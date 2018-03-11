@@ -1,0 +1,16 @@
+{
+  "app.logout": "Salir",
+  "app.language": "Idioma",
+  "main.menu.home": "Inicio",
+  "main.menu.about": "Acerca de...",
+  "login.title": "Entrar",
+  "login.submit": "Enviar",
+  "login.input.user": "Usuario",
+  "login.input.pass": "Contraseña",
+  "login.input.isMandatory": "Este campo es obligatorio",
+  "login.error.1": "¡Credenciales erroneas!",
+  "login.error.2": "Inténtalo otra vez",
+  "error.not-found.main": "Ups! Ha habido un error!",
+  "error.not-found.doesnt-exists": "La página solicitada no existe...",
+  "error.not-found.not-implemented": "(O tal vez aun no ha sido implementada)"
+}

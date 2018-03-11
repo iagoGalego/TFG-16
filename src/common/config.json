@@ -1,0 +1,47 @@
+{
+  "app": {
+    "languages": {
+      "available" : [
+        {
+          "code" : "en",
+          "name" : "English",
+          "flag" : "en_gb.png"
+        }, {
+          "code" : "es",
+          "name" : "Español",
+          "flag" : "es_es.png"
+        }, {
+          "code" : "gl",
+          "name" : "Galego",
+          "flag" : "gl.png"
+        }
+      ],
+      "default": "en"
+    },
+    "historyType" : "browserHistory",
+    "baseURL" : "/",
+    "title" : "OPENET"
+  },
+
+  "api" : {
+    "baseURL" : "https://tec.citius.usc.es/cuestionarios/backend",
+    "authAPI" : "HMBAuthenticationRESTAPI/auth",
+    "dbAPI" : "HMBOntologyRESTAPI/api",
+    "execAPI" : "HMBWFExecutionEngineRESTAPI/api",
+    "versions" : {
+      "db" : {
+        "segmentationAPI " : "v3",
+        "clientAPI" : "v2",
+        "userAPI" : "v1",
+        "adminAPI" : "v3"
+      },
+      "exec" : {
+        "adminAPI" : "v3"
+      }
+    }
+  },
+
+  "sentry": {
+    "url" : "http://38b0abb189c846bbb23ce34e115b5933@172.16.244.216:81/3"
+  }
+}

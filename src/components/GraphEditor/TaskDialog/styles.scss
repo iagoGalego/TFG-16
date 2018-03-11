@@ -1,0 +1,101 @@
+@import '../../../common/styles/theme';
+
+.taskDialog{
+  overflow: visible;
+  width: 320px;
+
+  textarea {
+    resize: none;
+  }
+}
+
+.fullWidth{
+  width: 100%;
+}
+
+.multiSelector{
+  border: solid 1px rgba(0,0,0,.1);
+  border-radius: 3px;
+  margin: 0 -8px;
+  padding: 8px;
+
+  &>:last-child{
+    &, *{
+      margin-bottom: 0;
+    }
+  }
+
+  h1{
+    font-size: 1.5rem;
+    color: rgba(0,0,0,.25);
+    margin: 0 0 10px;
+    padding-bottom: 5px;
+    border-bottom: solid 1px rgba(0,0,0,.1);
+  }
+}
+
+.columns{
+  display: flex;
+  justify-content: space-between;
+
+  &>*{
+    flex: 1;
+    flex-basis: 49%;
+  }
+}
+.noPadding{
+  &, *{
+    padding: 0;
+  }
+}
+.noMargin{
+  &, *{
+    top: 0;
+    margin: 0;
+  }
+}
+
+.badges{
+  justify-content: flex-end;
+  margin-top: -3px;
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+
+  &::before{
+    position: absolute;
+    content: 'aaa';
+    display: inline-block;
+    width: 10px;
+    height: 2.4rem;
+    background-image: /*TODO*/linear-gradient(to left, rgba(255,255,255,1) 0%,rgba(255,255,255,0) 100%); ;
+    z-index: 1000;
+  }
+
+  &, *{
+    user-select: none;
+    cursor: pointer;
+  }
+
+  &>div{
+    display: inline-block!important;
+    width: 2rem;
+    height: 2rem;
+    margin: 2px 0;
+
+    &>span{
+      font-size: 14px;
+      line-height: 2rem;
+    }
+  }
+}
+
+.roles{
+  position: relative;
+  color: rgba(0,0,0,.25);
+}
+.rolesSelector{
+  position: absolute;
+  top: 0;
+  right: 0;
+}

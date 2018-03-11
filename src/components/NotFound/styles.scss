@@ -1,0 +1,31 @@
+.error{
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+
+  hgroup{
+    margin-top: 5%;
+    * {
+      font-family: monospace;
+      text-align: center;
+    }
+  }
+
+  h1{
+    font-size: 6rem;
+    margin-bottom: 0;
+  }
+
+  img{
+    margin-bottom: 5%;
+    max-width: 80%;
+    max-height: 60%;
+    min-width: 60%;
+    width: auto;
+    height: auto;
+    transform: rotate3d(0,0,1,-5deg);
+  }
+}

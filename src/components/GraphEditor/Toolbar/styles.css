@@ -1,0 +1,43 @@
+.toolbar {
+  background-color: red;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.26);
+  z-index: 1;
+}
+
+.toolbar >nav {
+  display: flex;
+  height: 80%;
+  flex: 1 0;
+  justify-content: center;
+}
+
+.toolbar:first-child{
+  justify-content: flex-start;
+}
+
+.toolbar:last-child{
+  justify-content: flex-end;
+}
+
+.toolbar    section {
+  padding: 0 5px;
+  min-width: 10px;
+  display: flex;
+  border-right: solid 1px rgba(100, 100, 100, .2);
+  height: 100%;
+}
+
+.toolbar:last-child{
+        border-right: none;
+}
+
+.toolbar button {
+  height: 100%;
+}
+
+.toolbar  *{
+  font-size: 2.5rem!important;
+}

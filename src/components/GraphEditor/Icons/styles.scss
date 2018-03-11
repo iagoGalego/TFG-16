@@ -1,0 +1,23 @@
+.icon, .icon-wide{
+  height: 38px;
+  margin: 0;
+  display: flex;
+  padding: 0 5px;
+  position: relative;
+
+  img{
+    pointer-events: none;
+    height: auto;
+    width: auto;
+    max-height: 100%;
+    max-width: 100%;
+  }
+}
+
+.icon{
+  width: 48px;
+}
+
+.icon-wide{
+  width: 64px;
+}

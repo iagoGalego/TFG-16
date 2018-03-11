@@ -1,0 +1,25 @@
+.home {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.home *{
+    flex: auto 0 0;
+    text-align: center;
+}
+
+.home img{
+    width: 90%;
+    max-width: 700px;
+    align-self: center;
+}
+
+.hidden{
+  display: none;
+}

@@ -1,0 +1,181 @@
+.selected{
+  text-decoration: underline;
+}
+/*html[lang=en]{
+  .languageSelector button[data-lang=en]{
+    text-decoration: underline;
+  }
+}
+
+html[lang=es]{
+  .languageSelector button[data-lang=es]{
+    text-decoration: underline;
+  }
+}
+
+html[lang=gl]{
+  .languageSelector button[data-lang=gl]{
+    text-decoration: underline;
+  }
+}*/
+
+.copyright {
+  position: fixed;
+  top: calc(100% - 3rem);
+  display: block;
+  left: 0;
+  text-align: center;
+  width: 100%;
+  color: white;
+  font-size: 10px;
+}
+
+.copyright span{
+    font-size: 12px;
+}
+
+.languageSelector {
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 32px;
+}
+
+.languageSelector button {
+  min-width: 0;
+  color: white !important;
+  /*font-size: $font-size-tiny;*/
+  margin: 0 !important;
+  padding: 4px;
+  height: 100%;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.languageSelector:hover{
+      background-color: transparent!important;
+      text-decoration: underline;
+}
+
+.loginContainer{
+  background-color: darkgray;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+
+}
+
+.loginCard {
+  display: flex;
+  align-items: center;
+  width: 280px;
+  flex-direction: column;
+  min-height: 360px;
+  height: auto;
+}
+
+.loginCard>*{
+    width: 100%;
+}
+
+.loginCard picture{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+/*.loginCard @media screen and (min-width: $layout-breakpoint-md) {
+  flex-direction: row;
+  height: 360px;
+  width: auto;
+  min-width: 560px;
+}*/
+
+.loginCard  picture{
+      width: auto;
+}
+
+
+.logoContainer {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  flex-direction: row;
+}
+
+/*.logoContainer  @media screen and (min-width: $layout-breakpoint-md){
+    flex-direction: column;
+}*/
+
+.logoContainer  *{
+    max-height: 100%;
+    max-width: 100%;
+}
+
+.divider{
+  border: none;
+  /*background-color: $border-color;*/
+  height: 1px;
+}
+
+.title {
+  display: block;
+  text-align: center;
+}
+.title  h5{
+    margin: 0;
+}
+
+.fullWidth{
+  width: 100%;
+}
+
+.inputs{
+  display: flex;
+  flex-direction: column;
+  min-width: 250px;
+}
+
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  /*border-top: solid 1px $border-color;*/
+  border-left: none;
+}
+/*.loginForm  @media screen and (min-width: $layout-breakpoint-md){
+    border-top: none;
+    border-left: solid 1px $border-color;
+  }
+*/
+.loginForm  .formContainer{
+    flex: auto;
+}
+
+.error {
+  padding: 0 20px 0 16px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-bottom: 16px;
+  max-width: 288px;
+  max-height: 2.5em;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+.error * {
+    /*color: $palette-red-500;*/
+}
+
+.icon{
+  font-size: 4.5rem;
+}
+
+.messages{
+  display: flex;
+  flex-direction: column;
+}

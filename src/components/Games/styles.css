@@ -1,0 +1,24 @@
+.mainContainer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.mainContainer  ul{
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mainContainer >h1{
+    flex: 0;
+    padding: 3rem;
+    font-size: 3rem;
+    font-family: monospace;
+    text-align: center;
+}
+
+.mainContainer >img{
+    flex: 0;
+}
+

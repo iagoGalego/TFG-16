@@ -1,0 +1,12 @@
+.taskDialog {
+  width: 320px;
+}
+
+.taskDialog .dialogControls{
+    background-color: red;
+    padding: 1rem;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    height: 42px;
+}

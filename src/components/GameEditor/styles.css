@@ -1,0 +1,41 @@
+.mainContainer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+
+.mainContainer >h1{
+    flex: 0;
+    padding: 3rem;
+    font-size: 3rem;
+    font-family: monospace;
+    text-align: center;
+}
+
+.mainContainer  >img{
+    flex: 0;
+}
+
+.mainContainer >.toolbar{
+    position: absolute;
+    height: 48px;
+    top: 0;
+    left: 0;
+    right: 0;
+}
+
+.mainContainer >.editor{
+    position: absolute;
+    top: 48px;
+    left: 0;
+    right: 0;
+    height: calc(100% - 48px);
+}
+
+.mainContainer >.taskDialog{
+    position: absolute;
+    bottom: 18px;
+    left: 8px;
+}

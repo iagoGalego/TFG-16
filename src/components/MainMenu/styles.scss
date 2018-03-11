@@ -1,0 +1,26 @@
+@import '../../common/styles/theme';
+
+.active{
+  display: block;
+  overflow: hidden;
+  border-left: solid 3px $color-text;
+  background: none rgba(0,0,0,0.09);
+
+  @media screen and (min-width: 960px){
+    border-left: solid 3px var(--color-white);
+  }
+
+  li{
+    margin-left: -3px;
+  }
+}
+
+.menu{
+  flex: 1;
+  padding: 0;
+
+  a:link, a:visited, a:hover, a:active{
+    text-decoration: none;
+    color: inherit;
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "app.logout": "Logout",
+  "app.language": "Language",
+  "main.menu.home": "Home",
+  "main.menu.about": "About",
+  "login.title": "Log In",
+  "login.submit": "Submit",
+  "login.input.user": "User",
+  "login.input.pass": "Password",
+  "login.input.isMandatory": "This input is mandatory",
+  "login.error.1": "Wrong user credentials!",
+  "login.error.2": "Try again",
+  "error.not-found.main": "Sorry, but you are wrong!",
+  "error.not-found.doesnt-exists": "The page you have requested doesn't exist...",
+  "error.not-found.not-implemented": "(Or may be not yet implemented)"
+}

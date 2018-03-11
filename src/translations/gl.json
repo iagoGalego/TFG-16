@@ -1,0 +1,16 @@
+{
+  "app.logout": "Sair",
+  "app.language": "Idioma",
+  "main.menu.home": "Inicio",
+  "main.menu.about": "Acerca de...",
+  "login.title": "Entrar",
+  "login.submit": "Enviar",
+  "login.input.user": "Usuario",
+  "login.input.pass": "Contrasinal",
+  "login.input.isMandatory": "Este campo é obrigatorio",
+  "login.error.1": "¡Credenciais erróneas!",
+  "login.error.2": "Téntao outra vez",
+  "error.not-found.main": "¡Quieto parado! Parece que houbo un erro",
+  "error.not-found.doesnt-exists": "A páxina solicitada non existe...",
+  "error.not-found.not-implemented": "(Ou quizais non foi implementada ainda)"
+}

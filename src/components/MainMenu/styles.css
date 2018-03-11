@@ -1,0 +1,23 @@
+
+.active {
+  display: block;
+  overflow: hidden;
+  border-left: solid 3px;
+  background: none rgba(0, 0, 0, 0.09);
+}
+  /*.active{ @media screen and (min-width: $layout-breakpoint-md){
+    border-left: solid 3px white;
+  }*/
+
+.active li{
+    margin-left: -3px;
+}
+
+.menu {
+  flex: 1;
+  padding: 0;
+}
+  .menu a:link, a:visited, a:hover, a:active{
+    text-decoration: none;
+    color: inherit;
+}

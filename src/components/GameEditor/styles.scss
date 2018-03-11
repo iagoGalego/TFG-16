@@ -1,0 +1,45 @@
+@import '../../common/styles/theme';
+
+$toolbarHeight: 48px;
+
+.mainContainer{
+  height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+
+  &>h1{
+    flex: 0;
+    padding: 3rem;
+    font-size: 3rem;
+    font-family: monospace;
+    text-align: center;
+  }
+
+  &>img{
+    flex: 0;
+  }
+
+  &>.toolbar{
+    position: absolute;
+    height: $toolbarHeight;
+    top: 0;
+    left: 0;
+    right: 0;
+  }
+
+  &>.editor{
+    position: absolute;
+    top: $toolbarHeight;
+    left: 0;
+    right: 0;
+    height: calc(100% - #{$toolbarHeight});
+  }
+
+  &>.taskDialog{
+    position: absolute;
+    bottom: 18px;
+    left: 8px;
+  }
+}

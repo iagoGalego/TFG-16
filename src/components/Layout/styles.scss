@@ -1,0 +1,171 @@
+@import '../../common/styles/theme';
+
+.root{
+  height: 100%;
+}
+
+.buttons{
+  padding: 0;
+  display: flex;
+  justify-content: center;
+
+  button{
+    flex: 1;
+    margin: 0!important;
+    font-size: 2rem;
+    height: auto;
+    padding: 5px;
+
+    @media screen and (max-width: (960px - 1px)) {
+      &:last-of-type{
+        display: none;
+      }
+    }
+  }
+}
+
+.main{
+  overflow: hidden;
+  padding: 0;
+
+  height: calc(100% - 56px);
+
+  @media screen and (min-width: (600px + 1px)) {
+    height: calc(100% - 64px);
+  }
+
+  &>*{
+    height: 100%;
+  }
+}
+
+.windowTitle{
+  font-weight: 300;
+  font-size: 2.5rem;
+}
+
+.appbar{
+  background: #455a64!important;
+  padding: 0 8px;
+  display: flex;
+  justify-content: space-between;
+
+  @media screen and (min-width: 960px){
+    padding-left: 16px;
+  }
+
+  h1{
+    flex: 1;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+}
+
+.exitButton{
+  @media screen and (min-width: 960px){
+    display: none;
+  }
+
+  span {
+    color: var(--color-white);
+    font-size: 2rem!important;
+  }
+}
+
+.menuIcon{
+  margin-right: 8px;
+}
+
+.logo, .tinyLogo{
+  width: 100%;
+}
+
+.tinyLogo{
+  display: none;
+}
+
+.drawer{
+  border: none!important;
+  width: 256px!important;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  *{
+    color: $color-text!important;
+  }
+
+  .minimizer{
+    display: none;
+  }
+
+  @media screen and (min-width: 960px) {
+    background-color: $color-primary-dark !important;
+
+    span{
+      color: var(--color-white) !important;
+    }
+
+    .minimizer{
+      display: block;
+      width: 100%;
+    }
+  }
+}
+
+@media screen and (min-width: 960px) {
+  .panel{
+    left: 64px!important;
+  }
+  .shrink {
+    .logo{
+      display: none;
+    }
+
+    .tinyLogo{
+      display: block;
+    }
+
+    &, * {
+      max-width: 64px !important;
+      min-width: 64px !important;
+      width: 64px;
+    }
+
+    [data-react-toolbox = 'ripple'] > span {
+      max-width: 128px !important;
+    }
+
+    .buttons {
+      flex-direction: column;
+      * {
+        margin: 0;
+      }
+
+      button {
+        padding: 5px 0;
+      }
+    }
+
+    .minimizer {
+      display: flex;
+      transform: rotate(180deg);
+
+      span {
+        margin: 0 !important;
+      }
+    }
+
+    [data-react-toolbox = 'list-item-text'] {
+      display: none;
+    }
+
+    span {
+      text-align: center;
+    }
+
+    li span {
+      padding: 0 !important;
+    }
+  }
+}

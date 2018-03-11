@@ -1,0 +1,152 @@
+.root{
+  height: 100%;
+}
+
+.buttons {
+  padding: 0;
+  display: flex;
+  justify-content: center;
+}
+
+
+.buttons button {
+  flex: 1;
+  margin: 0 !important;
+  font-size: 2rem;
+  height: auto;
+  padding: 5px;
+}
+
+.buttons:last-of-type @media screen and (max-width: ($layout-breakpoint-md - 1px)){
+  display: none;
+}
+
+.main {
+  overflow: hidden;
+  padding: 0;
+  height: calc(100% - 56px);
+}
+
+.main @media screen and (min-width: ($layout-breakpoint-xxs + 1px)) {
+    height: calc(100% - 64px);
+}
+
+.main>* @media screen and (min-width: ($layout-breakpoint-xxs + 1px)){
+    height: 100%;
+}
+
+.windowTitle{
+  font-weight: 300;
+  font-size: 2.5rem;
+}
+
+.appbar {
+  padding: 0 8px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.appbar @media screen and (min-width: $layout-breakpoint-md){
+    padding-left: 16px;
+}
+
+.appbar h1{
+    flex: 1;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.exitButton @media screen and (min-width: $layout-breakpoint-md){
+    display: none;
+  }
+
+.exitButton span {
+    color: $color-white;
+    font-size: 2rem!important;
+}
+
+.menuIcon{
+  margin-right: 8px;
+}
+
+.logo, .tinyLogo{
+  width: 100%;
+}
+
+.tinyLogo{
+  display: none;
+}
+
+.drawer aside{
+    border: none!important;
+}
+
+.drawer *{
+    color: $color-text!important;
+}
+
+.drawer  .minimizer{
+    display: none;
+  }
+
+.drawer aside @media screen and (min-width: $layout-breakpoint-md) {
+
+  background-color: $color-primary-dark !important;
+}
+
+drawer span @media screen and (min-width: $layout-breakpoint-md){
+        color: $color-white !important;
+}
+
+drawer .minimizer{
+      display: block;
+}
+
+.shrink .logo @media screen and (min-width: $layout-breakpoint-md) {
+  display: none;
+}
+
+.shrink .tinyLogo @media screen and (min-width: $layout-breakpoint-md) {
+  display: block;
+}
+
+.shrink, * @media screen and (min-width: $layout-breakpoint-md) {
+  max-width: 64px !important;
+  min-width: 64px !important;
+  width: 64px;
+}
+
+.shrink [data-react-toolbox = 'ripple'] > span @media screen and (min-width: $layout-breakpoint-md) {
+  max-width: 128px !important;
+}
+
+.shrink .buttons @media screen and (min-width: $layout-breakpoint-md) {
+  flex-direction: column;
+}
+
+.shrink .buttons * @media screen and (min-width: $layout-breakpoint-md) {
+  margin: 0;
+}
+
+.shrink .buttons button @media screen and (min-width: $layout-breakpoint-md) {
+  margin: 0;
+}
+
+.shrink .minimizer @media screen and (min-width: $layout-breakpoint-md) {
+  display: flex;
+  transform: rotate(180deg);
+}
+
+.shrink .minimizer span @media screen and (min-width: $layout-breakpoint-md) {
+  margin: 0 !important;
+}
+
+.shrink [data-react-toolbox = 'list-item-text'] span @media screen and (min-width: $layout-breakpoint-md) {
+  display: none;
+}
+.shrink span span @media screen and (min-width: $layout-breakpoint-md) {
+  text-align: center;
+}
+.shrink li span span @media screen and (min-width: $layout-breakpoint-md) {
+  padding: 0 !important;
+}
