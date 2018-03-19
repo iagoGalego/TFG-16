@@ -18,9 +18,10 @@ import { buildGraph, bindGraphEvents } from '../../GraphEditor/Utils'
             container: this.__graphContainer,
             graphDefinition: this.props.graph,
             selectedTask: this.props.selectedTask,
-            scale: 1
+            scale: this.props.scale
         })
-        bindGraphEvents(this.__graph, this.__newNodeContainer, this.props.selectedTask, this.props.addTask, this.props.selectTask)
+
+        bindGraphEvents(this.__graph, this.__newNodeContainer, this.props.selectedTask, this.props.addTask, this.props.selectTask, this.props.scale, this.props.moveTask)
     }
 
     componentDidUpdate() {
@@ -29,11 +30,8 @@ import { buildGraph, bindGraphEvents } from '../../GraphEditor/Utils'
             container: this.__graphContainer,
             graphDefinition: this.props.graph,
             selectedTask: this.props.selectedTask,
-            scale: 1
+            scale: this.props.scale
         })
-        bindGraphEvents(this.__graph, this.__newNodeContainer, this.props.selectedTask, this.props.addTask, this.props.selectTask)
-
-
     }
 
     render() {

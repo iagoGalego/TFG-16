@@ -8,6 +8,8 @@ import UserChoiceIcon from './img/UC.svg'
 import AndSplitIcon from './img/AS.svg'
 import AutomaticTaskIcon from './img/AT.svg'
 import UserTaskIcon from './img/UT.svg'
+import LoopIcon from './img/LP.svg'
+
 
 @CSSModules(styles) class HMBIcon extends Component{
     constructor(props) {
@@ -89,6 +91,19 @@ import UserTaskIcon from './img/UT.svg'
         </figure>
     }
 }
+@CSSModules(styles) class Loop extends Component{
+    constructor(props){
+        super(props)
+    }
+    render(){
+        let {tooltip, onMouseDown} = this.props
+
+        return  <figure styleName='icon' onMouseDown = { onMouseDown }>
+            <img src = { LoopIcon } />
+            <figcaption>{ tooltip }</figcaption>
+        </figure>
+    }
+}
 @CSSModules(styles) class AutomaticTask extends Component{
     constructor(props){
         super(props)
@@ -118,5 +133,5 @@ import UserTaskIcon from './img/UT.svg'
     }
 }
 
-export {InitialTask, LastTask, AutomaticChoice, UserChoice, AndSplit, AutomaticTask, UserTask}
+export {InitialTask, LastTask, AutomaticChoice, UserChoice, AndSplit, AutomaticTask, UserTask, Loop}
 export default HMBIcon

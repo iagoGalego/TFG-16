@@ -48,10 +48,10 @@ export function login(user, pass) {
     return dispatch => {
         dispatch(requestAPICall())
 
-        return APIClient
+        return HMBAPI.instance
             .login({user, pass})
             .then( token => {
-                sessionStorage.setItem('__token', token)
+                sessionStorage.setItem('__token', token);
                 dispatch(loginSuccess(token))
             })
             .then(() => HMBAPI.instance.loadUserConfiguration(user) )

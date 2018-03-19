@@ -15,6 +15,12 @@ export function addTaskInLink({task, link}){
     ]
 }
 
+export function clearDiagram(){
+    return {
+        type: TYPES.CLEAR_DIAGRAM
+    }
+}
+
 export function deleteTask(task){
     return [
         {
@@ -34,6 +40,13 @@ export function setSelectedTask(task){
     }
 }
 
+export function moveTask(task) {
+    return {
+        type: TYPES.MOVE_TASK,
+        payload: {task}
+    }
+}
+
 export function saveTask(task){
     return [
         {
@@ -41,7 +54,7 @@ export function saveTask(task){
             payload: { task },
         },{
             type: TYPES.SET_SELECTED_TASK,
-            payload: { task },
+            payload: { task: null },
         }
     ]
 }

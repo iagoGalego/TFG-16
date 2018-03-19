@@ -17,7 +17,7 @@ import { IconButton } from 'react-toolbox/lib/button'
 import Tooltip from 'react-toolbox/lib/tooltip'
 
 import { TASK_TYPE as T } from '../../../common/lib/model/builders'
-import { AutomaticChoice, UserChoice, AndSplit, AutomaticTask, UserTask } from '../../GraphEditor/Icons'
+import { AutomaticChoice, UserChoice, AndSplit, AutomaticTask, UserTask, Loop } from '../../GraphEditor/Icons'
 
 import styles from './styles.scss'
 
@@ -75,11 +75,12 @@ const Toolbar = ({
     intl: { formatMessage }}) =>
     <nav className = { className } styleName='toolbar'>
         <nav>
-            {/*<AndSplit onMouseDown = { (evt) => createTaskHandler(evt, T.AND_SPLIT) } />
-            <AutomaticChoice onMouseDown = { (evt) => createTaskHandler(evt, T.AUTOMATIC_CHOICE) } />
-            <UserChoice onMouseDown = { (evt) => createTaskHandler(evt, T.USER_CHOICE) } />*/null}
             <UserTask onMouseDown = { (evt) => createTaskHandler(evt, T.USER_TASK) }/>
-            {/*<AutomaticTask onMouseDown = { (evt) => createTaskHandler(evt, T.AUTOMATIC_TASK) } />*/ null}
+            <AutomaticTask onMouseDown = { (evt) => createTaskHandler(evt, T.AUTOMATIC_TASK) } />
+            <UserChoice onMouseDown = { (evt) => createTaskHandler(evt, T.USER_CHOICE) } />
+            <AutomaticChoice onMouseDown = { (evt) => createTaskHandler(evt, T.AUTOMATIC_CHOICE) } />
+            <AndSplit onMouseDown = { (evt) => createTaskHandler(evt, T.AND_SPLIT) } />
+            <Loop onMouseDown = { (evt) => createTaskHandler(evt, T.LOOP) } />
         </nav>
         <nav>
             <section>

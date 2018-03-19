@@ -131,7 +131,10 @@ const actionLabel = defineMessages({
 
     componentWillUpdate(props, state){
         if(props.minimized && state.modified && this.isValid() )
-            confirm('Do you want to save?')
+            if(confirm('Do you want to save?')){
+                this.setState({modified: false});
+                this.props.saveTask(this.state.task)
+            }
 
     }
     componentWillReceiveProps(props){
@@ -277,131 +280,138 @@ const actionLabel = defineMessages({
         let { intl: {formatMessage}} = this.props
 
         return (
-            <CardText>
-                <Input
-                    type='text'
-                    label = { formatMessage(formLabel.name) }
-                    value = { this.state.task.name }
-                    onChange = { this.handleNameChange }
-                />
-                <Input
-                    type='text'
-                    label = { formatMessage(formLabel.description) }
-                    value = { this.state.task.description }
-                    onChange = { this.handleDescriptionChange }
-                    multiline
-                />
-                <section styleName = 'columns'>
-                    <DatePicker label = { formatMessage(formLabel.initialDate) }
-                                locale = { this.props.language }
-                                value = { this.state.task.initialDate }
-                                maxDate = { this.state.task.endingDate }
-                                onChange = { this.handleInitialDateChange }
-                                autoOk
+            <CardText styleName = 'columns'>
+                <div styleName = 'column'>
+                    <Input
+                        type='text'
+                        label = { formatMessage(formLabel.name) }
+                        value = { this.state.task.name }
+                        onChange = { this.handleNameChange }
                     />
-                    <DatePicker label = { formatMessage(formLabel.endingDate) }
-                                locale = { this.props.language }
-                                value = { this.state.task.endingDate }
-                                minDate = { this.state.task.initialDate }
-                                onChange = { this.handleEndingDateChange }
-                                autoOk
+                    <Input
+                        type='text'
+                        label = { formatMessage(formLabel.description) }
+                        value = { this.state.task.description }
+                        onChange = { this.handleDescriptionChange }
+                        multiline
                     />
-                </section>
-                <section styleName = 'multiSelector'>
-                    <h1>
-                        <FormattedMessage
-                            id = 'games.editor.taskDialog.form.inputs.labels.onTaskFinish'
-                            defaultMessage = 'On task finish'
-                            description = 'Graph editor - Tasks Dialog - Form Inputs - Labels - On task finish'
+                    <section styleName = 'columns'>
+                        <DatePicker label = { formatMessage(formLabel.initialDate) }
+                                    locale = { this.props.language }
+                                    value = { this.state.task.initialDate }
+                                    maxDate = { this.state.task.endingDate }
+                                    onChange = { this.handleInitialDateChange }
+                                    autoOk
                         />
-                    </h1>
+                        <DatePicker label = { formatMessage(formLabel.endingDate) }
+                                    locale = { this.props.language }
+                                    value = { this.state.task.endingDate }
+                                    minDate = { this.state.task.initialDate }
+                                    onChange = { this.handleEndingDateChange }
+                                    autoOk
+                        />
+                    </section>
+                </div>
+                <div styleName = 'column'>
+                    <section styleName = 'multiSelector'>
+                        <h1>
+                            <FormattedMessage
+                                id = 'games.editor.taskDialog.form.inputs.labels.onTaskFinish'
+                                defaultMessage = 'On task finish'
+                                description = 'Graph editor - Tasks Dialog - Form Inputs - Labels - On task finish'
+                            />
+                        </h1>
 
-                    <div styleName='columns'>
-                        <Checkbox checked = { this.state.task.giveBadge }
-                                  label = { formatMessage(formLabel.giveBadge) }
-                                  onChange={ this.handleGiveBadgeChange } />
+                        <div styleName='columns'>
+                            <Checkbox checked = { this.state.task.giveBadge }
+                                      label = { formatMessage(formLabel.giveBadge) }
+                                      onChange={ this.handleGiveBadgeChange } />
 
-                        <div styleName = 'badges'>
-                            <TooltipedAvatar tooltip = 'tooltip'
-                                             tooltipPosition = 'bottom'
-                                             icon='folder'
-                                             style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                            <TooltipedAvatar tooltip = 'tooltip2'
-                                             tooltipPosition = 'bottom'
-                                             icon='build'
-                                             style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                            <TooltipedAvatar tooltip = 'tooltip3'
-                                             tooltipPosition = 'bottom'
-                                             icon='explore'
-                                             style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                            <TooltipedAvatar tooltip = 'tooltip'
-                                             tooltipPosition = 'bottom'
-                                             icon='folder'
-                                             style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                            <TooltipedAvatar tooltip = 'tooltip2'
-                                             tooltipPosition = 'bottom'
-                                             icon='build'
-                                             style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                            <TooltipedAvatar tooltip = 'tooltip3'
-                                             tooltipPosition = 'bottom'
-                                             icon='explore'
-                                             style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                            <TooltipedAvatar tooltip = 'tooltip'
-                                             tooltipPosition = 'bottom'
-                                             icon='folder'
-                                             style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                            <TooltipedAvatar tooltip = 'tooltip2'
-                                             tooltipPosition = 'bottom'
-                                             icon='build'
-                                             style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                            <TooltipedAvatar tooltip = 'tooltip3'
-                                             tooltipPosition = 'bottom'
-                                             icon='explore'
-                                             style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                            <TooltipedAvatar tooltip = 'tooltip'
-                                             tooltipPosition = 'bottom'
-                                             icon='folder'
-                                             style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                            <TooltipedAvatar tooltip = 'tooltip2'
-                                             tooltipPosition = 'bottom'
-                                             icon='build'
-                                             style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                            <TooltipedAvatar tooltip = 'tooltip3'
-                                             tooltipPosition = 'bottom'
-                                             icon='explore'
-                                             style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                            <div styleName = 'badges'>
+                                <TooltipedAvatar tooltip = 'tooltip'
+                                                 tooltipPosition = 'bottom'
+                                                 icon='folder'
+                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                                <TooltipedAvatar tooltip = 'tooltip2'
+                                                 tooltipPosition = 'bottom'
+                                                 icon='build'
+                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                                <TooltipedAvatar tooltip = 'tooltip3'
+                                                 tooltipPosition = 'bottom'
+                                                 icon='explore'
+                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                                <TooltipedAvatar tooltip = 'tooltip'
+                                                 tooltipPosition = 'bottom'
+                                                 icon='folder'
+                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                                <TooltipedAvatar tooltip = 'tooltip2'
+                                                 tooltipPosition = 'bottom'
+                                                 icon='build'
+                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                                <TooltipedAvatar tooltip = 'tooltip3'
+                                                 tooltipPosition = 'bottom'
+                                                 icon='explore'
+                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                                <TooltipedAvatar tooltip = 'tooltip'
+                                                 tooltipPosition = 'bottom'
+                                                 icon='folder'
+                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                                <TooltipedAvatar tooltip = 'tooltip2'
+                                                 tooltipPosition = 'bottom'
+                                                 icon='build'
+                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                                <TooltipedAvatar tooltip = 'tooltip3'
+                                                 tooltipPosition = 'bottom'
+                                                 icon='explore'
+                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                                <TooltipedAvatar tooltip = 'tooltip'
+                                                 tooltipPosition = 'bottom'
+                                                 icon='folder'
+                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                                <TooltipedAvatar tooltip = 'tooltip2'
+                                                 tooltipPosition = 'bottom'
+                                                 icon='build'
+                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                                <TooltipedAvatar tooltip = 'tooltip3'
+                                                 tooltipPosition = 'bottom'
+                                                 icon='explore'
+                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                            </div>
+
+                        </div>
+                        <div styleName='columns'>
+                            <Checkbox checked = { this.state.task.givePoints }
+                                      label = { formatMessage(formLabel.givePoints) }
+                                      onChange = { this.handleGivePointsChange } />
+
+                            <Input styleName = 'noPadding noMargin'
+                                   label = { !this.state.task.points && this.state.ui.showPointsLabel && formatMessage(formLabel.numberOfPoints) || ''}
+                                   hint = { formatMessage(formLabel.numberOfPoints) }
+                                   disabled = { !this.state.task.givePoints }
+                                   onChange = { this.handlePointsChange }
+                                   onFocus = { this.handlePointsInputFocus }
+                                   onBlur = { this.handlePointsInputBlur }
+                                   value = { this.state.task.points } />
                         </div>
 
-                    </div>
-                    <div styleName='columns'>
-                        <Checkbox checked = { this.state.task.givePoints }
-                                  label = { formatMessage(formLabel.givePoints) }
-                                  onChange = { this.handleGivePointsChange } />
+                    </section>
 
-                        <Input styleName = 'noPadding noMargin'
-                               label = { !this.state.task.points && this.state.ui.showPointsLabel && formatMessage(formLabel.numberOfPoints) || ''}
-                               hint = { formatMessage(formLabel.numberOfPoints) }
-                               disabled = { !this.state.task.givePoints }
-                               onChange = { this.handlePointsChange }
-                               onFocus = { this.handlePointsInputFocus }
-                               onBlur = { this.handlePointsInputBlur }
-                               value = { this.state.task.points } />
-                    </div>
+                    <Dropdown
+                        auto
+                        onChange = { this.handleOperatorChange }
+                        source = { this.props.HMBData.operators
+                            .filter(({wfontology_Name}) => wfontology_Name !== 'start' && wfontology_Name !== 'finish')
+                            .map(operator => ({value: operator.wfontology_Name, label: this.getLocalizedOperatorNameFromId(operator.wfontology_Name)}))
+                        }
+                        label = { formatMessage(formLabel.operator) }
+                        value = { this.state.task.operator }
+                    />
+                    { this.renderRolesSelector() }
 
-                </section>
+                </div>
 
-                <Dropdown
-                    auto
-                    onChange = { this.handleOperatorChange }
-                    source = { this.props.HMBData.operators
-                                .filter(({wfontology_Name}) => wfontology_Name !== 'start' && wfontology_Name !== 'finish')
-                                .map(operator => ({value: operator.wfontology_Name, label: this.getLocalizedOperatorNameFromId(operator.wfontology_Name)}))
-                            }
-                    label = { formatMessage(formLabel.operator) }
-                    value = { this.state.task.operator }
-                />
-                { this.renderRolesSelector() }
             </CardText>
+
         )
     }
 

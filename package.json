@@ -101,7 +101,7 @@
     "webpack-dev-server": "^2.11.1",
     "why-did-you-update": "0.1.1",
     "jquery": "^3.3.1",
-    "cytoscape": "^2.7.9",
+    "cytoscape": "^3.2.9",
     "cytoscape-dagre": "^2.2.0",
     "uuid": "^3.2.1"
   }

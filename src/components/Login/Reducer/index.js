@@ -9,7 +9,7 @@ const InitialState = {
     showErrorMessages: false,
     isAuthenticated: !!sessionStorage.getItem('__token'),
     hasLoggedOut: false,
-}
+};
 
 export default function LoginReducer(state = InitialState, {type = '', payload = {}} = {type:'', payload: {}}){
     switch (type){

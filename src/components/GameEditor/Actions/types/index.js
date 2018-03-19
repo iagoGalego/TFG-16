@@ -7,7 +7,9 @@ export const TYPES = Object.freeze({
     DELETE_TASK: 'DELETE_TASK',
     SAVE_TASK: 'SAVE_TASK',
     UNDO: 'GAME_EDITOR_UNDO',
-    REDO: 'GAME_EDITOR_REDO'
+    REDO: 'GAME_EDITOR_REDO',
+    CLEAR_DIAGRAM: 'CLEAR_DIAGRAM',
+    MOVE_TASK: 'MOVE_TASK'
 })
 
 export default TYPES

@@ -1,7 +1,6 @@
 import React, {Component} from 'react'
 import { defineMessages, FormattedMessage, injectIntl } from 'react-intl'
 import CSSModules from 'react-css-modules'
-
 import { autobind } from 'core-decorators'
 
 import Toolbar from '../GraphEditor/Toolbar'
@@ -28,9 +27,11 @@ const messages = defineMessages({
         super(props);
         this.state = {
             windowWidth: window.innerWidth,
-            scale: 1,
+            scale: 0.8,
             showHelp: false,
-        }
+            fullScreen: false
+        };
+        this.__full = null
     }
 
     static defaultProps = {
@@ -363,41 +364,72 @@ const messages = defineMessages({
         this.props.setAppTitle(this.props.intl.formatMessage(messages.title))
     }
     componentDidMount() {
-        window.addEventListener('resize', this.handleWindowResize)
+        window.addEventListener('resize', this.handleWindowResize);
         window.addEventListener('beforeunload', function (e) {
             //TODO save before leaving
-        })
+        });
+        document.addEventListener('fullscreenchange', this.handleExit);
+        document.addEventListener('webkitfullscreenchange', this.handleExit);
+        document.addEventListener('mozfullscreenchange', this.handleExit);
+        document.addEventListener('MSFullscreenChange', this.handleExit);
     }
     componentWillUnmount() {
         window.removeEventListener('resize', this.handleWindowResize)
     }
 
+    handleExit() {
+        this.setState(previousState => ({...previousState, fullScreen: !this.state.fullScreen}));
+    }
     handleWindowResize() {
         this.setState(previousState => ({...previousState, windowWidth: window.innerWidth}));
     }
     handleZoom(action){
         switch (action){
             case 'in':
-                this.setState(previousState => ({...previousState, scale: previousState.scale + 1}))
-                break
+                this.setState(previousState => ({...previousState, scale: previousState.scale + 0.2}));
+                document.dispatchEvent(new CustomEvent('graph:zoomin'))
+                break;
             case 'out':
-                this.setState(previousState => ({...previousState, scale: previousState.scale - 1}))
-                break
+                this.setState(previousState => ({...previousState, scale: previousState.scale - 0.2}));
+                document.dispatchEvent(new CustomEvent('graph:zoomout'))
+                break;
             case 'reset':
-                this.setState(previousState => ({...previousState, scale: 1}))
-                break
+                this.setState(previousState => ({...previousState, scale: 0.8}));
+                document.dispatchEvent(new CustomEvent('graph:reset'))
+                break;
             case 'fit':
-                alert('Not implemented yet!')
+                if(!this.state.fullScreen){
+                    if(this.__full.requestFullScreen) {
+                        this.__full.requestFullScreen();
+                    } else if(this.__full.mozRequestFullScreen) {
+                        this.__full.mozRequestFullScreen();
+                    } else if(this.__full.webkitRequestFullScreen) {
+                        this.__full.webkitRequestFullScreen();
+                    }
+                } else{
+                    if(document.cancelFullScreen) {
+                        document.cancelFullScreen();
+                    } else if(document.mozCancelFullScreen) {
+                        document.mozCancelFullScreen();
+                    } else if(document.webkitCancelFullScreen) {
+                        document.webkitCancelFullScreen();
+                    }
+                }
                 break;
             default:
                 alert(`Option '${action}' not recognized !`)
         }
     }
     handlePrint(){}
+
     handleTaskCreation(evt, type){
         document.dispatchEvent(new CustomEvent('graph:showplaceholders', {detail: {type, x: evt.nativeEvent.pageX, y: evt.nativeEvent.pageY}}))
     }
-    handleClear(){}
+
+    handleClear(){
+        this.props.clear();
+    }
+
     handleHelp(){
         this.setState(previousState => ({...previousState, showHelp: true}))
     }
@@ -416,7 +448,8 @@ const messages = defineMessages({
                 </div>
             )
         else return (
-            <div styleName = 'mainContainer' >
+            <div styleName = 'mainContainer'
+                 ref =  { element => this.__full = element }>
                 <Toolbar styleName='toolbar'
                          zoomHandler = { this.handleZoom }
                          createTaskHandler = { this.handleTaskCreation }
@@ -431,6 +464,7 @@ const messages = defineMessages({
                         scale = { this.state.scale }
                         addTask = { this.props.addTask }
                         selectTask = { this.props.selectTask }
+                        moveTask = { this.props.moveTask }
                 />
 
                 <TaskDialog styleName = 'taskDialog'

@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux'
-import { addTaskInLink, setSelectedTask, deleteTask, saveTask } from './Actions'
+import {addTaskInLink, setSelectedTask, deleteTask, saveTask, clearDiagram, moveTask} from './Actions'
 
 import GameEditor from './GameEditor'
 
@@ -29,6 +29,8 @@ function mapDispatchToProps(dispatch) {
         selectTask: bindActionCreators(setSelectedTask, dispatch),
         deleteTask: bindActionCreators(deleteTask, dispatch),
         saveTask: bindActionCreators(saveTask, dispatch),
+        moveTask: bindActionCreators(moveTask, dispatch),
+        clear: bindActionCreators(clearDiagram, dispatch),
     }
 }
 

@@ -13,7 +13,7 @@ export default function GraphReducer(state = InitialState, {type = '', payload =
             return {
                 ...state,
                 dialogOpened: !state.dialogOpened
-            }
+            };
         default:
             return state
     }

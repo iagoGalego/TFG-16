@@ -9,7 +9,9 @@ import AutomaticChoiceIcon from '../../GraphEditor/Icons/img/AC.svg'
 import UserChoiceIcon from '../../GraphEditor/Icons/img/UC.svg'
 import AndSplitIcon from '../../GraphEditor/Icons/img/AS.svg'
 import AutomaticTaskIcon from '../../GraphEditor/Icons/img/AT.svg'
+import EndIcon from '../../GraphEditor/Icons/img/END.svg'
 import UserTaskIcon from '../../GraphEditor/Icons/img/UT.svg'
+import LoopIcon from '../../GraphEditor/Icons/img/LP.svg'
 
 import { TASK_TYPE as T } from '../../../common/lib/model/builders'
 
@@ -32,12 +34,27 @@ function getImage(type){
         case 'andSplit':
         case T.AND_SPLIT:
             return AndSplitIcon
+        case 'andSplitEnd':
+        case T.AND_SPLIT_END:
+            return EndIcon
         case 'automaticChoice':
         case T.AUTOMATIC_CHOICE:
             return AutomaticChoiceIcon
+        case 'automaticChoiceEnd':
+        case T.AUTOMATIC_CHOICE_END:
+            return EndIcon
         case 'automaticTask':
         case T.AUTOMATIC_TASK:
             return AutomaticTaskIcon
+        case 'userChoiceEnd':
+        case T.USER_CHOICE_END:
+            return EndIcon
+        case 'loop':
+        case T.LOOP:
+            return LoopIcon
+        case 'loopEnd':
+        case T.LOOP_END:
+            return EndIcon
         default:
             return UserTaskIcon
     }
@@ -57,8 +74,18 @@ export function symbolTypeToString(type){
             return 'andSplit'
         case T.AUTOMATIC_CHOICE:
             return 'automaticChoice'
+        case T.AUTOMATIC_CHOICE_END:
+            return 'automaticChoiceEnd'
         case T.AUTOMATIC_TASK:
             return 'automaticTask'
+        case T.USER_CHOICE_END:
+            return 'userChoiceEnd'
+        case T.AND_SPLIT_END:
+            return 'andSplitEnd'
+        case T.LOOP:
+            return 'loop'
+        case T.LOOP_END:
+            return 'loopEnd'
         default:
             return 'userTask'
     }
@@ -77,8 +104,18 @@ export function stringTypeToSymbol(type){
             return T.AND_SPLIT
         case 'automaticChoice':
             return T.AUTOMATIC_CHOICE
+        case 'automaticChoiceEnd':
+            return T.AUTOMATIC_CHOICE_END
         case 'automaticTask':
             return T.AUTOMATIC_TASK
+        case 'userChoiceEnd':
+            return T.USER_CHOICE_END
+        case 'andSplitEnd':
+            return T.AND_SPLIT_END
+        case 'loop':
+            return T.LOOP
+        case 'loopEnd':
+            return T.LOOP_END
         default:
             return T.USER_TASK
     }
@@ -92,11 +129,13 @@ function mapGraphToFormat({nodes, links}, selectedTask){
 
     nodes.map(({id, name, type, x, y}) => formatedGraph.nodes.push({
         selected: selectedTask !== null && selectedTask.id === id,
-        data: {id, name, type, image: getImage(type),  x, y}}))
-    links.map(({from, to}) => formatedGraph.edges.push({selectable: false, data: {source: from, target: to}}))
+        data: {id, name, type, image: getImage(type)},
+        position: { x, y }})),
+    links.map(({from, to, isBase, type}) => formatedGraph.edges.push({selectable: false, data: {source: from, target: to, isBase: isBase, type: type}}))
 
     return formatedGraph
 }
+
 function getGraphStyles(){
     return cytoscape.stylesheet()
         .selector('node')
@@ -114,7 +153,7 @@ function getGraphStyles(){
         .css({
             'shape': 'ellipse',
         })
-        .selector('node[type="andSplit"], node[type="automaticChoice"], node[type="userChoice"]')
+        .selector('node[type="andSplit"], node[type="automaticChoice"], node[type="userChoice"], node[type="userChoiceEnd"], node[type="automaticChoiceEnd"]')
         .css({
             'shape': 'diamond',
         })
@@ -195,24 +234,25 @@ function getGraphStyles(){
         .css({
             'content' : 'file_download',
         })
+        .selector('edge[type="return"]')
 }
 
-export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, selectTask){
+export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, selectTask, scale, moveTask){
     //This is not working as expected. Review.
 
     function ADDTASKSTART(evt){
         try {
-            graph.collection('edge').addClass('placeholder')
+            graph.collection('edge').filter('[type!="return"]').addClass('placeholder')
         } catch (e){}
 
-        newNodeContainer.src = getImage(evt.detail.type)
-        newNodeContainer.style['position'] = 'fixed'
-        newNodeContainer.style['display'] = 'block'
-        newNodeContainer.style['z-index'] = 1000
-        newNodeContainer.style['opacity'] = 0.3
-        newNodeContainer.style['top'] = `${evt.detail.y - 20}px`
-        newNodeContainer.style['left'] = `${evt.detail.x - 20}px`
-        newNodeContainer.style['pointer-events'] = 'none'
+        newNodeContainer.src = getImage(evt.detail.type);
+        newNodeContainer.style['position'] = 'fixed';
+        newNodeContainer.style['display'] = 'block';
+        newNodeContainer.style['z-index'] = 1000;
+        newNodeContainer.style['opacity'] = 0.3;
+        newNodeContainer.style['top'] = `${evt.detail.y - 20}px`;
+        newNodeContainer.style['left'] = `${evt.detail.x - 20}px`;
+        newNodeContainer.style['pointer-events'] = 'none';
 
         const onmousemove = onmousemoveevt => {
             newNodeContainer.style['top'] = `${onmousemoveevt.clientY - 20}px`
@@ -231,7 +271,7 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
                     y: onmouseupevt.clientY - graph.container().getBoundingClientRect().top
                 }
             }))
-        }
+        };
 
         document.addEventListener('mousemove', onmousemove, true)
         document.addEventListener('mouseup', onmouseup, true)
@@ -244,13 +284,13 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
             const labelMargin = 16
 
             try {
-                graph.collection('edge').removeClass('placeholder')
+                graph.collection('edge').filter('[type!="return"]').removeClass('placeholder')
             } catch(e) {}
 
             //Prevent droping outside the editor
             if(x < 0 || y < 0) return
 
-            const edges = graph.collection('edge')
+            const edges = graph.collection('edge').filter('[type!="return"]')
 
             for (let i = 0; i<edges.size(); i++) {
                 if(edges[i].cy().renderer() === null) return
@@ -278,14 +318,10 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
 
                 //Check if drop in label position
                 if( (xx1 < x) && (x < xx2) && (yy1 < y) && (y < yy2)){
-                    document.removeEventListener('graph:showplaceholders', ADDTASKSTART)
-                    document.removeEventListener('graph:hideplaceholders', ADDTASKEND)
 
-                    const id = UUID.v4()
-
-                    addTask({
+                    const newTask = {
                         task: {
-                            id,
+                            id: UUID.v4(),
                             type: symbolTypeToString(type),
                             name: '',
                             description: '',
@@ -298,52 +334,73 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
                             giveBadges: false,
                             givePoints: false,
                             points: '',
+                            x: (edges[i].source().position().x+edges[i].target().position().x)/2,
+                            y: (edges[i].source().position().y+edges[i].target().position().y)/2
                         },
                         link: {
                             from: edges[i].source().id(),
                             to: edges[i].target().id()
                         }
-                    })
+                    }
+
+                    if(edges[i].data().isBase) newTask.link.newEdge = true;
+
+                    addTask(newTask)
                 }
             }
         }, 0)
     }
 
-    document.addEventListener('graph:showplaceholders', ADDTASKSTART)
-    document.addEventListener('graph:hideplaceholders', ADDTASKEND)
+    document.addEventListener('graph:showplaceholders', ADDTASKSTART);
+    document.addEventListener('graph:hideplaceholders', ADDTASKEND);
+
+    document.addEventListener('graph:zoomin', () => {graph.zoom( graph.zoom() + 0.1 )});
+    document.addEventListener('graph:zoomout', () => {graph.zoom( graph.zoom() - 0.1 )});
+    document.addEventListener('graph:reset', () => {graph.zoom( 0.8 )});
+
 
     graph.on('select', 'node', evt => {
-        if(selectedTask === null ||  (selectedTask !== null && selectedTask.id !== evt.cyTarget.id()))
-            selectTask({id: evt.cyTarget.id()})
-    })
+        if(selectedTask === null ||  (selectedTask !== null && selectedTask.id !== evt.target.id()))
+            selectTask({id: evt.target.id()})
+    });
 
     graph.on('tap', evt => {
-        if(evt.cyTarget.isNode === undefined || (evt.cyTarget.isNode !== undefined && !evt.cyTarget.isNode()))
+        if(evt.target.isNode === undefined || (evt.target.isNode !== undefined && !evt.target.isNode()))
             selectTask(null)
+    });
+
+    graph.on('mouseup', 'node',  evt => {
+        moveTask(evt.target.json())
     })
 
-    graph.on('dragover', evt => console.log(evt))
 }
-export function buildGraph({graph, container, graphDefinition, selectedTask}){
+export function buildGraph({graph, container, graphDefinition, selectedTask, scale}){
 
-    if ( graphDefinition === undefined )
+    if ( graphDefinition === undefined ){
         return
+    }
 
-    if (graph === null)
+    if (graph === null) {
         return cytoscape({
             container: container,
             boxSelectionEnabled: false,
             autoungrabify: false,
+            zoom: scale,
             style: getGraphStyles(),
             elements: mapGraphToFormat(graphDefinition, selectedTask),
             layout: {
-                name: 'breadthfirst',
+                name: 'concentric',
                 fit: false,
-                directed: true,
-                roots: '#start',
+                directed: false,
                 padding: 50,
             }
         });
-    else
-        return graph.json(mapGraphToFormat(graphDefinition, selectedTask))
+    }
+    else {
+        graph.elements().remove();
+        graph.add( mapGraphToFormat(graphDefinition, selectedTask) );
+        graph.nodes().ungrabify()
+        return graph
+        //return graph.json( mapGraphToFormat(graphDefinition, selectedTask) );
+    }
 }

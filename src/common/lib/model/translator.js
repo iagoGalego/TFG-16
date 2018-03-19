@@ -24,13 +24,13 @@ export default class Translator{
                             .setIsValidated(isValidated)
                             .setIsDesignFinished(isDesignFinished)
                             .setProvider(provider)
-                            .setDesigner(designer)
+                            .setDesigner(designer);
 
-        if (startDateIsRelative) workflow.setRelativeStartTime(startDate)
-        else workflow.setAbsoluteStartTime(startDate)
+        if (startDateIsRelative) workflow.setRelativeStartTime(startDate);
+        else workflow.setAbsoluteStartTime(startDate);
 
-        if (expiryDateIsRelative) workflow.setRelativeExpiryTime(expiryDate)
-        else workflow.setAbsoluteExpiryTime(expiryDate)
+        if (expiryDateIsRelative) workflow.setRelativeExpiryTime(expiryDate);
+        else workflow.setAbsoluteExpiryTime(expiryDate);
 
         cells.filter( cell => cell.type === 'link' )
             .forEach( link => workflow.addFusion(
@@ -38,7 +38,7 @@ export default class Translator{
                     .from(link.source.id, Number.parseInt(link.source.port))
                     .to(link.target.id, Number.parseInt(link.target.port))
                     .build()
-            ))
+            ));
 
         cells.filter( cell => cell.type !== 'link' )
             .forEach( node => {
@@ -51,10 +51,10 @@ export default class Translator{
                             .setFinal(node.isFinal)
                             .setOperator(node.operator)
                             .setRequired(node.isRequired)
-                            .setTagReference(node.tagReference)
+                            .setTagReference(node.tagReference);
 
-                        node.startDateIsRelative ? task.setRelativeStartTime(node.startDate) : task.setAbsoluteStartTime(node.startDate)
-                        node.expiryDateIsRelative ? task.setRelativeStartTime(node.expiryDate) : task.setAbsoluteStartTime(node.expiryDate)
+                        node.startDateIsRelative ? task.setRelativeStartTime(node.startDate) : task.setAbsoluteStartTime(node.startDate);
+                        node.expiryDateIsRelative ? task.setRelativeStartTime(node.expiryDate) : task.setAbsoluteStartTime(node.expiryDate);
 
                         //TODO set parameter value
                             /*
@@ -66,20 +66,20 @@ export default class Translator{
                              setOperatorSortParameter( parameterName, parameterValue )
                             */
 
-                        workflow.addTask(task.build())
-                        break
+                        workflow.addTask(task.build());
+                        break;
                     case TASK_TYPE.AUTOMATIC_CHOICE:
-                        break
+                        break;
                     case TASK_TYPE.AND_SPLIT:
-                        break
+                        break;
                     case TASK_TYPE.USER_CHOICE:
-                        break
+                        break;
                     default:
                         workflow.addTask(new TaskBuilder().build())
                         //throw new Error("Task type unknown")
                 }
 
-            })
+            });
 
         return workflow.build()
     }

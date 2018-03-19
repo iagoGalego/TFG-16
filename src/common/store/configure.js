@@ -15,7 +15,7 @@ export function configureStore(initialState) {
     const reducers = combineReducers({
         ...allReducers,
         routing: routerReducer
-    })
+    });
 
     const store = createStore(
         reducers,
@@ -25,12 +25,12 @@ export function configureStore(initialState) {
             window.devToolsExtension ? window.devToolsExtension() : f => f,
             batchedSubscribe(batchedUpdates),
         )
-    )
+    );
 
     if (module.hot) {
         // Enable Webpack hot module replacement for reducers
         module.hot.accept('./reducers', () => {
-            const nextReducer = require('./reducers/index')
+            const nextReducer = require('./reducers/index');
             store.replaceReducer(nextReducer)
         });
     }

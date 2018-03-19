@@ -193,7 +193,7 @@ const login = {
 
                     <div styleName = 'loginForm' >
                         <div styleName = 'formContainer'>
-                            <CardTitle title = {formatMessage(APIClient.login)} styleName = 'title' />
+                            <CardTitle title = {formatMessage(messages.login)} styleName = 'title' />
                             <hr styleName='divider'/>
                             <CardText styleName = 'inputs'>
                                 <Input
