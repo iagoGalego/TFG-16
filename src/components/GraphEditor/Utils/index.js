@@ -55,8 +55,8 @@ function getImage(type){
         case 'loopEnd':
         case T.LOOP_END:
             return EndIcon
+        case 'invisible':
         default:
-            return UserTaskIcon
     }
 }
 
@@ -130,8 +130,8 @@ function mapGraphToFormat({nodes, links}, selectedTask){
     nodes.map(({id, name, type, x, y}) => formatedGraph.nodes.push({
         selected: selectedTask !== null && selectedTask.id === id,
         data: {id, name, type, image: getImage(type)},
-        position: { x, y }})),
-    links.map(({from, to, isBase, type}) => formatedGraph.edges.push({selectable: false, data: {source: from, target: to, isBase: isBase, type: type}}))
+        position: { x, y }}))
+    links.map(({from, to, isBase, type, level}) => formatedGraph.edges.push({selectable: false, data: {source: from, target: to, isBase: isBase, type: type, level: level}}))
 
     return formatedGraph
 }
@@ -171,6 +171,13 @@ function getGraphStyles(){
             'width': '0',
             'shape': 'roundrectangle',
             'will-change': 'transform',
+        })
+        .selector('node[type="invisible"]')
+        .css({
+            'height': '2px',
+            'width': '2px',
+            'shape': 'rectangle',
+            'visibility': 'hidden'
         })
         .selector('node[type="placeholder"].active')
         .css({
@@ -218,9 +225,6 @@ function getGraphStyles(){
             'text-opacity': '0.7',
             'font-family': 'Material Icons',
             'font-size': '36px',
-            'target-arrow-shape': 'triangle',
-            'target-arrow-fill': 'filled',
-            'target-arrow-color': '#000',
         })
         .selector('edge[type="arrow"]')
         .css({
@@ -235,6 +239,7 @@ function getGraphStyles(){
             'content' : 'file_download',
         })
         .selector('edge[type="return"]')
+        .selector('edge[type="parallel"]')
 }
 
 export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, selectTask, scale, moveTask){
@@ -399,7 +404,7 @@ export function buildGraph({graph, container, graphDefinition, selectedTask, sca
     else {
         graph.elements().remove();
         graph.add( mapGraphToFormat(graphDefinition, selectedTask) );
-        graph.nodes().ungrabify()
+        //graph.nodes().ungrabify()
         return graph
         //return graph.json( mapGraphToFormat(graphDefinition, selectedTask) );
     }

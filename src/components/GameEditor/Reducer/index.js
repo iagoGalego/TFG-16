@@ -17,6 +17,7 @@ const InitialState = {
                 x: 1300,
                 y: 250
             }
+
         ],
         links: [
             {
@@ -39,11 +40,10 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
         case TYPES.ADD_TASK_IN_LINK:
             if(payload.task.type === 'userChoice' || payload.task.type === 'automaticChoice' ||
                 payload.task.type === 'andSplit' || payload.task.type === 'loop'){
-                const id = UUID.v4();
-                payload.task.x -= 100;
+                payload.task.x -= 150;
                 const close = {
                     task: {
-                        id,
+                        id: UUID.v4(),
                         type: payload.task.type + 'End',
                         name: '',
                         description: '',
@@ -57,7 +57,7 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                         givePoints: false,
                         points: '',
                         start: payload.task.id,
-                        x: payload.task.x + 200,
+                        x: payload.task.x + 300,
                         y: payload.task.y
                     },
                     link: {
@@ -93,7 +93,7 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                         selectedTask: payload.task,
                     }
                 } else {
-                    return {
+                    m = {
                         ...state,
                         graph : {
                             nodes: [...state.graph.nodes, payload.task, close.task],
@@ -105,25 +105,29 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                         },
                         selectedTask: payload.task,
                     }
+                    relocate(m.graph)
+                    return m
                 }
             } else{
                  if(payload.link.newEdge){
                     const newCounter = state.graph.links.find(({from, to}) =>from === payload.link.from && to === payload.link.to).counter + 1;
-                    payload.task.y -= 100;
+                    payload.task.y -= 85 * newCounter;
                     return {
                         ...state,
                         graph : {
-                            nodes: [...state.graph.nodes, payload.task],
+                            nodes: [...state.graph.nodes, payload.task, {type: 'invisible', id: 'meu1', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y}, {type: 'invisible', id:'meu2', x: state.graph.nodes.find(({id}) => id === payload.link.to).x,y: payload.task.y}],
                             links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
                                 {from: payload.link.from, to: payload.link.to, isBase: true, counter: newCounter },
-                                {from: payload.link.from, to: payload.task.id},
-                                {from: payload.task.id, to: payload.link.to}
+                                {from: payload.link.from, to: 'meu1', type: "parallelStart", level: newCounter },
+                                {from: 'meu1', to: payload.task.id, type: "parallelStart", level: newCounter },
+                                {from: payload.task.id, to: 'meu2', type: "parallelEnd", level: newCounter },
+                                {from: 'meu2', to: payload.link.to, type: "parallelEnd", level: newCounter }
                             ]
                         },
                         selectedTask: payload.task,
                     }
                 } else{
-                     return {
+                     var m =  {
                          ...state,
                          graph : {
                              nodes: [...state.graph.nodes, payload.task],
@@ -134,6 +138,8 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                          },
                          selectedTask: payload.task,
                      }
+                     relocate(m.graph)
+                     return m
                  }
             }
         case TYPES.SET_SELECTED_TASK:
@@ -152,6 +158,7 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                 recursiveDelete(state.graph.nodes.find(({start}) => (start === payload.task.id)).id, payload.task, st)
 
                 links = st.graph.links.filter(({from, to}) => (from !== linkFromEnd.from || to !== linkFromEnd.to));
+
                 nodes = st.graph.nodes.filter(({start}) => (start !== payload.task.id));
 
                 nodes = nodes.filter(({id}) => id !== payload.task.id)
@@ -264,5 +271,41 @@ function recursiveDelete(id,task, state) {
         } else {
             state.graph.links = state.graph.links.filter(({from, to}) => (from !== linksFromNode[i].from || to !== linksFromNode[i].to))
         }
+    }
+}
+
+function relocate(graph){
+    let node = graph.nodes.find(({id}) => (id === 'start')), cont = 0, weight = 0, complex = 0;
+    while(node.id !== 'end'){
+        node = graph.nodes.find(({id}) => (id === graph.links.find(({from}) => (from === node.id)).to))
+        if(node.type ===  'userChoice' || node.type ===  'automaticChoice' ||
+            node.type ===  'andSplit' || node.type ===  'loop'){
+            node = graph.nodes.find(({start}) => (start === node.id))
+            weight += 2
+            complex ++
+        } else if(node.type === 'userTask' || node.type === 'automaticTask') weight ++;
+        cont ++
+    }
+
+    if(weight > 5) {
+        graph.nodes.find(({id}) => (id === 'end')).x = 1300 + 200 * (weight - 5)
+    }
+
+    let totalDistance = graph.nodes.find(({id}) => (id === 'end')).x - graph.nodes.find(({id}) => (id === 'start')).x
+    let initialDistance = graph.nodes.find(({id}) => (id === 'start')).x
+    let distance = ( totalDistance - 300 * complex ) / cont
+
+    node = graph.nodes.find(({id}) => (id === graph.links.find(({from}) => (from === 'start')).to))
+
+    while(node.id !== 'end'){
+        initialDistance += distance
+        node.x = initialDistance
+        if(node.type ===  'userChoice' || node.type ===  'automaticChoice' ||
+            node.type ===  'andSplit' || node.type ===  'loop'){
+            node = graph.nodes.find(({start}) => (start === node.id))
+            initialDistance += 300
+            node.x = initialDistance
+        }
+        node = graph.nodes.find(({id}) => (id === graph.links.find(({from}) => (from === node.id)).to))
     }
 }
