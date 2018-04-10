@@ -4,6 +4,7 @@ import { autobind } from 'core-decorators'
 
 import styles from './styles.scss'
 import { buildGraph, bindGraphEvents } from '../../GraphEditor/Utils'
+import Translator from '../../../common/lib/model/translator'
 
 @CSSModules(styles, {allowMultiple: true})
 @autobind class Editor extends Component {

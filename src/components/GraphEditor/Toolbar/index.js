@@ -23,6 +23,16 @@ import styles from './styles.scss'
 
 const TooltipButton = Tooltip(IconButton)
 const messages = defineMessages({
+    undo : {
+        id : 'games.editor.toolbar.tooltips.undo',
+        description : 'Graph editor - Toolbar - Tooltips - Undo',
+        defaultMessage : 'Undo'
+    },
+    redo: {
+        id : 'games.editor.toolbar.tooltips.redo',
+        description : 'Graph editor - Toolbar - Tooltips - Redo',
+        defaultMessage : 'Redo'
+    },
     zoomin : {
         id : 'games.editor.toolbar.tooltips.zoomin',
         description : 'Graph editor - Toolbar - Tooltips - Zoom in',
@@ -67,22 +77,38 @@ const messages = defineMessages({
 
 const Toolbar = ({
     className,
+    canUndo = null,
+    canRedo = null,
     createTaskHandler = () => alert('Not implemented yet!'),
     zoomHandler = () => alert('Not implemented yet!'),
     printHandler = () => alert('Not implemented yet!'),
     clearHandler = () => alert('Not implemented yet!'),
+    saveHandler = () => alert('Not implemented yey!'),
     helpHandler = () => alert('Not implemented yet!'),
+    historyHandler = () => alert('Not implemented yet!'),
+    dragHandler = (event) => event.dataTransfer.setData("Text", event.target.id),
+
     intl: { formatMessage }}) =>
     <nav className = { className } styleName='toolbar'>
         <nav>
-            <UserTask onMouseDown = { (evt) => createTaskHandler(evt, T.USER_TASK) }/>
-            <AutomaticTask onMouseDown = { (evt) => createTaskHandler(evt, T.AUTOMATIC_TASK) } />
-            <UserChoice onMouseDown = { (evt) => createTaskHandler(evt, T.USER_CHOICE) } />
-            <AutomaticChoice onMouseDown = { (evt) => createTaskHandler(evt, T.AUTOMATIC_CHOICE) } />
-            <AndSplit onMouseDown = { (evt) => createTaskHandler(evt, T.AND_SPLIT) } />
-            <Loop onMouseDown = { (evt) => createTaskHandler(evt, T.LOOP) } />
+            <UserTask  dragHandler = { dragHandler } onMouseDown = { (evt) => createTaskHandler(evt, T.USER_TASK) } tooltip = "UserTask"/>
+            <AutomaticTask dragHandler = { dragHandler } onMouseDown = { (evt) => createTaskHandler(evt, T.AUTOMATIC_TASK) } tooltip = "AutomaticTask"/>
+            <UserChoice dragHandler = { dragHandler } onMouseDown = { (evt) => createTaskHandler(evt, T.USER_CHOICE) } tooltip = "UserChoice"/>
+            <AutomaticChoice dragHandler = { dragHandler } onMouseDown = { (evt) => createTaskHandler(evt, T.AUTOMATIC_CHOICE) } tooltip = "AutomaticChoice"/>
+            <AndSplit dragHandler = { dragHandler } onMouseDown = { (evt) => createTaskHandler(evt, T.AND_SPLIT) } tooltip = "AndSplit"/>
+            <Loop dragHandler = { dragHandler } onMouseDown = { (evt) => createTaskHandler(evt, T.LOOP) } tooltip = "Loop"/>
         </nav>
         <nav>
+            <section>
+                <TooltipButton icon = 'undo'
+                               tooltip = {formatMessage( messages.undo )}
+                               onClick = { () => historyHandler('undo') }
+                               disabled = { canUndo === 0 }/>
+                <TooltipButton icon = 'redo'
+                               tooltip = {formatMessage( messages.redo )}
+                               onClick = { () => historyHandler('redo') }
+                               disabled = { canRedo === 0 }/>
+            </section>
             <section>
                 <TooltipButton icon = 'zoom_in'
                                tooltip = {formatMessage( messages.zoomin )}
@@ -100,7 +126,7 @@ const Toolbar = ({
             <section>
                 <TooltipButton icon = 'save'
                                tooltip = {formatMessage( messages.save )}
-                               onClick = { () => alert('estas de coña no?') } />
+                               onClick = { saveHandler } />
             </section>
             <section>
                 <TooltipButton icon='print'

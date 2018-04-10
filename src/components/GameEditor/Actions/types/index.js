@@ -9,7 +9,9 @@ export const TYPES = Object.freeze({
     UNDO: 'GAME_EDITOR_UNDO',
     REDO: 'GAME_EDITOR_REDO',
     CLEAR_DIAGRAM: 'CLEAR_DIAGRAM',
-    MOVE_TASK: 'MOVE_TASK'
-})
+    MOVE_TASK: 'MOVE_TASK',
+    SAVE_EDGE: 'SAVE_EDGE',
+    SAVE: 'SAVE'
+});
 
 export default TYPES

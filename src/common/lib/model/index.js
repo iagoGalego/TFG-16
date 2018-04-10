@@ -1,1230 +1,703 @@
-export class Class {
-    constructor(name, canonicalName, uri) {
-        this.name = name;
-        this.canonicalName = canonicalName;
-        this.uri = uri;
-    }
-    getName() {
-        return this.name;
-    }
-    getCanonicalName() {
-        return this.canonicalName;
-    }
-    getURI() {
-	    return this.uri;
-    }
-}
+class Thing {
+    static RDFS_CLASS = 'http://www.w3.org/2000/01/rdf-schema#Class';
+    URI = undefined
+    isLoaded = undefined
 
-function guid() {
-    const g = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-	const r = Math.random()*16|0, v = c === 'x' ? r : (r&0x3|0x8);
-	return v.toString(16);
-    });
-    return g;
-}
-
-export class Thing {
-    constructor(obj,  reimport = true) {
-        this['@class'] = "es.usc.citius.hmb.model.Thing";
-        this.uri = null;
-        if (reimport) {
-            this.importFromObject(obj)
+    constructor(options = {}) {
+        if (options['uri']) {
+            this.URI = options['uri'];
         }
     }
     genURI() {
-        if (this.uri == null || this.uri.length <= 0) {
-            this.uri = guid();
-        }
-    }
-    getClassName() {
-        return this.constructor.name;
-    }
-    getCanonicalClassName() {
-        return this['@class'];
-    }
-    getClass() {
-	    return new Class(this.constructor.name, this['@class'], this.constructor['URI'])
-    }
-    importFromObject(obj) {
-        if (obj) {
-            Object.keys(obj).map(key => {
-                if (this[key] !== undefined) {
-                    this[key] = obj[key];
-                }
-            });
-            if (this.uri) {
-                this._id = this.uri;
-            }
+        if (this.URI === null || this.URI.length <= 0) {
+            this.URI = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                let r = Math.random()*16|0
+                let v = c === 'x' ? r : (r&0x3|0x8)
+                return v.toString(16)
+            })
         }
     }
 }
-/*    OperatorResourceAdapter class    */
-export class OperatorResourceAdapter extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.OperatorResourceAdapter";
-		this.operator = null; // Operator
-		this.resource = null; // Resource
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-OperatorResourceAdapter.URI = "http://citius.usc.es/hmb/wfontology.owl#Operator_Resource_Adapter";
-
-
-/*    ParameterValue class    */
-export class ParameterValue extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.ParameterValue";
-		this.namedParameter = null; // Parameter
-		this.namedParameterValue = null; // Sort
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-ParameterValue.URI = "http://citius.usc.es/hmb/wfontology.owl#ParameterValue";
-
-
-/*    Service class    */
-export class Service extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.Service";
-		this.serviceGrounding = null; // ServiceGrounding
-		this.serviceOperation = []; // ServiceOperation
-		this.serviceonto_Name = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Service.URI = "http://citius.usc.es/hmb/serviceonto.owl#Service";
-
-
-/*    Sort class    */
-export class Sort extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.Sort";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Sort.URI = "http://citius.usc.es/hmb/wfontology.owl#Sort";
-
-
-/*    ActionParameterValue class    */
-export class ActionParameterValue extends Sort {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.ActionParameterValue";
-		this.namedActionParameter = null; // ActionDescriptorParameter
-		this.namedActionParameterValue = null; // Sort
-		this.parameterName = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-ActionParameterValue.URI = "http://citius.usc.es/hmb/wfontology.owl#ActionParameterValue";
-
-
-/*    DomainDataObject class    */
-export class DomainDataObject extends Sort {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.DomainDataObject";
-		this.referenceId = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-DomainDataObject.URI = "http://citius.usc.es/hmb/imagames.owl#DomainDataObject";
-
-
-/*    Geolocation class    */
-export class Geolocation extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.Geolocation";
-		this.latitude = null; // Float
-		this.longitude = null; // Float
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Geolocation.URI = "http://citius.usc.es/hmb/imagames.owl#Geolocation";
-
-
-/*    QuestionnaireAnswer class    */
-export class QuestionnaireAnswer extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.QuestionnaireAnswer";
-		this.questionAnswer = []; // QuestionAnswer
-		this.questionnaireReferenceId = null; // String
-		this.timestamp = null; // Long
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-QuestionnaireAnswer.URI = "http://citius.usc.es/hmb/imagames.owl#QuestionnaireAnswer";
-
-
-/*    QuestionAnswer class    */
-export class QuestionAnswer extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.QuestionAnswer";
-		this.questionId = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-QuestionAnswer.URI = "http://citius.usc.es/hmb/imagames.owl#QuestionAnswer";
-
-
-/*    TextQuestionAnswer class    */
-export class TextQuestionAnswer extends QuestionAnswer {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.TextQuestionAnswer";
-		this.textResponse = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-TextQuestionAnswer.URI = "http://citius.usc.es/hmb/imagames.owl#TextQuestionAnswer";
-
-
-/*    SingleAnswerQuestionAnswer class    */
-export class SingleAnswerQuestionAnswer extends QuestionAnswer {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.SingleAnswerQuestionAnswer";
-		this.selectedOption = null; // Option
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-SingleAnswerQuestionAnswer.URI = "http://citius.usc.es/hmb/imagames.owl#SingleAnswerQuestionAnswer";
-
-
-/*    MultipleAnswerQuestionAnswer class    */
-export class MultipleAnswerQuestionAnswer extends QuestionAnswer {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.MultipleAnswerQuestionAnswer";
-		this.selectedOptions = []; // Option
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-MultipleAnswerQuestionAnswer.URI = "http://citius.usc.es/hmb/imagames.owl#MultipleAnswerQuestionAnswer";
-
-
-/*    TrueOrFalseQuestionAnswer class    */
-export class TrueOrFalseQuestionAnswer extends QuestionAnswer {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.TrueOrFalseQuestionAnswer";
-		this.booleanResponse = null; // Boolean
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-TrueOrFalseQuestionAnswer.URI = "http://citius.usc.es/hmb/imagames.owl#TrueOrFalseQuestionAnswer";
-
-
-/*    Term class    */
-export class Term extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.Term";
-		this.definition = null; // String
-		this.term = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Term.URI = "http://citius.usc.es/hmb/imagames.owl#Term";
-
-
-/*    BadgeReference class    */
-export class BadgeReference extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.BadgeReference";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-BadgeReference.URI = "http://citius.usc.es/hmb/imagames.owl#BadgeReference";
-
-
-/*    PictureReference class    */
-export class PictureReference extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.PictureReference";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-PictureReference.URI = "http://citius.usc.es/hmb/imagames.owl#PictureReference";
-
-
-/*    EmailReference class    */
-export class EmailReference extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.EmailReference";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-EmailReference.URI = "http://citius.usc.es/hmb/imagames.owl#EmailReference";
-
-
-/*    CheckInReference class    */
-export class CheckInReference extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.CheckInReference";
-		this.siteReference = null; // SiteReference
-		this.timestamp = null; // Long
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-CheckInReference.URI = "http://citius.usc.es/hmb/imagames.owl#CheckInReference";
-
-
-/*    TermsAndDefinitionsAnswer class    */
-export class TermsAndDefinitionsAnswer extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.TermsAndDefinitionsAnswer";
-		this.terms = []; // Term
-		this.timestamp = null; // Long
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-TermsAndDefinitionsAnswer.URI = "http://citius.usc.es/hmb/imagames.owl#TermsAndDefinitionsAnswer";
-
-
-/*    SiteReference class    */
-export class SiteReference extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.SiteReference";
-		this.dataDescription = null; // String
-		this.dataName = null; // String
-		this.geolocation = null; // Geolocation
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-SiteReference.URI = "http://citius.usc.es/hmb/imagames.owl#SiteReference";
-
-
-/*    ImageArea class    */
-export class ImageArea extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.ImageArea";
-		this.index = null; // Integer
-		this.maxX = null; // Float
-		this.maxY = null; // Float
-		this.minX = null; // Float
-		this.minY = null; // Float
-		this.text = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-ImageArea.URI = "http://citius.usc.es/hmb/imagames.owl#ImageArea";
-
-
-/*    SMSReference class    */
-export class SMSReference extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.SMSReference";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-SMSReference.URI = "http://citius.usc.es/hmb/imagames.owl#SMSReference";
-
-
-/*    TermsAndDefinitions class    */
-export class TermsAndDefinitions extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.TermsAndDefinitions";
-		this.points = null; // Integer
-		this.terms = []; // Term
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-TermsAndDefinitions.URI = "http://citius.usc.es/hmb/imagames.owl#TermsAndDefinitions";
-
-
-/*    ImageSelectionAreas class    */
-export class ImageSelectionAreas extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.ImageSelectionAreas";
-		this.areas = []; // ImageArea
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-ImageSelectionAreas.URI = "http://citius.usc.es/hmb/imagames.owl#ImageSelectionAreas";
-
-
-/*    QuestionnaireReference class    */
-export class QuestionnaireReference extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.QuestionnaireReference";
-		this.dataDescription = null; // String
-		this.dataName = null; // String
-		this.geolocation = null; // Geolocation
-		this.question = []; // Question
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-QuestionnaireReference.URI = "http://citius.usc.es/hmb/imagames.owl#QuestionnaireReference";
-
-
-/*    AudioReference class    */
-export class AudioReference extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.AudioReference";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-AudioReference.URI = "http://citius.usc.es/hmb/imagames.owl#AudioReference";
-
-
-/*    Question class    */
-export class Question extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.Question";
-		this.points = null; // Integer
-		this.text = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Question.URI = "http://citius.usc.es/hmb/imagames.owl#Question";
-
-
-/*    MultipleAnswerQuestion class    */
-export class MultipleAnswerQuestion extends Question {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.MultipleAnswerQuestion";
-		this.correctOptions = []; // String
-		this.options = []; // Option
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-MultipleAnswerQuestion.URI = "http://citius.usc.es/hmb/imagames.owl#MultipleAnswerQuestion";
-
-
-/*    TrueOrFalseQuestion class    */
-export class TrueOrFalseQuestion extends Question {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.TrueOrFalseQuestion";
-		this.booleanResponse = null; // Boolean
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-TrueOrFalseQuestion.URI = "http://citius.usc.es/hmb/imagames.owl#TrueOrFalseQuestion";
-
-
-/*    SingleAnswerQuestion class    */
-export class SingleAnswerQuestion extends Question {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.SingleAnswerQuestion";
-		this.correctOption = null; // String
-		this.options = []; // Option
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-SingleAnswerQuestion.URI = "http://citius.usc.es/hmb/imagames.owl#SingleAnswerQuestion";
-
-
-/*    TextQuestion class    */
-export class TextQuestion extends Question {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.TextQuestion";
-		this.textResponse = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-TextQuestion.URI = "http://citius.usc.es/hmb/imagames.owl#TextQuestion";
-
-
-/*    Option class    */
-export class Option extends DomainDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.imagames.model.Option";
-		this.optionType = null; // String
-		this.text = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Option.URI = "http://citius.usc.es/hmb/imagames.owl#Option";
-
-
-/*    Action class    */
-export class Action extends Sort {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.Action";
-		this.actionDescriptor = null; // ActionDescriptor
-		this.actionParameterValue = []; // ActionParameterValue
-		this.actionReference = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Action.URI = "http://citius.usc.es/hmb/wfontology.owl#Action";
-
-
-/*    UserAction class    */
-export class UserAction extends Action {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.UserAction";
-		this.userReference = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-UserAction.URI = "http://citius.usc.es/hmb/wfontology.owl#UserAction";
-
-
-/*    NativeDataObject class    */
-export class NativeDataObject extends Sort {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.NativeDataObject";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-NativeDataObject.URI = "http://citius.usc.es/hmb/wfontology.owl#NativeDataObject";
-
-
-/*    DateType class    */
-export class DateType extends NativeDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.DateType";
-		this.dateValue = null; // GregorianCalendar
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-DateType.URI = "http://citius.usc.es/hmb/wfontology.owl#DateType";
-
-
-/*    BooleanType class    */
-export class BooleanType extends NativeDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.BooleanType";
-		this.booleanValue = null; // Boolean
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-BooleanType.URI = "http://citius.usc.es/hmb/wfontology.owl#BooleanType";
-
-
-/*    FloatType class    */
-export class FloatType extends NativeDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.FloatType";
-		this.floatValue = null; // Float
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-FloatType.URI = "http://citius.usc.es/hmb/wfontology.owl#FloatType";
-
-
-/*    IntegerType class    */
-export class IntegerType extends NativeDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.IntegerType";
-		this.integerValue = null; // Integer
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-IntegerType.URI = "http://citius.usc.es/hmb/wfontology.owl#IntegerType";
-
-
-/*    StringType class    */
-export class StringType extends NativeDataObject {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.StringType";
-		this.stringValue = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-StringType.URI = "http://citius.usc.es/hmb/wfontology.owl#StringType";
-
-
-/*    WorkflowTrigger class    */
-export class WorkflowTrigger extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.WorkflowTrigger";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-WorkflowTrigger.URI = "http://citius.usc.es/hmb/wfontology.owl#WorkflowTrigger";
-
-
-/*    WorkflowRuleTrigger class    */
-export class WorkflowRuleTrigger extends WorkflowTrigger {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.WorkflowRuleTrigger";
-		this.ruleReference = null; // RuleReference
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-WorkflowRuleTrigger.URI = "http://citius.usc.es/hmb/wfontology.owl#WorkflowRuleTrigger";
-
-
-/*    Knowledge class    */
-export class Knowledge extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.Knowledge";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Knowledge.URI = "http://citius.usc.es/hmb/wfontology.owl#Knowledge";
-
-
-/*    Property class    */
-export class Property extends Knowledge {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.Property";
-		this.displayDescription = null; // String
-		this.displayName = null; // String
-		this.metadata = []; // Metadata
-		this.propertyContext = null; // PropertyContext
-		this.propertySource = null; // PropertySource
-		this.provider = null; // String
-		this.tagReference = []; // String
-		this.wfontology_Name = null; // String
-		this.wfontology_Type = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Property.URI = "http://citius.usc.es/hmb/wfontology.owl#Property";
-
-
-/*    MultiValueProperty class    */
-export class MultiValueProperty extends Property {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.MultiValueProperty";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-MultiValueProperty.URI = "http://citius.usc.es/hmb/wfontology.owl#MultiValueProperty";
-
-
-/*    ListValueProperty class    */
-export class ListValueProperty extends Property {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.ListValueProperty";
-		this.permittedValue = []; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-ListValueProperty.URI = "http://citius.usc.es/hmb/wfontology.owl#ListValueProperty";
-
-
-/*    SingleValueProperty class    */
-export class SingleValueProperty extends Property {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.SingleValueProperty";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-SingleValueProperty.URI = "http://citius.usc.es/hmb/wfontology.owl#SingleValueProperty";
-
-
-/*    PropertyContext class    */
-export class PropertyContext extends Knowledge {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.PropertyContext";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-PropertyContext.URI = "http://citius.usc.es/hmb/wfontology.owl#PropertyContext";
-
-
-/*    PropertySource class    */
-export class PropertySource extends Knowledge {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.PropertySource";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-PropertySource.URI = "http://citius.usc.es/hmb/wfontology.owl#PropertySource";
-
-
-/*    RuleReference class    */
-export class RuleReference extends Knowledge {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.RuleReference";
-		this.provider = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-RuleReference.URI = "http://citius.usc.es/hmb/wfontology.owl#RuleReference";
-
-
-/*    FileRuleBase class    */
-export class FileRuleBase extends RuleReference {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.FileRuleBase";
-		this.filename = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-FileRuleBase.URI = "http://citius.usc.es/hmb/wfontology.owl#FileRuleBase";
-
-
-/*    SingleRule class    */
-export class SingleRule extends RuleReference {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.SingleRule";
-		this.ruleId = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-SingleRule.URI = "http://citius.usc.es/hmb/wfontology.owl#SingleRule";
-
-
-/*    RuleBase class    */
-export class RuleBase extends RuleReference {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.RuleBase";
-		this.ruleBaseId = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-RuleBase.URI = "http://citius.usc.es/hmb/wfontology.owl#RuleBase";
-
-
-/*    User class    */
-export class User extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.User";
-		this.completeName = null; // String
-		this.email = null; // String
-		this.globalTagReference = []; // String
-		this.passwordSHA = null; // String
-		this.systemontology_Name = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-User.URI = "http://citius.usc.es/hmb/systemontology.owl#User";
-
-
-/*    SequenceFlow class    */
-export class SequenceFlow extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.SequenceFlow";
-		this.isDisabled = null; // Boolean
-		this.lastVersionNumber = null; // Integer
-		this.sourceIndex = null; // Integer
-		this.sourceTask = null; // String
-		this.targetIndex = null; // Integer
-		this.targetTask = null; // String
-		this.versionNumber = null; // Integer
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-SequenceFlow.URI = "http://citius.usc.es/hmb/wfontology.owl#SequenceFlow";
-
-
-/*    ConditionDate class    */
-export class ConditionDate extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.ConditionDate";
-		this.isRelative = null; // Boolean
-		this.time = null; // Long
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-ConditionDate.URI = "http://citius.usc.es/hmb/wfontology.owl#ConditionDate";
-
-
-/*    ActionDescriptorParameter class    */
-export class ActionDescriptorParameter extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.ActionDescriptorParameter";
-		this.displayName = null; // String
-		this.wfontology_Name = null; // String
-		this.wfontology_Type = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-ActionDescriptorParameter.URI = "http://citius.usc.es/hmb/wfontology.owl#ActionDescriptorParameter";
-
-
-/*    Metadata class    */
-export class Metadata extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.Metadata";
-		this.metadataValue = null; // String
-		this.wfontology_Name = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Metadata.URI = "http://citius.usc.es/hmb/wfontology.owl#Metadata";
-
-
-/*    Tag class    */
-export class Tag extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.Tag";
-		this.displayName = null; // String
-		this.isSubTagOf = []; // Tag
-		this.provider = null; // String
-		this.user = []; // User
-		this.wfontology_Name = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Tag.URI = "http://citius.usc.es/hmb/wfontology.owl#Tag";
-
-
-/*    ChoicePathCondition class    */
-export class ChoicePathCondition extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.ChoicePathCondition";
-		this.condition = null; // String
-		this.pathIndex = null; // Integer
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-ChoicePathCondition.URI = "http://citius.usc.es/hmb/wfontology.owl#ChoicePathCondition";
-
-
-/*    WorkflowTemplate class    */
-export class WorkflowTemplate extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.WorkflowTemplate";
-		this.description = null; // String
-		this.designer = null; // User
-		this.element = []; // Task
-		this.expiryDate = null; // ConditionDate
-		this.isDesignFinished = null; // Boolean
-		this.isValidated = null; // Boolean
-		this.metadata = []; // Metadata
-		this.modificationDate = null; // Long
-		this.provider = null; // String
-		this.sequenceFlow = []; // SequenceFlow
-		this.startDate = null; // ConditionDate
-		this.trigger = null; // WorkflowTrigger
-		this.versionNumber = null; // Integer
-		this.wfontology_Name = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-WorkflowTemplate.URI = "http://citius.usc.es/hmb/wfontology.owl#WorkflowTemplate";
-
-
-/*    Workflow class    */
-export class Workflow extends WorkflowTemplate {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.Workflow";
-		this.executionId = null; // String
-		this.executionStatus = null; // String
-		this.isSubWorkflow = null; // Boolean
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Workflow.URI = "http://citius.usc.es/hmb/wfontology.owl#Workflow";
-
-
-/*    Task class    */
-export class Task extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.Task";
-		this.description = null; // String
-		this.expiryDate = null; // ConditionDate
-		this.isDisabled = null; // Boolean
-		this.isFinal = null; // Boolean
-		this.isInitial = null; // Boolean
-		this.isRequired = null; // Boolean
-		this.lastVersionNumber = null; // Integer
-		this.operator = null; // Operator
-		this.pairedTask = null; // String
-		this.parameterValue = []; // ParameterValue
-		this.startDate = null; // ConditionDate
-		this.tagReference = []; // String
-		this.user = []; // User
-		this.versionNumber = null; // Integer
-		this.wfontology_Name = null; // String
-		this.workflow = null; // Workflow
-		this.xposition = null; // Integer
-		this.yposition = null; // Integer
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Task.URI = "http://citius.usc.es/hmb/wfontology.owl#Task";
-
-
-/*    HumanTask class    */
-export class HumanTask extends Task {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.HumanTask";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-HumanTask.URI = "http://citius.usc.es/hmb/wfontology.owl#HumanTask";
-
-
-/*    UserChoice class    */
-export class UserChoice extends HumanTask {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.UserChoice";
-		this.numberOfPaths = null; // Integer
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-UserChoice.URI = "http://citius.usc.es/hmb/wfontology.owl#UserChoice";
-
-
-/*    AutomaticTask class    */
-export class AutomaticTask extends Task {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.AutomaticTask";
-		this.numberOfPaths = null; // Integer
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-AutomaticTask.URI = "http://citius.usc.es/hmb/wfontology.owl#AutomaticTask";
-
-
-/*    OrJoin class    */
-export class OrJoin extends AutomaticTask {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.OrJoin";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-OrJoin.URI = "http://citius.usc.es/hmb/wfontology.owl#OrJoin";
-
-
-/*    AutomaticChoice class    */
-export class AutomaticChoice extends AutomaticTask {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.AutomaticChoice";
-		this.pathCondition = []; // ChoicePathCondition
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-AutomaticChoice.URI = "http://citius.usc.es/hmb/wfontology.owl#AutomaticChoice";
-
-
-/*    Split class    */
-export class Split extends AutomaticTask {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.Split";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Split.URI = "http://citius.usc.es/hmb/wfontology.owl#Split";
-
-
-/*    AndJoin class    */
-export class AndJoin extends AutomaticTask {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.AndJoin";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-AndJoin.URI = "http://citius.usc.es/hmb/wfontology.owl#AndJoin";
-
-
-/*    ServiceGrounding class    */
-export class ServiceGrounding extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.ServiceGrounding";
-		this.endPoint = null; // String
-		this.isSystemService = null; // Boolean
-		this.namespace = null; // String
-		this.servicePackageFile = null; // String
-		this.serviceVersion = null; // Integer
-		this.typeNamespace = null; // String
-		this.wsdlurl = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-ServiceGrounding.URI = "http://citius.usc.es/hmb/serviceonto.owl#ServiceGrounding";
-
-
-/*    Parameter class    */
-export class Parameter extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.Parameter";
-		this.isMandatory = null; // Boolean
-		this.wfontology_Name = null; // String
-		this.wfontology_Type = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Parameter.URI = "http://citius.usc.es/hmb/wfontology.owl#Parameter";
-
-
-/*    Resource class    */
-export class Resource extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.Resource";
-		this.implements = null; // Operator
-		this.wfontology_Name = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Resource.URI = "http://citius.usc.es/hmb/wfontology.owl#Resource";
-
-
-/*    ServiceOperation class    */
-export class ServiceOperation extends Resource {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.ServiceOperation";
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-ServiceOperation.URI = "http://citius.usc.es/hmb/serviceonto.owl#ServiceOperation";
-
-
-/*    Operator class    */
-export class Operator extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.Operator";
-		this.description = null; // String
-		this.evaluatesProperty = []; // Property
-		this.parameter = []; // Parameter
-		this.provider = null; // String
-		this.readsProperty = []; // Property
-		this.ruleReference = null; // RuleReference
-		this.wfontology_Name = null; // String
-		this.writesProperty = []; // Property
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-Operator.URI = "http://citius.usc.es/hmb/wfontology.owl#Operator";
-
-
-/*    ActionDescriptor class    */
-export class ActionDescriptor extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.ActionDescriptor";
-		this.actionDescriptorParameter = []; // ActionDescriptorParameter
-		this.category = null; // String
-		this.description = null; // String
-		this.displayName = null; // String
-		this.wfontology_Name = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-ActionDescriptor.URI = "http://citius.usc.es/hmb/wfontology.owl#ActionDescriptor";
-
-
-/*    ActionGroup class    */
-export class ActionGroup extends Thing {
-	constructor(obj, reimport = true) {
-		super(obj, false);
-		this['@class'] = "es.usc.citius.hmb.model.ActionGroup";
-		this.actionDescriptors = []; // ActionDescriptor
-		this.description = null; // String
-		this.displayName = null; // String
-		this.wfontology_Name = null; // String
-		if (reimport) {
-			super.importFromObject(obj)
-		}
-	}
-}
-ActionGroup.URI = "http://citius.usc.es/hmb/wfontology.owl#ActionGroup";
+export { Thing }
+
+class Sort extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Sort';
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Sort";
+    }
+}
+export { Sort }
+
+class ActionDescriptorParameter extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#ActionDescriptorParameter';
+    displayName = undefined
+    name = undefined
+    type = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.ActionDescriptorParameter";
+    }
+}
+export { ActionDescriptorParameter }
+
+class ActionDescriptor extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#ActionDescriptor';
+    category = undefined
+    description = undefined
+    displayName = undefined
+    name = undefined
+    actionDescriptorParameter = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.ActionDescriptor";
+    }
+}
+export { ActionDescriptor }
+
+class Action extends Sort {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Action';
+    actionDescriptor = undefined
+    actionParameterValue = undefined
+    actionReference = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Action";
+    }
+}
+export { Action }
+
+class ActionParameterValue extends Action {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#ActionParameterValue';
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.ActionParameterValue";
+    }
+}
+export { ActionParameterValue }
+
+class ActionGroup extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#ActionGroup';
+    actionDescriptor = undefined
+    name = undefined
+    description = undefined
+    displayName = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.ActionGroup";
+    }
+}
+export { ActionGroup }
+
+class ChoicePathCondition extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#ChoicePathCondition';
+    condition = undefined
+    pathIndex = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.ChoicePathCondition";
+    }
+}
+export { ChoicePathCondition }
+
+class ConditionDate extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#ConditionDate';
+    time = undefined
+    isRelative = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.ConditionDate";
+    }
+}
+export { ConditionDate }
+
+class Knowledge extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Knowledge';
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Knowledge";
+    }
+}
+export { Knowledge }
+
+class PropertySource extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#PropertySource';
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.PropertySource";
+    }
+}
+export { PropertySource }
+
+class PropertyContext extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#PropertyContext';
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.PropertyContext";
+    }
+}
+export { PropertyContext }
+
+class Metadata extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Metadata';
+    name = undefined
+    metadataValue = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Metadata";
+    }
+}
+export { Metadata }
+
+class Property extends Knowledge {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Property';
+    aggregationOperator = undefined
+    displayDescription = undefined
+    displayName = undefined
+    name = undefined
+    provider = undefined
+    tagReference = undefined
+    type = undefined
+    metadata = undefined
+    propertyContext = undefined
+    propertySource = undefined
+    isAvailableForRules = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Property";
+    }
+}
+export { Property }
+
+class ListValueProperty extends Property {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#ListValueProperty';
+    permittedValue = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.ListValueProperty";
+    }
+}
+export { ListValueProperty }
+
+class MultiValueProperty extends Property {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#MultiValueProperty';
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.MultiValueProperty";
+    }
+}
+export { MultiValueProperty }
+
+class SingleValueProperty extends Property {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#SingleValueProperty';
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.SingleValueProperty";
+    }
+}
+export { SingleValueProperty }
+
+class RuleReference extends Knowledge {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#RuleReference';
+    provider = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.RuleReference";
+    }
+}
+export { RuleReference }
+
+class FileRuleBase extends RuleReference {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#FileRuleBase';
+    filename = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.FileRuleBase";
+    }
+}
+export { FileRuleBase }
+
+class RuleBase extends RuleReference {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#RuleBase';
+    ruleBaseId = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.RuleBase";
+    }
+}
+export { RuleBase }
+
+class SingleRule extends RuleReference {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#SingleRule';
+    ruleId = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.SingleRule";
+    }
+}
+export { SingleRule }
+
+class UserAction extends Action {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#UserAction';
+    userReference = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.UserAction";
+    }
+}
+export { UserAction }
+
+class NativeDataObject extends Sort {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#NativeDataObject';
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.NativeDataObject";
+    }
+}
+export { NativeDataObject }
+
+class BooleanType extends NativeDataObject {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#BooleanType';
+    booleanValue = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.BooleanType";
+    }
+}
+export { BooleanType }
+
+class DateType extends NativeDataObject {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#DateType';
+    dateValue = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.DateType";
+    }
+}
+export { DateType }
+
+class LongType extends NativeDataObject {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#LongType';
+    longValue = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.LongType";
+    }
+}
+export { LongType }
+
+class DoubleType extends NativeDataObject {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#DoubleType';
+    doubleValue = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.DoubleType";
+    }
+}
+export { DoubleType }
+
+class FloatType extends NativeDataObject {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#FloatType';
+    floatValue = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.FloatType";
+    }
+}
+export { FloatType }
+
+class IntegerType extends NativeDataObject {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#IntegerType';
+    integerValue = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.IntegerType";
+    }
+}
+export { IntegerType }
+
+class StringType extends NativeDataObject {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#StringType';
+    stringValue = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.StringType";
+    }
+}
+export { StringType }
+
+class Parameter extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Parameter';
+    name = undefined
+    type = undefined
+    isMandatory = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Parameter";
+    }
+}
+export { Parameter }
+
+class ParameterValue extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#ParameterValue';
+    namedParameter = undefined
+    namedParameterValue = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.ParameterValue";
+    }
+}
+export { ParameterValue }
+
+class Operator extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Operator';
+    evaluatesProperty = undefined
+    name = undefined
+    description = undefined
+    provider = undefined
+    parameter = undefined
+    ruleReference = undefined
+    readsProperty = undefined
+    writesProperty = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Operator";
+    }
+}
+export { Operator }
+
+class Resource extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Resource';
+    name = undefined
+    mImplements = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Resource";
+    }
+}
+export { Resource }
+
+class Operator_Resource_Adapter extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Operator_Resource_Adapter';
+    operator = undefined
+    resource = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Operator_Resource_Adapter";
+    }
+}
+export { Operator_Resource_Adapter }
+
+class SequenceFlow extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#SequenceFlow';
+    lastVersionNumber = undefined
+    sourceIndex = undefined
+    sourceTask = undefined
+    targetIndex = undefined
+    targetTask = undefined
+    versionNumber = undefined
+    isDisabled = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.SequenceFlow";
+    }
+}
+export { SequenceFlow }
+
+class Tag extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Tag';
+    name = undefined
+    displayName = undefined
+    provider = undefined
+    isSubTagOf = undefined
+    user = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Tag";
+    }
+}
+export { Tag }
+
+class Task extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Task';
+    name = undefined
+    description = undefined
+    expiryDate = undefined
+    startDate = undefined
+    lastVersionNumber = undefined
+    metadata = undefined
+    operator = undefined
+    pairedTask = undefined
+    parameterValue = undefined
+    pathId = undefined
+    tagReference = undefined
+    versionNumber = undefined
+    workflow = undefined
+    xPosition = undefined
+    yPosition = undefined
+    isDisabled = undefined
+    isFinal = undefined
+    isInitial = undefined
+    isRequired = undefined
+    user = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Task";
+    }
+}
+export { Task }
+
+class AutomaticTask extends Task {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#AutomaticTask';
+    numberOfPaths = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.AutomaticTask";
+    }
+}
+export { AutomaticTask }
+
+class AndJoin extends AutomaticTask {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#AndJoin';
+    localAggregationRules = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.AndJoin";
+    }
+}
+export { AndJoin }
+
+class AutomaticChoice extends AutomaticTask {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#AutomaticChoice';
+    pathCondition = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.AutomaticChoice";
+    }
+}
+export { AutomaticChoice }
+
+class OrJoin extends AutomaticTask {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#OrJoin';
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.OrJoin";
+    }
+}
+export { OrJoin }
+
+class Split extends AutomaticTask {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Split';
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Split";
+    }
+}
+export { Split }
+
+class HumanTask extends Task {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#HumanTask';
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.HumanTask";
+    }
+}
+export { HumanTask }
+
+class UserChoice extends HumanTask {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#UserChoice';
+    numberOfPaths = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.UserChoice";
+    }
+}
+export { UserChoice }
+
+class WorkflowTrigger extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#WorkflowTrigger';
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.WorkflowTrigger";
+    }
+}
+export { WorkflowTrigger }
+
+class WorkflowRuleTrigger extends WorkflowTrigger {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#WorkflowRuleTrigger';
+    ruleReference = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.WorkflowRuleTrigger";
+    }
+}
+export { WorkflowRuleTrigger }
+
+class WorkflowTemplate extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#WorkflowTemplate';
+    name = undefined
+    description = undefined
+    startDate = undefined
+    expiryDate = undefined
+    metadata = undefined
+    modificationDate = undefined
+    provider = undefined
+    element = undefined
+    sequenceFlow = undefined
+    trigger = undefined
+    versionNumber = undefined
+    isDesignFinished = undefined
+    isValidated = undefined
+    designer = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.WorkflowTemplate";
+    }
+}
+export { WorkflowTemplate }
+
+class Workflow extends WorkflowTemplate {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Workflow';
+    executionId = undefined
+    executionStatus = undefined
+    isSubWorkflow = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Workflow";
+    }
+}
+export { Workflow }
+
+class HistoryEntry extends Sort {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#HistoryEntry';
+    property = undefined
+    user = undefined
+    values = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.HistoryEntry";
+    }
+}
+export { HistoryEntry }
+
+class ServiceGrounding extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/serviceonto.owl#ServiceGrounding';
+    endPoint = undefined
+    namespace = undefined
+    servicePackageFile = undefined
+    serviceVersion = undefined
+    typeNamespace = undefined
+    WSDLURL = undefined
+    systemService = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.ServiceGrounding";
+    }
+}
+export { ServiceGrounding }
+
+class ServiceOperation extends Resource {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/serviceonto.owl#ServiceOperation';
+    name = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.ServiceOperation";
+    }
+}
+export { ServiceOperation }
+
+class Service extends Thing {
+    name = undefined
+    serviceGrounding = undefined
+    serviceOperation = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Service";
+    }
+}
+export { Service }
+
+class User extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/systemontology.owl#User';
+    name = undefined
+    email = undefined
+    completeName = undefined
+    passwordSHA = undefined
+    globalTagReference = undefined
+    metadata = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.User";
+    }
+}
+export { User }
+
+class TaskExecution extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/systemontology.owl#TaskExecution';
+    name = undefined
+    email = undefined
+    completeName = undefined
+    passwordSHA = undefined
+    globalTagReference = undefined
+    metadata = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.TaskExecution";
+    }
+}
+export { TaskExecution }
 

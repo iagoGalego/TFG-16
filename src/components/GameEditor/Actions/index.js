@@ -59,6 +59,18 @@ export function saveTask(task){
     ]
 }
 
+export function saveEdge(task){
+    return [
+        {
+            type: TYPES.SAVE_EDGE,
+            payload: { task },
+        }, {
+            type: TYPES.SET_SELECTED_TASK,
+            payload: { task: null },
+        }
+    ]
+}
+
 export function undo(){
     return {
         type: TYPES.UNDO
@@ -68,5 +80,12 @@ export function undo(){
 export function redo(){
     return {
         type: TYPES.REDO
+    }
+}
+
+export function save(workflow){
+    return {
+        type: TYPES.SAVE,
+        payload: { workflow: workflow },
     }
 }

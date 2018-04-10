@@ -55,19 +55,6 @@ const messages = defineMessages({
     }
 });
 
-const login = {
-    color: 'white',
-    background: '#ffc400',
-    marginRight: '0px',
-    marginLeft: '0px',
-    fontSize: '1.4rem',
-    fontWeight: 500,
-    letterSpacing: 0,
-    position: 'relative',
-    display: 'inline-block',
-    height: '3.6rem',
-};
-
 @CSSModules(styles)
 @autobind class Login extends Component {
     constructor(props, context) {
@@ -234,7 +221,6 @@ const login = {
                         }
                         <CardActions>
                             <Button
-                                style = { login }
                                 styleName = 'fullWidth'
                                 label = {formatMessage(messages.submit)}
                                 onClick = { this.handleLoginRequest }

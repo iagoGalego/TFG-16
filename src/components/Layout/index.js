@@ -65,7 +65,7 @@ import MainMenu from '../MainMenu'
     handleSaveSettings(){}
     handleShrinkDrawer(){
         ReactDOM.findDOMNode(this.__drawer).classList.toggle(styles['shrink']);
-        ReactDOM.findDOMNode(this.__panel).classList.toggle(styles['panel'])
+        ReactDOM.findDOMNode(this.__panel).classList.toggle(styles['panel']);
     }
 
     componentDidMount() {

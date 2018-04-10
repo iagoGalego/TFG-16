@@ -127,11 +127,12 @@ function mapGraphToFormat({nodes, links}, selectedTask){
         edges: []
     }
 
-    nodes.map(({id, name, type, x, y}) => formatedGraph.nodes.push({
+    nodes.map(({id, name, type, x, y, isTransitable}) => formatedGraph.nodes.push({
         selected: selectedTask !== null && selectedTask.id === id,
+        isTransitable: isTransitable,
         data: {id, name, type, image: getImage(type)},
         position: { x, y }}))
-    links.map(({from, to, isBase, type, level}) => formatedGraph.edges.push({selectable: false, data: {source: from, target: to, isBase: isBase, type: type, level: level}}))
+    links.map(({from, to, isLoop, isBase, isTransitable, type, level}) => formatedGraph.edges.push({selectable: false, data: {source: from, target: to, isBase: isBase, isTransitable: isTransitable, isLoop: isLoop, type: type, level: level}}))
 
     return formatedGraph
 }
@@ -225,6 +226,9 @@ function getGraphStyles(){
             'text-opacity': '0.7',
             'font-family': 'Material Icons',
             'font-size': '36px',
+            'target-arrow-shape': 'triangle',
+            'target-arrow-fill': 'filled',
+            'target-arrow-color': '#000',
         })
         .selector('edge[type="arrow"]')
         .css({
@@ -239,7 +243,31 @@ function getGraphStyles(){
             'content' : 'file_download',
         })
         .selector('edge[type="return"]')
-        .selector('edge[type="parallel"]')
+        .css({
+            'line-style': 'dashed',
+            'line-color': 'grey',
+            'target-arrow-color': 'grey',
+        })
+        .selector('edge[type="verticalStart"]')
+        .css({
+            'target-arrow-shape': 'none',
+        })
+        .selector('edge[type="parallelEnd"]')
+        .css({
+            'target-arrow-shape': 'none',
+        })
+        .selector('edge[isBase]')
+        .css({
+            'line-style': 'dashed',
+            'line-color': 'grey',
+            'target-arrow-color': 'grey',
+        })
+        .selector('edge[isTransitable]')
+        .css({
+            'line-style': 'solid',
+            'line-color': '#000',
+            'target-arrow-color': '#000',
+        })
 }
 
 export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, selectTask, scale, moveTask){
@@ -247,7 +275,7 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
 
     function ADDTASKSTART(evt){
         try {
-            graph.collection('edge').filter('[type!="return"]').addClass('placeholder')
+            graph.collection('edge').filter('[type!="return"]').filter('[type!="verticalStart"]').filter('[type!="verticalEnd"]').addClass('placeholder')
         } catch (e){}
 
         newNodeContainer.src = getImage(evt.detail.type);
@@ -289,13 +317,13 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
             const labelMargin = 16
 
             try {
-                graph.collection('edge').filter('[type!="return"]').removeClass('placeholder')
+                graph.collection('edge').filter('[type!="return"]').filter('[type!="verticalEnd"]').filter('[type!="verticalStart"]').removeClass('placeholder')
             } catch(e) {}
 
             //Prevent droping outside the editor
             if(x < 0 || y < 0) return
 
-            const edges = graph.collection('edge').filter('[type!="return"]')
+            const edges = graph.collection('edge').filter('[type!="verticalStart"]').filter('[type!="verticalEnd"]').filter('[type!="return"]')
 
             for (let i = 0; i<edges.size(); i++) {
                 if(edges[i].cy().renderer() === null) return
@@ -349,6 +377,7 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
                     }
 
                     if(edges[i].data().isBase) newTask.link.newEdge = true;
+                    if(edges[i].data().isLoop) newTask.link.isLoop = true;
 
                     addTask(newTask)
                 }
@@ -404,8 +433,7 @@ export function buildGraph({graph, container, graphDefinition, selectedTask, sca
     else {
         graph.elements().remove();
         graph.add( mapGraphToFormat(graphDefinition, selectedTask) );
-        //graph.nodes().ungrabify()
+        graph.nodes().ungrabify()
         return graph
-        //return graph.json( mapGraphToFormat(graphDefinition, selectedTask) );
     }
 }

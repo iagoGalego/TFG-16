@@ -11,6 +11,7 @@ import {setTitle} from "../Layout/Actions";
 import {connect} from "react-redux";
 import styles from './styles.scss'
 import image from './img/warning.svg'
+import {Workflow} from "../../common/lib/model";
 
 const messages = defineMessages({
     title : {
@@ -383,6 +384,9 @@ const messages = defineMessages({
     handleWindowResize() {
         this.setState(previousState => ({...previousState, windowWidth: window.innerWidth}));
     }
+    handleSave(){
+        this.props.save({name: "meu", description: "teu", user: "seu"});
+    }
     handleZoom(action){
         switch (action){
             case 'in':
@@ -420,7 +424,24 @@ const messages = defineMessages({
                 alert(`Option '${action}' not recognized !`)
         }
     }
-    handlePrint(){}
+    handlePrint(){
+        //TODO bigger canvas
+        var dataUrl = document.querySelector(".src-components-GraphEditor-Editor-__graph___52RLx > div:nth-child(1) > canvas:nth-child(3)").toDataURL("image/png")
+        var windowContent = '<!DOCTYPE html>';
+        windowContent += '<html>'
+        windowContent += '<head><title>Print Graph</title></head>';
+        windowContent += '<body>'
+        windowContent += '<img src="' + dataUrl + '">';
+        windowContent += '</body>';
+        windowContent += '</html>';
+        var printWin = window.open('','','width=340,height=260');
+        printWin.document.open();
+        printWin.document.write(windowContent);
+        printWin.document.close();
+        printWin.focus();
+        printWin.print();
+        printWin.close();
+    }
 
     handleTaskCreation(evt, type){
         document.dispatchEvent(new CustomEvent('graph:showplaceholders', {detail: {type, x: evt.nativeEvent.pageX, y: evt.nativeEvent.pageY}}))
@@ -432,6 +453,19 @@ const messages = defineMessages({
 
     handleHelp(){
         this.setState(previousState => ({...previousState, showHelp: true}))
+    }
+
+    handleHistory(action){
+        switch (action) {
+            case 'undo':
+                this.props.undo();
+                break;
+            case 'redo':
+                this.props.redo();
+                break;
+            default:
+                this.props.undo();
+        }
     }
 
     render() {
@@ -454,8 +488,12 @@ const messages = defineMessages({
                          zoomHandler = { this.handleZoom }
                          createTaskHandler = { this.handleTaskCreation }
                          printHandler = { this.handlePrint }
+                         saveHandler = { this.handleSave }
                          clearHandler = { this.handleClear }
                          helpHandler = { this.handleHelp }
+                         historyHandler = {this.handleHistory}
+                         canUndo = { this.props.canUndo }
+                         canRedo = { this.props.canRedo }
                 />
 
                 <Editor styleName = 'editor'
@@ -473,6 +511,7 @@ const messages = defineMessages({
                             selectedTask = { this.props.selectedTask }
                             deleteTask = { this.props.deleteTask }
                             saveTask = { this.props.saveTask }
+                            saveEdge = { this.props.saveEdge }
                             HMBData = { this.props.HMBData }
                 />
             </div>

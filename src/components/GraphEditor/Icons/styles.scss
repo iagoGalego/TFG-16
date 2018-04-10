@@ -1,3 +1,27 @@
+@mixin center($width: null, $height: null) {
+  position: relative;
+  bottom: -75px;
+  right: 49px;
+
+  @if not $width and not $height {
+    transform: translate(-50%, -50%);
+  } @else if $width and $height {
+    margin: -($width / 2) #{0 0} -($height / 2);
+  }
+}
+
+@mixin center1($width: null, $height: null) {
+  position: relative;
+  bottom: -67px;
+  right: 49px;
+
+  @if not $width and not $height {
+    transform: translate(-50%, -50%);
+  } @else if $width and $height {
+    margin: -($width / 2) #{0 0} -($height / 2);
+  }
+}
+
 .icon, .icon-wide{
   height: 38px;
   margin: 0;
@@ -16,8 +40,70 @@
 
 .icon{
   width: 48px;
+
+  figcaption{
+    position: relative;
+    bottom: -43px;
+    right: 55px;
+    background-color: #6c6c6c;
+    color: #fff;
+    text-align: center;
+    border-radius: 2px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-right: 3px;
+    padding-left: 3px;
+    z-index: 1;
+    transition: opacity 0.3s;
+    visibility: hidden;
+    opacity: 0;
+    font-size: 10px;
+    font-weight: bold;
+    height: 30px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 90px;
+    min-width: 90px;
+    @include center1(48px, 38px);
+  }
+
+  &:hover figcaption {
+    visibility: visible;
+    opacity: 1;
+  }
 }
 
 .icon-wide{
   width: 64px;
+
+  figcaption{
+    position: relative;
+    bottom: -43px;
+    right: 55px;
+    background-color: #6c6c6c;
+    color: #fff;
+    text-align: center;
+    border-radius: 2px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-right: 3px;
+    padding-left: 3px;
+    z-index: 1;
+    transition: opacity 0.3s;
+    visibility: hidden;
+    opacity: 0;
+    font-size: 10px;
+    font-weight: bold;
+    height: 30px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 80px;
+    min-width: 80px;
+    @include center(64px, 38px);
+  }
+
+  &:hover figcaption {
+    visibility: visible;
+    opacity: 1;
+  }
 }

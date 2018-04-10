@@ -25,6 +25,11 @@ import styles from './styles.scss'
 const TooltipedAvatar = Tooltip(Avatar)
 
 const formLabel = defineMessages({
+    condition : {
+        id : 'games.editor.taskDialog.form.inputs.labels.condition',
+        description : 'Graph editor - Tasks Dialog - Form Inputs - Labels - Condition',
+        defaultMessage : 'Condition'
+    },
     name : {
         id : 'games.editor.taskDialog.form.inputs.labels.name',
         description : 'Graph editor - Tasks Dialog - Form Inputs - Labels - Name',
@@ -69,6 +74,11 @@ const formLabel = defineMessages({
         id : 'games.editor.taskDialog.form.inputs.labels.onTaskFinish.numberOfPoints',
         description : 'Graph editor - Tasks Dialog - Form Inputs - Labels - On task finish - Number of points',
         defaultMessage : 'Points'
+    },
+    isTransitable: {
+        id : 'games.editor.taskDialog.form.inputs.labels.isTransitable',
+        description : 'Graph editor - Tasks Dialog - Form Inputs - Labels - Is Transitable',
+        defaultMessage : 'Is Transitable'
     }
 })
 const values = defineMessages({
@@ -114,6 +124,8 @@ const actionLabel = defineMessages({
                 giveBadges: false,
                 badges: [],
                 givePoints: false,
+                isTransitable: false,
+                condition: '',
                 points: '',
                 ...props.selectedTask
             },
@@ -125,6 +137,7 @@ const actionLabel = defineMessages({
     }
 
     static defaultProps = {
+        saveEdge : () => {},
         saveTask : () => {},
         deleteTask : () => {},
     }
@@ -139,6 +152,7 @@ const actionLabel = defineMessages({
     }
     componentWillReceiveProps(props){
         if(props.selectedTask !== null)
+
             this.setState({
                 task: {
                     name: '',
@@ -178,6 +192,9 @@ const actionLabel = defineMessages({
 
     handleNameChange(value){
         this.setState(prevState => ({task: {...prevState.task, name: value}, modified: true}))
+    }
+    handleConditionChange(value){
+        this.setState(prevState => ({task: {...prevState.task, condition: value}, modified: true}))
     }
     handleDescriptionChange(value){
         this.setState(prevState => ({task: {...prevState.task, description: value}, modified: true}))
@@ -225,6 +242,9 @@ const actionLabel = defineMessages({
     handleGivePointsChange(value){
         this.setState(prevState => ({task: {...prevState.task, givePoints: value}, modified: true}))
     }
+    handleIsTransitableChange(value){
+        this.setState(prevState => ({task: {...prevState.task, isTransitable: value}, modified: true}))
+    }
     handlePointsChange(value){
         if(value === '' || !Number.isNaN(Number.parseInt(value)) && value >= 0){
             this.setState(prevState => ({task: {...prevState.task, points: value}, modified: true}))
@@ -241,6 +261,10 @@ const actionLabel = defineMessages({
     handleSaveTaskClick(){
         this.setState({modified: false})
         this.props.saveTask(this.state.task)
+    }
+    handleSaveEdgeClick(){
+        this.setState({modified: false})
+        this.props.saveEdge(this.state.task)
     }
     handleDeleteTaskClick(){
         this.setState({
@@ -483,6 +507,28 @@ const actionLabel = defineMessages({
             case T.LAST_TASK:
             case T.INITIAL_TASK:
                 return
+            case T.AUTOMATIC_CHOICE:
+            case T.AND_SPLIT:
+            case T.USER_CHOICE:
+                return (
+                    <CardActions>
+                        <Button
+                            styleName = 'fullWidth'
+                            label = { formatMessage(actionLabel.delete) }
+                            onClick = { this.handleDeleteTaskClick }
+                            raised
+                            accent
+                        />
+                        <Button
+                            styleName = 'fullWidth'
+                            label = { formatMessage(actionLabel.save) }
+                            onClick = { this.handleSaveEdgeClick }
+                            disabled = { !(this.isValid() && this.state.modified) }
+                            raised
+                            accent
+                        />
+                    </CardActions>
+                )
             default:
                 return (
                     <CardActions>
@@ -587,16 +633,41 @@ const actionLabel = defineMessages({
                         />
                     </CardText>
                 )
-            case T.AUTOMATIC_TASK:
+            case T.LOOP:
                 return (
                     <CardText>
                         <Input
-                            label = { formatMessage(formLabel.name) }
-                            value = { name }
+                            label = { formatMessage(formLabel.condition) }
+                            value = { this.state.task.condition }
+                            onChange = { this.handleConditionChange }
                         />
                     </CardText>
                 )
+            case T.AND_SPLIT:
+            case T.AUTOMATIC_CHOICE:
+                return (
+                    <CardText>
+                        <Input
+                            label = { formatMessage(formLabel.condition) }
+                            value = { this.state.task.condition }
+                            onChange = { this.handleConditionChange }
+                        />
+                        <Checkbox checked = { this.state.task.isTransitable }
+                                  label = { formatMessage(formLabel.isTransitable) }
+                                  onChange = { this.handleIsTransitableChange } />
+                    </CardText>
+                )
+            case T.USER_CHOICE:
+                return (
+                    <CardText>
+                        <Checkbox checked = { this.state.task.isTransitable }
+                                  label = { formatMessage(formLabel.isTransitable) }
+                                  onChange = { this.handleIsTransitableChange } />
+                    </CardText>
+                )
             case T.USER_TASK:
+                return this.renderUserTaskDialog()
+            case T.AUTOMATIC_TASK:
                 return this.renderUserTaskDialog()
         }
     }

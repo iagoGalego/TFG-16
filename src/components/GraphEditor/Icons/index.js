@@ -59,7 +59,7 @@ import LoopIcon from './img/LP.svg'
     render(){
         let {tooltip, onMouseDown} = this.props
 
-        return  <figure styleName='icon' onMouseDown = { onMouseDown }>
+        return  <figure draggable="true" styleName='icon' onMouseDown = { onMouseDown }>
             <img src = { AutomaticChoiceIcon } />
             <figcaption>{ tooltip }</figcaption>
         </figure>
@@ -72,7 +72,7 @@ import LoopIcon from './img/LP.svg'
     render(){
         let {tooltip, onMouseDown} = this.props
 
-        return  <figure styleName='icon' onMouseDown = { onMouseDown }>
+        return  <figure draggable="true" styleName='icon' onMouseDown = { onMouseDown }>
             <img src = { UserChoiceIcon } />
             <figcaption>{ tooltip }</figcaption>
         </figure>
@@ -85,7 +85,7 @@ import LoopIcon from './img/LP.svg'
     render(){
         let {tooltip, onMouseDown} = this.props
 
-        return  <figure styleName='icon' onMouseDown = { onMouseDown }>
+        return  <figure draggable="true" styleName='icon' onMouseDown = { onMouseDown }>
             <img src = { AndSplitIcon } />
             <figcaption>{ tooltip }</figcaption>
         </figure>
@@ -98,7 +98,7 @@ import LoopIcon from './img/LP.svg'
     render(){
         let {tooltip, onMouseDown} = this.props
 
-        return  <figure styleName='icon' onMouseDown = { onMouseDown }>
+        return  <figure draggable="true" styleName='icon' onMouseDown = { onMouseDown }>
             <img src = { LoopIcon } />
             <figcaption>{ tooltip }</figcaption>
         </figure>
@@ -112,7 +112,7 @@ import LoopIcon from './img/LP.svg'
     render(){
         let {tooltip, onMouseDown} = this.props
 
-        return  <figure styleName='icon-wide' onMouseDown = { onMouseDown }>
+        return  <figure draggable="true" styleName='icon-wide' onMouseDown = { onMouseDown }>
             <img src = { AutomaticTaskIcon } />
             <figcaption>{ tooltip }</figcaption>
         </figure>
@@ -126,7 +126,7 @@ import LoopIcon from './img/LP.svg'
     render(){
         let {tooltip, onMouseDown} = this.props
 
-        return  <figure styleName='icon-wide' onMouseDown = { onMouseDown }>
+        return  <figure draggable="true" styleName='icon-wide' onMouseDown = { onMouseDown }>
             <img src = { UserTaskIcon } />
             <figcaption>{ tooltip }</figcaption>
         </figure>

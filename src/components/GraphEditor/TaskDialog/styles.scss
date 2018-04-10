@@ -12,6 +12,13 @@
 
 .fullWidth{
   width: 100%;
+  color: white!important;
+  font-size: 1.4rem!important;
+  font-weight: 500!important;
+
+  &:not([disabled]){
+    background: #ffc400!important;
+  }
 }
 
 .multiSelector{
