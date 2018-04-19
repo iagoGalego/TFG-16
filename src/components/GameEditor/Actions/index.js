@@ -9,6 +9,9 @@ export function addTaskInLink({task, link}){
             type: TYPES.ADD_TASK_IN_LINK,
             payload: { task, link },
         }, {
+            type: TYPES.SET_CLEAN,
+            payload: { clean: false }
+        }, {
             type: TYPES.SET_SELECTED_TASK,
             payload: { task },
         }
@@ -16,9 +19,12 @@ export function addTaskInLink({task, link}){
 }
 
 export function clearDiagram(){
-    return {
+    return [{
         type: TYPES.CLEAR_DIAGRAM
-    }
+    }, {
+        type: TYPES.SET_CLEAN,
+        payload: { clean: true }
+    }]
 }
 
 export function deleteTask(task){
@@ -72,15 +78,21 @@ export function saveEdge(task){
 }
 
 export function undo(){
-    return {
+    return [{
         type: TYPES.UNDO
-    }
+    }, {
+        type: TYPES.SET_SELECTED_TASK,
+        payload: { task: null },
+    }]
 }
 
 export function redo(){
-    return {
+    return [{
         type: TYPES.REDO
-    }
+    }, {
+        type: TYPES.SET_SELECTED_TASK,
+        payload: { task: null },
+    }]
 }
 
 export function save(workflow){

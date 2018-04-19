@@ -40,7 +40,7 @@ const Settings = ({ active, onSave, onCancel, intl: {formatMessage}, language, s
         onOverlayClick = { onCancel }
         actions = {[
                         { label: formatMessage(settings.cancel), onClick: onCancel },
-                        { label: formatMessage(settings.save), onClick: onSave }
+                        { label: formatMessage(settings.save), onClick: onSave, primary: true }
                     ]}
         >
 

@@ -3,10 +3,10 @@ import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux'
 import Layout from '../../components/Layout'
 import {setAppLanguage, setTitle, toggleMenu, toggleSettingsPanel} from '../../components/Layout/Actions'
-import LoginWrapper from "./LoginWrapper";
 import About from '../../components/About'
 import Home from '../../components/Home'
 import Games from '../../components/Games'
+import Questionnaires from '../../components/Questionnaires'
 import NotFound from '../../components/NotFound'
 
 import { Switch } from 'react-router'
@@ -25,6 +25,7 @@ class LayoutWrapper extends Component {
                     <Route path='/app/dashboard' component = { Home } />
                     <Redirect exact from = '/app' to='/app/dashboard' />
                     <Route path = '/app/games' component = { Games } />
+                    <Route path = '/app/questionnaires' component = { Questionnaires } />
                     <Route path = '/app/about' component = { About } />
                     <Route path = '/app/404' component = { NotFound } />
                     <Redirect from = '*' to='404' />

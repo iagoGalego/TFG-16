@@ -9,7 +9,7 @@ class Thing {
         }
     }
     genURI() {
-        if (this.URI === null || this.URI.length <= 0) {
+        if (this.URI === undefined || this.URI === null || this.URI.length <= 0) {
             this.URI = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
                 let r = Math.random()*16|0
                 let v = c === 'x' ? r : (r&0x3|0x8)

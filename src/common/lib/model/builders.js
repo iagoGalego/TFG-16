@@ -3,6 +3,7 @@
  */
 import {
     Task,
+    AutomaticTask,
     AutomaticChoice,
     UserChoice,
     OrJoin,
@@ -17,7 +18,9 @@ import {
     FloatType,
     BooleanType,
     StringType,
-    DateType, } from './index';
+    DateType,
+    HumanTask,
+} from './index';
 
 export const TASK_TYPE = Object.freeze({
     USER_TASK : Symbol('USER_TASK'),
@@ -35,8 +38,9 @@ export const TASK_TYPE = Object.freeze({
 });
 
 export class TaskBuilder{
-    constructor(){
-        this.__task = new Task();
+    constructor(val = true, uri){
+        if(val === true)this.__task = new HumanTask(uri);
+        else this.__task = new AutomaticTask(uri);
         this.__task.genURI();
         this.setInitial(false);
         this.setFinal(false);
@@ -51,14 +55,41 @@ export class TaskBuilder{
         this.__task.isFinal = val;
         return this
     }
+    isDisabled(isDisabled){
+        this.__task.isDisabled = isDisabled;
+        return this
+    }
+    setMetadata( metadata = [] ){
+        this.__task.metadata = metadata;
+        return this
+    }
+    setUser( user = [] ){
+        this.__task.user = user;
+        return this
+    }
+    setWorkflow( workflow ){
+        this.__task.workflow = workflow;
+        return this
+    }
+    setLastVersionNumber(lastVersionNumber){
+        this.__task.lastVersionNumber = lastVersionNumber;
+        return this
+    }
+    setVersionNumber(versionNumber){
+        this.__task.versionNumber = versionNumber;
+        return this
+    }
     setOperator( operator ) {
         //UNCOMMENT if (!operator) throw new ReferenceError("Operator is undefined")
         this.__task.operator = operator;
         return this
     }
     setName( name ){
-        this.__task.wfontology_Name = name;
+        this.__task.name = name;
         return this
+    }
+    setNumberOfPaths( numberOfPaths ){
+        this.__task.numberOfPaths = numberOfPaths;
     }
     setDescription( description ){
         this.__task.description = description;
@@ -114,6 +145,10 @@ export class TaskBuilder{
         cd.isRelative = false;
         cd.time = timeMillis;
         this.setExpiryDate( cd );
+        return this
+    }
+    setParameters( parameters = [] ){
+        this.__task.parameterValue = parameters;
         return this
     }
     setOperatorIntegerParameter( parameterName, parameterValue ){
@@ -186,8 +221,8 @@ export class SequenceFlowBuilder{
     from( taskid, index ){
         if ( !taskid || index < 0 ) throw new Error("SequenceFlow construction error");
 
-        this.__sf.sourceTask = taskid instanceof Task ? taskid.uri : taskid
-        this.__sf.sourceIndex = index
+        this.__sf.sourceTask = taskid instanceof Task ? taskid.uri : taskid;
+        this.__sf.sourceIndex = index;
 
         return this
     }
@@ -197,6 +232,18 @@ export class SequenceFlowBuilder{
         this.__sf.targetTask = taskid instanceof Task ? taskid.uri : taskid;
         this.__sf.targetIndex = index;
 
+        return this
+    }
+    lastVersionNumber(lastVersionNumber){
+        this.__sf.lastVersionNumber = lastVersionNumber;
+        return this
+    }
+    versionNumber(versionNumber){
+        this.__sf.versionNumber = versionNumber;
+        return this
+    }
+    isDisabled(isDisabled = false){
+        this.__sf.isDisabled = isDisabled;
         return this
     }
     addToArray( array ){
@@ -217,7 +264,27 @@ export class WorkflowBuilder{
         this.setMetadata()
     }
     setName( name ){
-        this.__wf.wfontology_Name = name;
+        this.__wf.name = name;
+        return this
+    }
+    setModificationDate(modificationDate){
+        this.__wf.modificationDate = modificationDate;
+        return this
+    }
+    setTrigger(trigger){
+        this.__wf.trigger = trigger;
+        return this
+    }
+    setVersionNumber(versionNumber){
+        this.__wf.versionNumber = versionNumber;
+        return this
+    }
+    setExecutionId(executionId){
+        this.__wf.executionId = executionId;
+        return this
+    }
+    setExecutionStatus(executionStatus){
+        this.__wf.executionStatus = executionStatus;
         return this
     }
     setDescription( desc ){
@@ -289,7 +356,7 @@ export class WorkflowBuilder{
         cd.genURI();
         cd.isRelative = false;
         cd.time = timeMillis;
-        this.setStartDate( cd )
+        this.setStartDate( cd );
         return this
     }
     setRelativeExpiryTime( timeMillis ){
@@ -313,35 +380,25 @@ export class WorkflowBuilder{
     }
 }
 export class AutomaticChoiceBuilder{
-    constructor(){
-        this.__split = new AutomaticChoice();
+    constructor(uri){
+        this.__split = new AutomaticChoice(uri);
         this.__split.genURI();
         this.__split.isInitial = false;
         this.__split.isFinal = false;
-
-        this.__join = new OrJoin();
-        this.__join.genURI();
-        this.__join.isInitial = false;
-        this.__join.isFinal = false;
-
-        this.__split.pairedTask = this.__join.uri;
-        this.__join.pairedTask = this.__split.uri
+        this.__split.isRequired = true;
+        this.__split.isDisabled = false;
+        this.__split.pathCondition = [];
     }
-    setNumberOfPaths( numberOfPaths ){
-        this.setNumberOfSplitPaths(numberOfPaths);
-        this.setNumberOfJoinPaths(numberOfPaths);
+    setPairedTask( pairedTask ){
+        this.__split.pairedTask = pairedTask;
         return this
     }
-    setNumberOfSplitPaths( numberOfPaths ){
+    setNumberOfPaths( numberOfPaths ){
         this.__split.numberOfPaths = numberOfPaths;
         return this
     }
-    setNumberOfJoinPaths( numberOfPaths ){
-        this.__join.numberOfPaths = numberOfPaths;
-        return this
-    }
     setPathCondition( pathIndex, condition ){
-        let cpc = ChoicePathCondition();
+        let cpc = new ChoicePathCondition();
         cpc.genURI();
         cpc.pathIndex = pathIndex;
         cpc.condition = condition;
@@ -349,7 +406,7 @@ export class AutomaticChoiceBuilder{
         return this
     }
     setNullPathCondition( pathIndex ){
-        let cpc = ChoicePathCondition();
+        let cpc = new ChoicePathCondition();
         cpc.genURI();
         cpc.pathIndex = pathIndex;
         cpc.condition = null;
@@ -357,28 +414,23 @@ export class AutomaticChoiceBuilder{
         return this
     }
     setName( name ){
-        this.__split.wfontology_Name = `${name} (Split)`;
-        this.__join.wfontology_Name = `${name} (Join)`;
+        this.__split.name = `${name} (Split)`;
         return this
     }
     setDescription( description ){
         this.__split.description = description;
-        this.__join.description = description;
         return this
     }
     setRequired( required = true ){
         this.__split.isRequired = required;
-        this.__join.isRequired = required;
         return this
     }
     setStartDate( date ){
         this.__split.startDate = date;
-        this.__join.startDate = date;
         return this
     }
     setExpiryDate( date ){
         this.__split.expiryDate = date;
-        this.__join.expiryDate = date;
         return this
     }
     setRelativeStartTime( timeMillis ){
@@ -415,65 +467,65 @@ export class AutomaticChoiceBuilder{
     }
     addToArray( array ){
         array.push(this.build().split);
-        array.push(this.build().join);
         return this
     }
     build(){
-        if ( this.__split.numberOfPaths !== this.__split.pathCondition.length ) throw new Error("Number of paths != number of set path conditions")
-        return { split: this.__split, join: this.__join}
+        //if ( this.__split.numberOfPaths !== this.__split.pathCondition.length ) throw new Error("Number of paths != number of set path conditions")
+        return this.__split
     }
 }
 export class UserChoiceBuilder{
-    constructor(){
-        this.__split = new AutomaticChoice();
+    constructor(uri){
+        this.__split = new UserChoice(uri);
         this.__split.genURI();
         this.__split.isInitial = false;
         this.__split.isFinal = false;
-
-        this.__join = new OrJoin();
-        this.__join.genURI();
-        this.__join.isInitial = false;
-        this.__join.isFinal = false;
-
-        this.__split.pairedTask = this.__join.uri;
-        this.__join.pairedTask = this.__split.uri
+        this.__split.isRequired = true;
+        this.__split.isDisabled = false;
+        this.__split.pathCondition = [];
     }
-    setNumberOfPaths( numberOfPaths ){
-        this.setNumberOfSplitPaths(numberOfPaths);
-        this.setNumberOfJoinPaths(numberOfPaths);
+    setPairedTask( pairedTask ){
+        this.__split.pairedTask = pairedTask;
         return this
     }
-    setNumberOfSplitPaths( numberOfPaths ){
+    setNumberOfPaths( numberOfPaths ){
         this.__split.numberOfPaths = numberOfPaths;
         return this
     }
-    setNumberOfJoinPaths( numberOfPaths ){
-        this.__join.numberOfPaths = numberOfPaths;
+    setName( name ){
+        this.__split.name = `${name} (Split)`;
         return this
     }
-    setName( name ){
-        this.__split.wfontology_Name = `${name} (Split)`;
-        this.__join.wfontology_Name = `${name} (Join)`;
+    setPathCondition( pathIndex, condition ){
+        let cpc = new ChoicePathCondition();
+        cpc.genURI();
+        cpc.pathIndex = pathIndex;
+        cpc.condition = condition;
+        this.__split.pathCondition.push(cpc);
+        return this
+    }
+    setNullPathCondition( pathIndex ){
+        let cpc = new ChoicePathCondition();
+        cpc.genURI();
+        cpc.pathIndex = pathIndex;
+        cpc.condition = null;
+        this.__split.pathCondition.push(cpc);
         return this
     }
     setDescription( description ){
         this.__split.description = description;
-        this.__join.description = description;
         return this
     }
     setRequired( required = true ){
         this.__split.isRequired = required;
-        this.__join.isRequired = required;
         return this
     }
     setStartDate( date ){
         this.__split.startDate = date;
-        this.__join.startDate = date;
         return this
     }
     setExpiryDate( date ){
         this.__split.expiryDate = date;
-        this.__join.expiryDate = date;
         return this
     }
     setRelativeStartTime( timeMillis ){
@@ -510,63 +562,47 @@ export class UserChoiceBuilder{
     }
     addToArray( array ){
         array.push(this.build().split);
-        array.push(this.build().join);
         return this
     }
     build(){
-        return { split: this.__split, join: this.__join}
+        return this.__split
     }
 }
-export class AndSplitBuilder{
-    constructor(){
-        this.__split = new AutomaticChoice();
-        this.__split.genURI();
-        this.__split.isInitial = false;
-        this.__split.isFinal = false;
-
-        this.__join = new OrJoin();
+export class OrJoinBuilder{
+    constructor(uri){
+        this.__join = new OrJoin(uri);
         this.__join.genURI();
         this.__join.isInitial = false;
         this.__join.isFinal = false;
+        this.__join.isRequired = true;
+        this.__join.isDisabled = false;
 
-        this.__split.pairedTask = this.__join.uri;
-        this.__join.pairedTask = this.__split.uri
+    }
+    setPairedTask( pairedTask ){
+        this.__join.pairedTask = pairedTask;
+        return this
     }
     setNumberOfPaths( numberOfPaths ){
-        this.setNumberOfSplitPaths(numberOfPaths);
-        this.setNumberOfJoinPaths(numberOfPaths);
-        return this
-    }
-    setNumberOfSplitPaths( numberOfPaths ){
-        this.__split.numberOfPaths = numberOfPaths;
-        return this
-    }
-    setNumberOfJoinPaths( numberOfPaths ){
         this.__join.numberOfPaths = numberOfPaths;
         return this
     }
     setName( name ){
-        this.__split.wfontology_Name = `${name} (Split)`;
-        this.__join.wfontology_Name = `${name} (Join)`;
+        this.__join.name = `${name} (Join)`;
         return this
     }
     setDescription( description ){
-        this.__split.description = description;
         this.__join.description = description;
         return this
     }
     setRequired( required = true ){
-        this.__split.isRequired = required;
         this.__join.isRequired = required;
         return this
     }
     setStartDate( date ){
-        this.__split.startDate = date;
         this.__join.startDate = date;
         return this
     }
     setExpiryDate( date ){
-        this.__split.expiryDate = date;
         this.__join.expiryDate = date;
         return this
     }
@@ -603,63 +639,88 @@ export class AndSplitBuilder{
         return this
     }
     addToArray( array ){
-        array.push(this.build().split);
         array.push(this.build().join);
         return this
     }
     build(){
-        return { split: this.__split, join: this.__join}
+        return this.__join
     }
 }
-export class ParameterValueBuilder{
-    constructor(){
-        this.__pv = new ParameterValue()
+export class AndJoinBuilder{
+    constructor(uri){
+        this.__join = new AndJoin(uri);
+        this.__join.genURI();
+        this.__join.isInitial = false;
+        this.__join.isFinal = false;
+        this.__join.isRequired = true;
+        this.__join.isDisabled = false;
+
     }
-    setParameter( parameter ){
-        this.__pv.namedParameter = parameter;
+    setPairedTask( pairedTask ){
+        this.__join.pairedTask = pairedTask;
         return this
     }
-    setParameterFromOperator( operator, parameterName ){
-        let parameter = operator.parameter.filter(x => x.wfontology_Name === parameterName);
-        if (parameter.length === 0) throw new Error("Parameter "+parameterName+" not found in operator "+operator.wfontology_Name)
-        this.setParameter(parameter[0]);
+    setNumberOfPaths( numberOfPaths ){
+        this.__join.numberOfPaths = numberOfPaths;
         return this
     }
-    setParameterIntegerValue( value ){
-        let val = new IntegerType();
-        val.integerValue = Number.parseInt(value);
-        this.__pv.namedParameterValue = val;
+    setName( name ){
+        this.__join.name = `${name} (Join)`;
         return this
     }
-    setParameterFloatValue( value ){
-        let val = new FloatType();
-        val.floatValue = Number.parseFloat(value);
-        this.__pv.namedParameterValue = val;
+    setDescription( description ){
+        this.__join.description = description;
         return this
     }
-    setParameterStringValue( value ){
-        let val = new StringType();
-        val.stringValue = value;
-        this.__pv.namedParameterValue = val;
+    setRequired( required = true ){
+        this.__join.isRequired = required;
         return this
     }
-    setParameterBooleanValue( value ){
-        let val = new BooleanType();
-        val.booleanValue = !!value;
-        this.__pv.namedParameterValue = val;
+    setStartDate( date ){
+        this.__join.startDate = date;
         return this
     }
-    setParameterDateValue( value ){
-        let val = new DateType();
-        val.dateValue = value;
-        this.__pv.namedParameterValue = val;
+    setExpiryDate( date ){
+        this.__join.expiryDate = date;
         return this
     }
-    setParameterSortValue( value ){
-        this.__pv.namedParameterValue = value;
+    setRelativeStartTime( timeMillis ){
+        let cd = new ConditionDate();
+        cd.genURI();
+        cd.isRelative = true;
+        cd.time = timeMillis;
+        this.setStartDate( cd );
+        return this
+    }
+    setAbsoluteStartTime( timeMillis ){
+        let cd = new ConditionDate();
+        cd.genURI();
+        cd.isRelative = false;
+        cd.time = timeMillis;
+        this.setStartDate( cd );
+        return this
+    }
+    setRelativeExpiryTime( timeMillis ){
+        let cd = new ConditionDate();
+        cd.genURI();
+        cd.isRelative = true;
+        cd.time = timeMillis;
+        this.setExpiryDate( cd );
+        return this
+    }
+    setAbsoluteExpiryTime( timeMillis ){
+        let cd = new ConditionDate();
+        cd.genURI();
+        cd.isRelative = false;
+        cd.time = timeMillis;
+        this.setExpiryDate( cd );
+        return this
+    }
+    addToArray( array ){
+        array.push(this.build().join);
         return this
     }
     build(){
-        return this.__pv
+        return this.__join
     }
 }

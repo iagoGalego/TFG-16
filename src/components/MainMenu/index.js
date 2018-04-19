@@ -27,6 +27,11 @@ const messages = defineMessages({
         id: 'main.menu.games',
         description: 'Main menu games link',
         defaultMessage: 'Games',
+    },
+    questionnaires: {
+        id: 'main.menu.questionnaires',
+        description: 'Main menu questionnaires link',
+        defaultMessage: 'Questionnaires',
     }
 });
 
@@ -72,6 +77,9 @@ class MainMenu extends Component{
                 </ NavLink>
                 <NavLink to = '/app/games' activeClassName = { styles['active'] }>
                     <ListItem caption = {formatMessage(messages.games)} leftIcon = 'videogame_asset' />
+                </ NavLink>
+                <NavLink to = '/app/questionnaires' activeClassName = { styles['active'] }>
+                    <ListItem caption = {formatMessage(messages.questionnaires)} leftIcon = 'assignment' />
                 </ NavLink>
                 <NavLink to = '/app/about' activeClassName = { styles['active'] }>
                     <ListItem caption = {formatMessage(messages.about)} leftIcon = 'info' />

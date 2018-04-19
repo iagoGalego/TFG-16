@@ -11,7 +11,7 @@ import {setTitle} from "../Layout/Actions";
 import {connect} from "react-redux";
 import styles from './styles.scss'
 import image from './img/warning.svg'
-import {Workflow} from "../../common/lib/model";
+import ReactDOM from "react-dom";
 
 const messages = defineMessages({
     title : {
@@ -51,13 +51,13 @@ const messages = defineMessages({
                             "@class": "es.usc.citius.hmb.model.Parameter",
                             "isLoaded": true,
                             "isMandatory": true,
-                            "wfontology_Name": "taskId",
-                            "wfontology_Type": "http://citius.usc.es/hmb/questionnaires.owl#StringType",
+                            "name": "taskId",
+                            "mType": "http://citius.usc.es/hmb/questionnaires.owl#StringType",
                             "uri": "http://citius.usc.es/hmb/questionnaires.owl#TaskId"
                         }
                     ],
                     "provider": "es.usc.citius.hmb.questionnaires",
-                    "wfontology_Name": "manageTask",
+                    "name": "manageTask",
                     "readsProperty": [],
                     "evaluatesProperty": [],
                     "ruleReference": null,
@@ -77,9 +77,11 @@ const messages = defineMessages({
                                 "isLoaded": true,
                                 "uri": "http://citius.usc.es/hmb/wfontology.owl#UserInputPropertySource"
                             },
+                            "isAvailableForRules": true,
+                            "aggregationOperator": "",
                             "tagReference": [],
-                            "wfontology_Name": "aborted_tasks",
-                            "wfontology_Type": "http://citius.usc.es/hmb/wfontology.owl#StringType",
+                            "name": "aborted_tasks",
+                            "mType": "http://citius.usc.es/hmb/wfontology.owl#StringType",
                             "displayDescription": "ID de las tareas abortadas por el admin",
                             "displayName": "Tareas abortadas por el admin",
                             "uri": "http://citius.usc.es/hmb/questionnaires.owl#AbortedTasks"
@@ -99,9 +101,11 @@ const messages = defineMessages({
                                 "isLoaded": true,
                                 "uri": "http://citius.usc.es/hmb/wfontology.owl#UserInputPropertySource"
                             },
+                            "isAvailableForRules": true,
+                            "aggregationOperator": "",
                             "tagReference": [],
-                            "wfontology_Name": "active_tasks",
-                            "wfontology_Type": "http://citius.usc.es/hmb/wfontology.owl#StringType",
+                            "name": "active_tasks",
+                            "mype": "http://citius.usc.es/hmb/wfontology.owl#StringType",
                             "displayDescription": "ID de las tareas activas",
                             "displayName": "Tareas activas",
                             "uri": "http://citius.usc.es/hmb/questionnaires.owl#ActiveTasks"
@@ -121,9 +125,11 @@ const messages = defineMessages({
                                 "isLoaded": true,
                                 "uri": "http://citius.usc.es/hmb/wfontology.owl#UserInputPropertySource"
                             },
+                            "isAvailableForRules": true,
+                            "aggregationOperator": "",
                             "tagReference": [],
-                            "wfontology_Name": "skipped_tasks",
-                            "wfontology_Type": "http://citius.usc.es/hmb/wfontology.owl#StringType",
+                            "name": "skipped_tasks",
+                            "mType": "http://citius.usc.es/hmb/wfontology.owl#StringType",
                             "displayDescription": "ID de las tareas saltadas por el admin",
                             "displayName": "Tareas saltadas por el admin",
                             "uri": "http://citius.usc.es/hmb/questionnaires.owl#SkipedTasks"
@@ -136,7 +142,7 @@ const messages = defineMessages({
                     "description": null,
                     "parameter": [],
                     "provider": "es.usc.citius.hmb.questionnaires",
-                    "wfontology_Name": "finish",
+                    "name": "finish",
                     "readsProperty": [],
                     "evaluatesProperty": [],
                     "ruleReference": null,
@@ -152,13 +158,13 @@ const messages = defineMessages({
                             "@class": "es.usc.citius.hmb.model.Parameter",
                             "isLoaded": true,
                             "isMandatory": true,
-                            "wfontology_Name": "questionnaire",
-                            "wfontology_Type": "http://citius.usc.es/hmb/questionnaires.owl#Questionnaire",
+                            "name": "questionnaire",
+                            "mType": "http://citius.usc.es/hmb/questionnaires.owl#Questionnaire",
                             "uri": "http://citius.usc.es/hmb/questionnaires.owl#Pa_Questionnaire"
                         }
                     ],
                     "provider": "es.usc.citius.hmb.questionnaires",
-                    "wfontology_Name": "questionnaire",
+                    "name": "questionnaire",
                     "readsProperty": [],
                     "evaluatesProperty": [],
                     "ruleReference": null,
@@ -178,9 +184,11 @@ const messages = defineMessages({
                                 "isLoaded": true,
                                 "uri": "http://citius.usc.es/hmb/wfontology.owl#UserInputPropertySource"
                             },
+                            "isAvailableForRules": true,
+                            "aggregationOperator": "",
                             "tagReference": [],
-                            "wfontology_Name": "quest_answer",
-                            "wfontology_Type": "http://citius.usc.es/hmb/questionnaires.owl#QuestionnaireAnswer",
+                            "name": "quest_answer",
+                            "mType": "http://citius.usc.es/hmb/questionnaires.owl#QuestionnaireAnswer",
                             "displayDescription": null,
                             "displayName": "Respuesta a cuestionario",
                             "uri": "http://citius.usc.es/hmb/questionnaires.owl#QuestAnswer"
@@ -200,9 +208,11 @@ const messages = defineMessages({
                                 "isLoaded": true,
                                 "uri": "http://citius.usc.es/hmb/wfontology.owl#UserInputPropertySource"
                             },
+                            "isAvailableForRules": true,
+                            "aggregationOperator": "",
                             "tagReference": [],
-                            "wfontology_Name": "questionnaire_history",
-                            "wfontology_Type": "http://citius.usc.es/hmb/questionnaires.owl#HistoryEntry",
+                            "name": "questionnaire_history",
+                            "mType": "http://citius.usc.es/hmb/questionnaires.owl#HistoryEntry",
                             "displayDescription": "Historial de cuestionarios",
                             "displayName": "Historial de cuestionarios",
                             "uri": "http://citius.usc.es/hmb/questionnaires.owl#QuestionnaireHistory"
@@ -218,9 +228,11 @@ const messages = defineMessages({
                                 "uri": "http://citius.usc.es/hmb/wfontology.owl#LocalCasePropertyContext"
                             },
                             "propertySource": null,
+                            "isAvailableForRules": true,
+                            "aggregationOperator": "",
                             "tagReference": [],
-                            "wfontology_Name": "quest_ok",
-                            "wfontology_Type": "http://citius.usc.es/hmb/wfontology.owl#BooleanType",
+                            "name": "quest_ok",
+                            "mType": "http://citius.usc.es/hmb/wfontology.owl#BooleanType",
                             "displayDescription": "Cuestionario respondido correctamente",
                             "displayName": "Cuestionario respondido correctamente",
                             "uri": "http://citius.usc.es/hmb/questionnaires.owl#QuestOK"
@@ -234,7 +246,7 @@ const messages = defineMessages({
                     "description": null,
                     "parameter": [],
                     "provider": "es.usc.citius.hmb.questionnaires",
-                    "wfontology_Name": "start",
+                    "name": "start",
                     "readsProperty": [],
                     "evaluatesProperty": [],
                     "ruleReference": null,
@@ -247,14 +259,14 @@ const messages = defineMessages({
                     "isLoaded": true,
                     "provider": "es.usc.citius.hmb.questionnaires",
                     "user": [],
-                    "wfontology_Name": "gameadmin",
+                    "name": "gameadmin",
                     "isSubTagOf": [
                         {
                             "@class": "es.usc.citius.hmb.model.Tag",
                             "isLoaded": true,
                             "provider": null,
                             "user": [],
-                            "wfontology_Name": "admin",
+                            "name": "admin",
                             "isSubTagOf": [],
                             "displayName": "Administrator",
                             "uri": "http://citius.usc.es/hmb/questionnaires.owl#Tag_Admin"
@@ -268,7 +280,7 @@ const messages = defineMessages({
                     "isLoaded": true,
                     "provider": null,
                     "user": [],
-                    "wfontology_Name": "admin",
+                    "name": "admin",
                     "isSubTagOf": [],
                     "displayName": "Administrator",
                     "uri": "http://citius.usc.es/hmb/questionnaires.owl#Tag_Admin"
@@ -278,14 +290,14 @@ const messages = defineMessages({
                     "isLoaded": true,
                     "provider": "es.usc.citius.hmb.questionnaires",
                     "user": [],
-                    "wfontology_Name": "gameuser",
+                    "name": "gameuser",
                     "isSubTagOf": [
                         {
                             "@class": "es.usc.citius.hmb.model.Tag",
                             "isLoaded": true,
                             "provider": null,
                             "user": [],
-                            "wfontology_Name": "user",
+                            "name": "user",
                             "isSubTagOf": [],
                             "displayName": "User",
                             "uri": "http://citius.usc.es/hmb/questionnaires.owl#Tag_User"
@@ -299,7 +311,7 @@ const messages = defineMessages({
                     "isLoaded": true,
                     "provider": null,
                     "user": [],
-                    "wfontology_Name": "user",
+                    "name": "user",
                     "isSubTagOf": [],
                     "displayName": "User",
                     "uri": "http://citius.usc.es/hmb/questionnaires.owl#Tag_User"
@@ -309,7 +321,7 @@ const messages = defineMessages({
                     "isLoaded": true,
                     "provider": null,
                     "user": [],
-                    "wfontology_Name": "root",
+                    "name": "root",
                     "isSubTagOf": [],
                     "displayName": "Root",
                     "uri": "http://citius.usc.es/hmb/questionnaires.owl#Tag_Root"
@@ -319,14 +331,14 @@ const messages = defineMessages({
                     "isLoaded": true,
                     "provider": "es.usc.citius.hmb.questionnaires",
                     "user": [],
-                    "wfontology_Name": "useradmin",
+                    "name": "useradmin",
                     "isSubTagOf": [
                         {
                             "@class": "es.usc.citius.hmb.model.Tag",
                             "isLoaded": true,
                             "provider": null,
                             "user": [],
-                            "wfontology_Name": "admin",
+                            "name": "admin",
                             "isSubTagOf": [],
                             "displayName": "Administrator",
                             "uri": "http://citius.usc.es/hmb/questionnaires.owl#Tag_Admin"
@@ -385,21 +397,26 @@ const messages = defineMessages({
         this.setState(previousState => ({...previousState, windowWidth: window.innerWidth}));
     }
     handleSave(){
-        this.props.save({name: "meu", description: "teu", user: "seu"});
+        this.props.save({
+            name: "Workflow_01", description: "Description Sample",
+            startDate: null, expiryDate: null,
+            metadata: {name: "meta",metadataValue: "data"},
+            modificationDate: new Date().getDate(), provider: "iagoGalego",
+            designer: "iagoGalego"});
     }
     handleZoom(action){
         switch (action){
             case 'in':
-                this.setState(previousState => ({...previousState, scale: previousState.scale + 0.2}));
-                document.dispatchEvent(new CustomEvent('graph:zoomin'))
+                this.setState(previousState => ({...previousState, scale: previousState.scale + 0.1}));
+                document.dispatchEvent(new CustomEvent('graph:zoomin'));
                 break;
             case 'out':
-                this.setState(previousState => ({...previousState, scale: previousState.scale - 0.2}));
-                document.dispatchEvent(new CustomEvent('graph:zoomout'))
+                this.setState(previousState => ({...previousState, scale: previousState.scale - 0.1}));
+                document.dispatchEvent(new CustomEvent('graph:zoomout'));
                 break;
             case 'reset':
                 this.setState(previousState => ({...previousState, scale: 0.8}));
-                document.dispatchEvent(new CustomEvent('graph:reset'))
+                document.dispatchEvent(new CustomEvent('graph:reset'));
                 break;
             case 'fit':
                 if(!this.state.fullScreen){
@@ -426,15 +443,15 @@ const messages = defineMessages({
     }
     handlePrint(){
         //TODO bigger canvas
-        var dataUrl = document.querySelector(".src-components-GraphEditor-Editor-__graph___52RLx > div:nth-child(1) > canvas:nth-child(3)").toDataURL("image/png")
-        var windowContent = '<!DOCTYPE html>';
+        let dataUrl = document.querySelector(".src-components-GraphEditor-Editor-__graph___52RLx > div:nth-child(1) > canvas:nth-child(3)").toDataURL("image/png")
+        let windowContent = '<!DOCTYPE html>';
         windowContent += '<html>'
         windowContent += '<head><title>Print Graph</title></head>';
         windowContent += '<body>'
         windowContent += '<img src="' + dataUrl + '">';
         windowContent += '</body>';
         windowContent += '</html>';
-        var printWin = window.open('','','width=340,height=260');
+        let printWin = window.open('','','width=340,height=260');
         printWin.document.open();
         printWin.document.write(windowContent);
         printWin.document.close();
@@ -448,7 +465,9 @@ const messages = defineMessages({
     }
 
     handleClear(){
-        this.props.clear();
+        if(!this.props.isClean){
+            this.props.clear();
+        }
     }
 
     handleHelp(){
@@ -468,6 +487,10 @@ const messages = defineMessages({
         }
     }
 
+    toggleTaskDialog(){
+        ReactDOM.findDOMNode(this.__taskDialog).classList.toggle(styles['toggled']);
+    }
+
     render() {
         if( this.state.windowWidth < 720 )
             return (
@@ -480,7 +503,7 @@ const messages = defineMessages({
                         />
                     </h1>
                 </div>
-            )
+            );
         else return (
             <div styleName = 'mainContainer'
                  ref =  { element => this.__full = element }>
@@ -506,8 +529,9 @@ const messages = defineMessages({
                 />
 
                 <TaskDialog styleName = 'taskDialog'
+                            ref =  { element => this.__taskDialog = element }
+                            toggleTaskDialog = { this.toggleTaskDialog }
                             language = { this.props.language }
-                            minimized = { this.props.selectedTask === null }
                             selectedTask = { this.props.selectedTask }
                             deleteTask = { this.props.deleteTask }
                             saveTask = { this.props.saveTask }

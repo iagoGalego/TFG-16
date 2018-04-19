@@ -39,6 +39,7 @@ export class APIClient {
         query.append('username', user);
         query.append('password', pass);
 
+        __token = "token";
         return Promise.resolve("token")/*fetch(`${CONFIG.api.baseURL}/${CONFIG.api.authAPI}/login`, {
             method: 'POST',
             headers: {

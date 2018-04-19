@@ -2,6 +2,7 @@
 
 .root{
   height: 100%;
+  overflow: hidden;
 }
 
 .buttons{
@@ -25,13 +26,11 @@
 }
 
 .main{
-  overflow: hidden;
   padding: 0;
-
-  height: calc(100% - 56px);
+  height: 100%;
 
   @media screen and (min-width: (600px + 1px)) {
-    height: calc(100% - 64px);
+    height: calc(100% - 64px)!important;
   }
 
   &>*{
@@ -74,6 +73,9 @@
 
 .menuIcon{
   margin-right: 8px;
+  @media screen and (min-width: 960px){
+    display: none;
+  }
 }
 
 .logo, .tinyLogo{

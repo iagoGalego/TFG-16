@@ -11,7 +11,8 @@ export const TYPES = Object.freeze({
     CLEAR_DIAGRAM: 'CLEAR_DIAGRAM',
     MOVE_TASK: 'MOVE_TASK',
     SAVE_EDGE: 'SAVE_EDGE',
-    SAVE: 'SAVE'
+    SAVE: 'SAVE',
+    SET_CLEAN: 'SET_CLEAN'
 });
 
 export default TYPES

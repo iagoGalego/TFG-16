@@ -21,40 +21,40 @@ function getImage(type){
     switch(type){
         case 'start':
         case T.INITIAL_TASK:
-            return FirstTaskIcon
+            return FirstTaskIcon;
         case 'end':
         case T.LAST_TASK:
-            return LastTaskIcon
+            return LastTaskIcon;
         case 'userTask':
         case T.USER_TASK:
-            return UserTaskIcon
+            return UserTaskIcon;
         case 'userChoice':
         case T.USER_CHOICE:
-            return UserChoiceIcon
+            return UserChoiceIcon;
         case 'andSplit':
         case T.AND_SPLIT:
-            return AndSplitIcon
+            return AndSplitIcon;
         case 'andSplitEnd':
         case T.AND_SPLIT_END:
             return EndIcon
         case 'automaticChoice':
         case T.AUTOMATIC_CHOICE:
-            return AutomaticChoiceIcon
+            return AutomaticChoiceIcon;
         case 'automaticChoiceEnd':
         case T.AUTOMATIC_CHOICE_END:
             return EndIcon
         case 'automaticTask':
         case T.AUTOMATIC_TASK:
-            return AutomaticTaskIcon
+            return AutomaticTaskIcon;
         case 'userChoiceEnd':
         case T.USER_CHOICE_END:
-            return EndIcon
+            return EndIcon;
         case 'loop':
         case T.LOOP:
-            return LoopIcon
+            return LoopIcon;
         case 'loopEnd':
         case T.LOOP_END:
-            return EndIcon
+            return EndIcon;
         case 'invisible':
         default:
     }
@@ -63,29 +63,29 @@ function getImage(type){
 export function symbolTypeToString(type){
     switch(type){
         case T.INITIAL_TASK:
-            return 'start'
+            return 'start';
         case T.LAST_TASK:
-            return 'end'
+            return 'end';
         case T.USER_TASK:
-            return 'userTask'
+            return 'userTask';
         case T.USER_CHOICE:
-            return 'userChoice'
+            return 'userChoice';
         case T.AND_SPLIT:
-            return 'andSplit'
+            return 'andSplit';
         case T.AUTOMATIC_CHOICE:
-            return 'automaticChoice'
+            return 'automaticChoice';
         case T.AUTOMATIC_CHOICE_END:
-            return 'automaticChoiceEnd'
+            return 'automaticChoiceEnd';
         case T.AUTOMATIC_TASK:
-            return 'automaticTask'
+            return 'automaticTask';
         case T.USER_CHOICE_END:
-            return 'userChoiceEnd'
+            return 'userChoiceEnd';
         case T.AND_SPLIT_END:
-            return 'andSplitEnd'
+            return 'andSplitEnd';
         case T.LOOP:
-            return 'loop'
+            return 'loop';
         case T.LOOP_END:
-            return 'loopEnd'
+            return 'loopEnd';
         default:
             return 'userTask'
     }
@@ -93,29 +93,29 @@ export function symbolTypeToString(type){
 export function stringTypeToSymbol(type){
     switch(type){
         case 'start':
-            return T.INITIAL_TASK
+            return T.INITIAL_TASK;
         case 'end':
-            return T.LAST_TASK
+            return T.LAST_TASK;
         case 'userTask':
-            return T.USER_TASK
+            return T.USER_TASK;
         case 'userChoice':
-            return T.USER_CHOICE
+            return T.USER_CHOICE;
         case 'andSplit':
-            return T.AND_SPLIT
+            return T.AND_SPLIT;
         case 'automaticChoice':
-            return T.AUTOMATIC_CHOICE
+            return T.AUTOMATIC_CHOICE;
         case 'automaticChoiceEnd':
-            return T.AUTOMATIC_CHOICE_END
+            return T.AUTOMATIC_CHOICE_END;
         case 'automaticTask':
-            return T.AUTOMATIC_TASK
+            return T.AUTOMATIC_TASK;
         case 'userChoiceEnd':
-            return T.USER_CHOICE_END
+            return T.USER_CHOICE_END;
         case 'andSplitEnd':
-            return T.AND_SPLIT_END
+            return T.AND_SPLIT_END;
         case 'loop':
-            return T.LOOP
+            return T.LOOP;
         case 'loopEnd':
-            return T.LOOP_END
+            return T.LOOP_END;
         default:
             return T.USER_TASK
     }
@@ -125,13 +125,12 @@ function mapGraphToFormat({nodes, links}, selectedTask){
     let formatedGraph = {
         nodes: [],
         edges: []
-    }
+    };
 
-    nodes.map(({id, name, type, x, y, isTransitable}) => formatedGraph.nodes.push({
+    nodes.map(({id, name, type, x, y, isTransitable, isDisabled}) => formatedGraph.nodes.push({
         selected: selectedTask !== null && selectedTask.id === id,
-        isTransitable: isTransitable,
-        data: {id, name, type, image: getImage(type)},
-        position: { x, y }}))
+        data: {id, name, type, image: getImage(type), isDisabled: isDisabled, isTransitable: isTransitable},
+        position: { x, y }}));
     links.map(({from, to, isLoop, isBase, isTransitable, type, level}) => formatedGraph.edges.push({selectable: false, data: {source: from, target: to, isBase: isBase, isTransitable: isTransitable, isLoop: isLoop, type: type, level: level}}))
 
     return formatedGraph
@@ -268,10 +267,14 @@ function getGraphStyles(){
             'line-color': '#000',
             'target-arrow-color': '#000',
         })
+        .selector('node[?isDisabled]')
+        .css({
+            'background-color': '#d1d1d1',
+            'background-image-opacity': '0.5',
+        })
 }
 
 export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, selectTask, scale, moveTask){
-    //This is not working as expected. Review.
 
     function ADDTASKSTART(evt){
         try {
@@ -288,9 +291,9 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
         newNodeContainer.style['pointer-events'] = 'none';
 
         const onmousemove = onmousemoveevt => {
-            newNodeContainer.style['top'] = `${onmousemoveevt.clientY - 20}px`
-            newNodeContainer.style['left'] = `${onmousemoveevt.clientX - 20}px`
-        }
+            newNodeContainer.style['top'] = `${onmousemoveevt.clientY - 20}px`;
+            newNodeContainer.style['left'] = `${onmousemoveevt.clientX - 20}px`;
+        };
         const onmouseup = onmouseupevt => {
             document.removeEventListener('mousemove', onmousemove, true)
             document.removeEventListener('mouseup', onmouseup, true)
@@ -358,15 +361,15 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
                             type: symbolTypeToString(type),
                             name: '',
                             description: '',
-                            operator: '',
-                            parameters: {},
+                            operator: null,
+                            parameters: [],
                             rolesAllowed: [],
-                            badges: [],
                             initialDate: null,
                             endingDate: null,
-                            giveBadges: false,
-                            givePoints: false,
-                            points: '',
+                            isRequired: true,
+                            isDisabled: false,
+                            isInitial: false,
+                            isFinal: false,
                             x: (edges[i].source().position().x+edges[i].target().position().x)/2,
                             y: (edges[i].source().position().y+edges[i].target().position().y)/2
                         },
@@ -427,7 +430,8 @@ export function buildGraph({graph, container, graphDefinition, selectedTask, sca
                 fit: false,
                 directed: false,
                 padding: 50,
-            }
+            },
+            wheelSensitivity: 0.1
         });
     }
     else {

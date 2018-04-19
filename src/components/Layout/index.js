@@ -7,7 +7,6 @@ import React, { Component } from 'react'
 import ReactDOM from 'react-dom'
 import { createChild } from '../../common/utils'
 import CSSModules from 'react-css-modules'
-import Dimensions from 'react-dimensions'
 import { autobind } from 'core-decorators'
 import { AppBar } from 'react-toolbox/lib/app_bar'
 import { Button, IconButton } from 'react-toolbox/lib/button'
@@ -15,18 +14,17 @@ import { Layout, NavDrawer, Panel } from 'react-toolbox/lib/layout'
 import { Navigation } from 'react-toolbox/lib/navigation'
 import Settings from '../Settings'
 
-
 import styles from './styles.scss'
 import Logo from '../../common/img/logo-vertical.png'
 import TinyLogo from '../../common/img/logo-tiny.png'
 import MainMenu from '../MainMenu'
 
-@Dimensions()
 @CSSModules(styles)
 @autobind class CustomLayout extends Component {
-    constructor(props) {
-        super(props);
-        this.authenticate(props)
+    constructor(props, context) {
+        super(props, context);
+        this.authenticate(props);
+        this.lang = this.props.language;
     }
     static contextTypes = {
         router: PropTypes.object.isRequired,
@@ -38,7 +36,7 @@ import MainMenu from '../MainMenu'
 
     authenticate(props) {
         if (!props.isAuthenticated) {
-            this.context.router.push(
+            this.context.router.history.push(
                 props.hasLoggedOut
                     ? '/login'
                     : {
@@ -52,7 +50,7 @@ import MainMenu from '../MainMenu'
     }
 
     handleToggleMenu(){
-        if(this.props.containerWidth < 960){
+        if(window.innerWidth < 960){
             this.props.toggleMenu()
         }
     }
@@ -60,9 +58,13 @@ import MainMenu from '../MainMenu'
         this.props.logout()
     }
     handleToggleSettings(){
+        this.props.changeLanguage(this.lang);
         this.props.toggleSettingsPanel()
     }
-    handleSaveSettings(){}
+    handleSaveSettings(){
+        this.lang = this.props.language;
+        this.props.toggleSettingsPanel()
+    }
     handleShrinkDrawer(){
         ReactDOM.findDOMNode(this.__drawer).classList.toggle(styles['shrink']);
         ReactDOM.findDOMNode(this.__panel).classList.toggle(styles['panel']);
@@ -70,16 +72,15 @@ import MainMenu from '../MainMenu'
 
     componentDidMount() {
     const panel = ReactDOM.findDOMNode(this.__panel);
-    const drawer = ReactDOM.findDOMNode(this.__drawer);
     window.addEventListener('resize', function(){
-            if(drawer.classList.contains(styles['shrink']) && window.innerWidth < 960){
+            if(window.innerWidth < 960){
                 panel.classList.remove(styles['panel'])
             }
         }, true);
     }
 
     render(){
-        const { language, title, menuOpened, settingsPanelOpened, changeLanguage, children, containerWidth } = this.props
+        const { language, title, menuOpened, settingsPanelOpened, changeLanguage, children } = this.props;
 
         return (
             <div styleName = 'root'>
@@ -89,8 +90,8 @@ import MainMenu from '../MainMenu'
                         active = { menuOpened }
                         permanentAt = 'md'
                         styleName = 'drawer'
-                        onOverlayClick = { this.handleToggleMenu }
-                    >
+                        onOverlayClick = { this.handleToggleMenu }>
+
                         <header>
                             <img src = { Logo } styleName = 'logo' />
                             <img src = { TinyLogo } styleName= 'tinyLogo' />
@@ -104,7 +105,7 @@ import MainMenu from '../MainMenu'
                     </NavDrawer>
                     <Panel ref = { elem => this.__panel = elem }>
                         <AppBar styleName = 'appbar'>
-                            { containerWidth < 960 ? <IconButton styleName = 'menuIcon' icon = 'menu' inverse = { true } onClick = { this.handleToggleMenu }/> : null}
+                            <IconButton styleName = 'menuIcon' icon = 'menu' inverse = { true } onClick = { this.handleToggleMenu }/>
                             <h1 styleName = 'windowTitle'>{ title }</h1>
                             <IconButton styleName='exitButton' icon='exit_to_app' onClick = { this.handleLogoutButtonClick }/>
                         </AppBar>
@@ -120,6 +121,7 @@ import MainMenu from '../MainMenu'
                           onSave = { this.handleSaveSettings }
                           language = { language }
                           setLanguage = { changeLanguage }
+                          lang = { this.lang }
                 />
             </div>
         )

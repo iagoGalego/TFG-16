@@ -8,10 +8,11 @@ import Button from 'react-toolbox/lib/button'
 import Checkbox from 'react-toolbox/lib/checkbox'
 import Dropdown from 'react-toolbox/lib/dropdown'
 import DatePicker from 'react-toolbox/lib/date_picker'
-import Chip from 'react-toolbox/lib/chip'
 import Avatar from 'react-toolbox/lib/avatar'
 import Tooltip from 'react-toolbox/lib/tooltip'
 import { IconMenu, MenuItem } from 'react-toolbox/lib/menu'
+import Chip from 'react-toolbox/lib/chip'
+
 
 import { TASK_TYPE as T } from '../../../common/lib/model/builders'
 import OPERATOR_NAME from '../../../common/lib/model/OperatorNames'
@@ -79,6 +80,16 @@ const formLabel = defineMessages({
         id : 'games.editor.taskDialog.form.inputs.labels.isTransitable',
         description : 'Graph editor - Tasks Dialog - Form Inputs - Labels - Is Transitable',
         defaultMessage : 'Is Transitable'
+    },
+    isDisabled: {
+        id : 'games.editor.taskDialog.form.inputs.labels.isDisabled',
+        description : 'Graph editor - Tasks Dialog - Form Inputs - Labels - Is Disabled',
+        defaultMessage : 'Is Disabled'
+    },
+    isRequired: {
+        id : 'games.editor.taskDialog.form.inputs.labels.isRequired',
+        description : 'Graph editor - Tasks Dialog - Form Inputs - Labels - Is Required',
+        defaultMessage : 'Is Required'
     }
 })
 const values = defineMessages({
@@ -91,6 +102,11 @@ const values = defineMessages({
         id : 'games.editor.taskDialog.form.inputs.values.name.last',
         description : 'Graph editor - Tasks Dialog - Form Inputs - Values - Name - Last Task',
         defaultMessage : 'Last Task'
+    },
+    noTask: {
+        id : 'games.editor.taskDialog.noTask',
+        description : 'Graph editor - Tasks Dialog - No Task',
+        defaultMessage : 'No task selected'
     }
 })
 const actionLabel = defineMessages({
@@ -104,12 +120,12 @@ const actionLabel = defineMessages({
         description : 'Graph editor - Tasks Dialog - Form Buttons - Save Task',
         defaultMessage : 'Save Task'
     },
-})
+});
 
 @CSSModules(styles, {allowMultiple: true})
 @autobind class TaskDialog extends Component{
     constructor(props){
-        super(props)
+        super(props);
 
         this.state = {
             modified: false,
@@ -125,6 +141,8 @@ const actionLabel = defineMessages({
                 badges: [],
                 givePoints: false,
                 isTransitable: false,
+                isRequired: true,
+                isDisabled: false,
                 condition: '',
                 points: '',
                 ...props.selectedTask
@@ -132,7 +150,8 @@ const actionLabel = defineMessages({
             ui: {
                 showPointsLabel: true,
                 showError: true
-            }
+            },
+            label: "▾"
         }
     }
 
@@ -140,15 +159,16 @@ const actionLabel = defineMessages({
         saveEdge : () => {},
         saveTask : () => {},
         deleteTask : () => {},
-    }
+        toggleTaskDialog : () => {}
+    };
 
     componentWillUpdate(props, state){
-        if(props.minimized && state.modified && this.isValid() )
-            if(confirm('Do you want to save?')){
-                this.setState({modified: false});
+        if(props.selectedTask === null && state.modified && this.isValid() ) {
+            if (confirm('Do you want to save?')) {
                 this.props.saveTask(this.state.task)
             }
-
+            this.setState({modified: false});
+        }
     }
     componentWillReceiveProps(props){
         if(props.selectedTask !== null)
@@ -161,6 +181,7 @@ const actionLabel = defineMessages({
                     operator: '',
                     parameters: {},
                     rolesAllowed: [],
+                    isRequired: true,
                     ...props.selectedTask
                 }
             })
@@ -182,10 +203,10 @@ const actionLabel = defineMessages({
     isValidUserTask(){
         let { name, operator, parameters, rolesAllowed } = this.state.task
 
-        return name != ''
-            && operator != ''
+        return name !== ''
+            && operator !== ''
             && Object.entries(parameters).length >= this.props.HMBData.operators
-                .filter(({wfontology_Name}) => wfontology_Name === operator)[0]
+                .filter(({name}) => name === operator)[0]
                 .parameter.filter(({isMandatory}) => isMandatory).length
             && rolesAllowed.length > 0
     }
@@ -200,15 +221,15 @@ const actionLabel = defineMessages({
         this.setState(prevState => ({task: {...prevState.task, description: value}, modified: true}))
     }
     handleOperatorChange(value){
-        this.setState(prevState => ({task: {...prevState.task, operator: value}, modified: true}))
+        this.setState(prevState => ({task: {...prevState.task, operator: this.props.HMBData.operators.find(({name}) => name === value)}, modified: true}))
     }
     handleRolesChange(value, rol){
         if(value && rol.id === 'all')
             this.setState(prevState => ({
                 task: {
                     ...prevState.task,
-                    rolesAllowed: this.props.HMBData.roles.map(({wfontology_Name, displayName}) => ({
-                        id: wfontology_Name,
+                    rolesAllowed: this.props.HMBData.roles.map(({name, displayName}) => ({
+                        id: name,
                         name: displayName
                     }))
                 },
@@ -244,6 +265,12 @@ const actionLabel = defineMessages({
     }
     handleIsTransitableChange(value){
         this.setState(prevState => ({task: {...prevState.task, isTransitable: value}, modified: true}))
+    }
+    handleIsRequiredChange(value){
+        this.setState(prevState => ({task: {...prevState.task, isRequired: value}, modified: true}))
+    }
+    handleIsDisabledChange(value){
+        this.setState(prevState => ({task: {...prevState.task, isDisabled: value}, modified: true}))
     }
     handlePointsChange(value){
         if(value === '' || !Number.isNaN(Number.parseInt(value)) && value >= 0){
@@ -286,6 +313,11 @@ const actionLabel = defineMessages({
 
         return (OPERATOR_NAME[id] && formatMessage(OPERATOR_NAME[id])) || id
     }
+    getLocalizedOperatorIdFromName(name){
+        let {intl: {formatMessage}} = this.props
+
+        return (OPERATOR_NAME[name] && formatMessage(OPERATOR_NAME[name])) || name
+    }
     getLocalizedParameterNameFromId(id){
         let {intl: {formatMessage}} = this.props
 
@@ -294,18 +326,18 @@ const actionLabel = defineMessages({
     getLocalizedRoleNameFromId(id){
         let {intl: {formatMessage}} = this.props
 
-        let defaultRole = this.props.HMBData.roles.filter(rol => rol.wfontology_Name === id)[0]
+        let defaultRole = this.props.HMBData.roles.filter(rol => rol.name === id)[0]
         let defaultRoleName = ( defaultRole !== undefined && defaultRole.displayName ) || id
 
         return (ROLE_NAME[id] && formatMessage(ROLE_NAME[id])) || defaultRoleName
     }
 
     renderUserTaskDialog(){
-        let { intl: {formatMessage}} = this.props
+        let { intl: {formatMessage}} = this.props;
 
         return (
-            <CardText styleName = 'columns'>
-                <div styleName = 'column'>
+            <CardText styleName='inputs'>
+                <div>
                     <Input
                         type='text'
                         label = { formatMessage(formLabel.name) }
@@ -335,108 +367,119 @@ const actionLabel = defineMessages({
                                     autoOk
                         />
                     </section>
+                    { this.renderRolesSelector() }
                 </div>
-                <div styleName = 'column'>
-                    <section styleName = 'multiSelector'>
-                        <h1>
-                            <FormattedMessage
-                                id = 'games.editor.taskDialog.form.inputs.labels.onTaskFinish'
-                                defaultMessage = 'On task finish'
-                                description = 'Graph editor - Tasks Dialog - Form Inputs - Labels - On task finish'
-                            />
-                        </h1>
 
-                        <div styleName='columns'>
-                            <Checkbox checked = { this.state.task.giveBadge }
-                                      label = { formatMessage(formLabel.giveBadge) }
-                                      onChange={ this.handleGiveBadgeChange } />
-
-                            <div styleName = 'badges'>
-                                <TooltipedAvatar tooltip = 'tooltip'
-                                                 tooltipPosition = 'bottom'
-                                                 icon='folder'
-                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                                <TooltipedAvatar tooltip = 'tooltip2'
-                                                 tooltipPosition = 'bottom'
-                                                 icon='build'
-                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                                <TooltipedAvatar tooltip = 'tooltip3'
-                                                 tooltipPosition = 'bottom'
-                                                 icon='explore'
-                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                                <TooltipedAvatar tooltip = 'tooltip'
-                                                 tooltipPosition = 'bottom'
-                                                 icon='folder'
-                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                                <TooltipedAvatar tooltip = 'tooltip2'
-                                                 tooltipPosition = 'bottom'
-                                                 icon='build'
-                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                                <TooltipedAvatar tooltip = 'tooltip3'
-                                                 tooltipPosition = 'bottom'
-                                                 icon='explore'
-                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                                <TooltipedAvatar tooltip = 'tooltip'
-                                                 tooltipPosition = 'bottom'
-                                                 icon='folder'
-                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                                <TooltipedAvatar tooltip = 'tooltip2'
-                                                 tooltipPosition = 'bottom'
-                                                 icon='build'
-                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                                <TooltipedAvatar tooltip = 'tooltip3'
-                                                 tooltipPosition = 'bottom'
-                                                 icon='explore'
-                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                                <TooltipedAvatar tooltip = 'tooltip'
-                                                 tooltipPosition = 'bottom'
-                                                 icon='folder'
-                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                                <TooltipedAvatar tooltip = 'tooltip2'
-                                                 tooltipPosition = 'bottom'
-                                                 icon='build'
-                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                                <TooltipedAvatar tooltip = 'tooltip3'
-                                                 tooltipPosition = 'bottom'
-                                                 icon='explore'
-                                                 style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                            </div>
-
-                        </div>
-                        <div styleName='columns'>
-                            <Checkbox checked = { this.state.task.givePoints }
-                                      label = { formatMessage(formLabel.givePoints) }
-                                      onChange = { this.handleGivePointsChange } />
-
-                            <Input styleName = 'noPadding noMargin'
-                                   label = { !this.state.task.points && this.state.ui.showPointsLabel && formatMessage(formLabel.numberOfPoints) || ''}
-                                   hint = { formatMessage(formLabel.numberOfPoints) }
-                                   disabled = { !this.state.task.givePoints }
-                                   onChange = { this.handlePointsChange }
-                                   onFocus = { this.handlePointsInputFocus }
-                                   onBlur = { this.handlePointsInputBlur }
-                                   value = { this.state.task.points } />
-                        </div>
-
-                    </section>
-
+                <div>
+                    <CardText styleName = 'checkbox'>
+                        <Checkbox checked = { this.state.task.isRequired }
+                                  label = { formatMessage(formLabel.isRequired) }
+                                  onChange = { this.handleIsRequiredChange } />
+                        <Checkbox checked = { this.state.task.isDisabled }
+                                  label = { formatMessage(formLabel.isDisabled) }
+                                  onChange = { this.handleIsDisabledChange } />
+                    </CardText>
                     <Dropdown
                         auto
                         onChange = { this.handleOperatorChange }
                         source = { this.props.HMBData.operators
-                            .filter(({wfontology_Name}) => wfontology_Name !== 'start' && wfontology_Name !== 'finish')
-                            .map(operator => ({value: operator.wfontology_Name, label: this.getLocalizedOperatorNameFromId(operator.wfontology_Name)}))
+                            .filter(({name}) => name !== 'start' && name !== 'finish')
+                            .map(operator => ({value: operator.name, label: this.getLocalizedOperatorNameFromId(operator.name)}))
                         }
                         label = { formatMessage(formLabel.operator) }
-                        value = { this.state.task.operator }
+                        value = { (this.state.task.operator !== null)? this.state.task.operator.name: null }
                     />
-                    { this.renderRolesSelector() }
-
+                    { this.renderFormInputsForOperatorParameters()}
                 </div>
 
             </CardText>
 
         )
+    }
+
+    renderbadges(){
+        return <section styleName = 'multiSelector'>
+            <h1>
+                <FormattedMessage
+                    id = 'games.editor.taskDialog.form.inputs.labels.onTaskFinish'
+                    defaultMessage = 'On task finish'
+                    description = 'Graph editor - Tasks Dialog - Form Inputs - Labels - On task finish'
+                />
+            </h1>
+
+            <div styleName='columns'>
+                <Checkbox checked = { this.state.task.giveBadge }
+                          label = { formatMessage(formLabel.giveBadge) }
+                          onChange={ this.handleGiveBadgeChange } />
+
+                <div styleName = 'badges'>
+                    <TooltipedAvatar tooltip = 'tooltip'
+                                     tooltipPosition = 'bottom'
+                                     icon='folder'
+                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                    <TooltipedAvatar tooltip = 'tooltip2'
+                                     tooltipPosition = 'bottom'
+                                     icon='build'
+                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                    <TooltipedAvatar tooltip = 'tooltip3'
+                                     tooltipPosition = 'bottom'
+                                     icon='explore'
+                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                    <TooltipedAvatar tooltip = 'tooltip'
+                                     tooltipPosition = 'bottom'
+                                     icon='folder'
+                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                    <TooltipedAvatar tooltip = 'tooltip2'
+                                     tooltipPosition = 'bottom'
+                                     icon='build'
+                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                    <TooltipedAvatar tooltip = 'tooltip3'
+                                     tooltipPosition = 'bottom'
+                                     icon='explore'
+                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                    <TooltipedAvatar tooltip = 'tooltip'
+                                     tooltipPosition = 'bottom'
+                                     icon='folder'
+                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                    <TooltipedAvatar tooltip = 'tooltip2'
+                                     tooltipPosition = 'bottom'
+                                     icon='build'
+                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                    <TooltipedAvatar tooltip = 'tooltip3'
+                                     tooltipPosition = 'bottom'
+                                     icon='explore'
+                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                    <TooltipedAvatar tooltip = 'tooltip'
+                                     tooltipPosition = 'bottom'
+                                     icon='folder'
+                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                    <TooltipedAvatar tooltip = 'tooltip2'
+                                     tooltipPosition = 'bottom'
+                                     icon='build'
+                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                    <TooltipedAvatar tooltip = 'tooltip3'
+                                     tooltipPosition = 'bottom'
+                                     icon='explore'
+                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
+                </div>
+
+            </div>
+            <div styleName='columns'>
+                <Checkbox checked = { this.state.task.givePoints }
+                          label = { formatMessage(formLabel.givePoints) }
+                          onChange = { this.handleGivePointsChange } />
+
+                <Input styleName = 'noPadding noMargin'
+                       label = { !this.state.task.points && this.state.ui.showPointsLabel && formatMessage(formLabel.numberOfPoints) || ''}
+                       hint = { formatMessage(formLabel.numberOfPoints) }
+                       disabled = { !this.state.task.givePoints }
+                       onChange = { this.handlePointsChange }
+                       onFocus = { this.handlePointsInputFocus }
+                       onBlur = { this.handlePointsInputBlur }
+                       value = { this.state.task.points } />
+            </div>
+
+        </section>
     }
 
     renderRolesSelector(){
@@ -454,11 +497,11 @@ const actionLabel = defineMessages({
                     <IconMenu styleName='rolesSelector' icon='add' position='auto' menuRipple = {false}>
                         {
                             HMBData.roles
-                                .filter(rol => !this.state.task.rolesAllowed.map(rol => rol.id).includes(rol.wfontology_Name))
-                                .map(({wfontology_Name, displayName}) =>
-                                    <MenuItem key = { wfontology_Name }
-                                              caption = { this.getLocalizedRoleNameFromId(wfontology_Name) }
-                                              onClick = { () => this.handleRolesChange(true, {id: wfontology_Name, name: displayName}) }/>
+                                .filter(rol => !this.state.task.rolesAllowed.map(rol => rol .id).includes(rol.name))
+                                .map(({name, displayName}) =>
+                                    <MenuItem key = { name }
+                                              caption = { this.getLocalizedRoleNameFromId(name) }
+                                              onClick = { () => this.handleRolesChange(true, {id: name, name: displayName}) }/>
                                 )
                         }
 
@@ -502,58 +545,78 @@ const actionLabel = defineMessages({
     }
     renderFormActionsForTask(){
         let { selectedTask, intl: {formatMessage}} = this.props
-
-        switch(stringTypeToSymbol(selectedTask.type)){
-            case T.LAST_TASK:
-            case T.INITIAL_TASK:
-                return
-            case T.AUTOMATIC_CHOICE:
-            case T.AND_SPLIT:
-            case T.USER_CHOICE:
-                return (
-                    <CardActions>
-                        <Button
-                            styleName = 'fullWidth'
-                            label = { formatMessage(actionLabel.delete) }
-                            onClick = { this.handleDeleteTaskClick }
-                            raised
-                            accent
-                        />
-                        <Button
-                            styleName = 'fullWidth'
-                            label = { formatMessage(actionLabel.save) }
-                            onClick = { this.handleSaveEdgeClick }
-                            disabled = { !(this.isValid() && this.state.modified) }
-                            raised
-                            accent
-                        />
-                    </CardActions>
-                )
-            default:
-                return (
-                    <CardActions>
-                        <Button
-                            styleName = 'fullWidth'
-                            label = { formatMessage(actionLabel.delete) }
-                            onClick = { this.handleDeleteTaskClick }
-                            raised
-                            accent
-                        />
-                        <Button
-                            styleName = 'fullWidth'
-                            label = { formatMessage(actionLabel.save) }
-                            onClick = { this.handleSaveTaskClick }
-                            disabled = { !(this.isValid() && this.state.modified) }
-                            raised
-                            accent
-                        />
-                    </CardActions>
-                )
+        if(selectedTask !== null){
+            switch(stringTypeToSymbol(selectedTask.type)){
+                case T.LAST_TASK:
+                case T.INITIAL_TASK:
+                case T.AUTOMATIC_CHOICE:
+                case T.AND_SPLIT:
+                case T.USER_CHOICE:
+                    return (
+                        <CardActions>
+                            <Button
+                                styleName = 'fullWidth'
+                                label = { formatMessage(actionLabel.delete) }
+                                onClick = { this.handleDeleteTaskClick }
+                                raised
+                                accent
+                            />
+                            <Button
+                                styleName = 'fullWidth'
+                                label = { formatMessage(actionLabel.save) }
+                                onClick = { this.handleSaveEdgeClick }
+                                disabled = { !(this.isValid() && this.state.modified) }
+                                raised
+                                accent
+                            />
+                        </CardActions>
+                    );
+                default:
+                    return (
+                        <CardActions>
+                            <Button
+                                styleName = 'fullWidth'
+                                label = { formatMessage(actionLabel.delete) }
+                                onClick = { this.handleDeleteTaskClick }
+                                raised
+                                accent
+                            />
+                            <Button
+                                styleName = 'fullWidth'
+                                label = { formatMessage(actionLabel.save) }
+                                onClick = { this.handleSaveTaskClick }
+                                disabled = { !(this.isValid() && this.state.modified) }
+                                raised
+                                accent
+                            />
+                        </CardActions>
+                    )
+            }
+        } else {
+            return <CardActions>
+                <Button
+                    styleName = 'fullWidth'
+                    label = { formatMessage(actionLabel.delete) }
+                    onClick = { this.handleDeleteTaskClick }
+                    disabled={ true }
+                    raised
+                    accent
+                />
+                <Button
+                    styleName = 'fullWidth'
+                    label = { formatMessage(actionLabel.save) }
+                    onClick = { this.handleSaveEdgeClick }
+                    disabled={ true }
+                    raised
+                    accent
+                />
+            </CardActions>
         }
+
     }
     renderFormInputsForOperatorParameters(){
-        let operator = this.props.HMBData.operators.filter(({wfontology_Name}) => wfontology_Name === this.state.task.operator)[0]
-
+        let o = (this.state.task.operator)? this.state.task.operator.name : null
+        let operator = this.props.HMBData.operators.filter(({name}) => name === o)[0]
         if (operator !== undefined && Array.isArray(operator.parameter) && operator.parameter.length > 0)
             return (
                 <div className = { styles.multiSelector }>
@@ -567,41 +630,40 @@ const actionLabel = defineMessages({
                     </h1>
                     <section>
                         {
-                            operator.parameter.map(({ wfontology_Name, wfontology_Type }) => {
-                                switch(wfontology_Type.split('#')[1]){
+                            operator.parameter.map(({ name, mType }) => {
+                                switch(mType.split('#')[1]){
                                     case 'StringType':
-                                        return <Input key = { wfontology_Name }
-                                                      label = { this.getLocalizedParameterNameFromId(wfontology_Name) }
-                                                      value = { this.state.task.parameters[wfontology_Name] || '' }
-                                                      onChange = { value => this.handleParameterValueChange(wfontology_Name, value) } />
+                                        return <Input key = { name }
+                                                      label = { this.getLocalizedParameterNameFromId(name) }
+                                                      value = { this.state.task.parameters[name] || '' }
+                                                      onChange = { value => this.handleParameterValueChange(name, value) } />
                                     case 'IntegerType':
-                                        return <Input key = { wfontology_Name }
+                                        return <Input key = { name }
                                                       type = 'number'
                                                       step = { 1 }
-                                                      label = { this.getLocalizedParameterNameFromId(wfontology_Name) }
-                                                      value = { this.state.task.parameters[wfontology_Name] || '' }
-                                                      onChange = { value => this.handleParameterValueChange(wfontology_Name, value) } />
+                                                      label = { this.getLocalizedParameterNameFromId(name) }
+                                                      value = { this.state.task.parameters[name] || '' }
+                                                      onChange = { value => this.handleParameterValueChange(name, value) } />
                                     case 'FloatType':
-                                        return <Input key = { wfontology_Name }
+                                        return <Input key = { name }
                                                       type = 'number'
                                                       step = { 1 }
-                                                      label = { this.getLocalizedParameterNameFromId(wfontology_Name) }
-                                                      value = { this.state.task.parameters[wfontology_Name] || '' }
-                                                      onChange = { value => this.handleParameterValueChange(wfontology_Name, value) } />
+                                                      label = { this.getLocalizedParameterNameFromId(name) }
+                                                      value = { this.state.task.parameters[name] || '' }
+                                                      onChange = { value => this.handleParameterValueChange(name, value) } />
                                     case 'BooleanType':
-                                        return <Checkbox key = { wfontology_Name }
-                                                         label = { this.getLocalizedParameterNameFromId(wfontology_Name) }
-                                                         checked = { this.state.task.parameters[wfontology_Name] || '' }
-                                                         onChange = { value => this.handleParameterValueChange(wfontology_Name, value) } />
+                                        return <Checkbox key = { name }
+                                                         label = { this.getLocalizedParameterNameFromId(name) }
+                                                         checked = { this.state.task.parameters[name] || '' }
+                                                         onChange = { value => this.handleParameterValueChange(name, value) } />
                                     case 'DateType':
-                                        //TODO fix locale
-                                        return <DatePicker key = { wfontology_Name }
-                                                           label = { this.getLocalizedParameterNameFromId(wfontology_Name) }
-                                                           value = { this.state.task.parameters[wfontology_Name] || '' }
-                                                           onChange = { value => this.handleParameterValueChange(wfontology_Name, value) } />
+                                        return <DatePicker key = { name }
+                                                           label = { this.getLocalizedParameterNameFromId(name) }
+                                                           value = { this.state.task.parameters[name] || '' }
+                                                           onChange = { value => this.handleParameterValueChange(name, value) } />
                                     default:
-                                        return <span key = { wfontology_Name }>
-                                            Parameter type [{ wfontology_Type.split('#')[1].toUpperCase() }] not suported yet
+                                        return <span key = { name }>
+                                            Parameter type [{ mType.split('#')[1].toUpperCase() }] not suported yet
                                         </span>
                                 }
                             })
@@ -610,76 +672,108 @@ const actionLabel = defineMessages({
                 </div>
             )
     }
+
+    handleToggleTaskDialog(){
+        if(this.state.label === "▾") this.setState(prevState => ({label: "▴"}))
+        else this.setState(prevState => ({label: "▾"}))
+        this.props.toggleTaskDialog();
+    }
+
     renderFormInputsForTask(){
-        let { selectedTask, intl: {formatMessage}} = this.props
-        switch(stringTypeToSymbol(selectedTask.type)){
-            case T.INITIAL_TASK:
-                return (
-                    <CardText>
-                        <Input
-                            label = { formatMessage(formLabel.name) }
-                            value = { formatMessage(values.initialTaskName) }
-                            disabled
-                        />
+        let { selectedTask, intl: {formatMessage}} = this.props;
+        if( selectedTask != null){
+            switch(stringTypeToSymbol(selectedTask.type)){
+                case T.INITIAL_TASK:
+                    return (
+                        <CardText styleName='inputs'>
+                            <Input
+                                label = { formatMessage(formLabel.name) }
+                                value = { formatMessage(values.initialTaskName) }
+                                disabled
+                            />
+                        </CardText>
+                    );
+                case T.LAST_TASK:
+                    return (
+                        <CardText styleName='inputs'>
+                            <Input
+                                label = { formatMessage(formLabel.name) }
+                                value = { formatMessage(values.lastTaskName) }
+                                disabled
+                            />
+                        </CardText>
+                    );
+                case T.LOOP:
+                    return (
+                        <CardText styleName='inputs'>
+                            <Input
+                                label = { formatMessage(formLabel.condition) }
+                                value = { this.state.task.condition }
+                                onChange = { this.handleConditionChange }
+                            />
+                        </CardText>
+                    );
+                case T.AND_SPLIT:
+                case T.AUTOMATIC_CHOICE:
+                    return (
+                        <CardText styleName = 'inputs'>
+                            <Input
+                                label = { formatMessage(formLabel.condition) }
+                                value = { this.state.task.condition }
+                                onChange = { this.handleConditionChange }
+                            />
+                            <Checkbox checked = { this.state.task.isTransitable }
+                                      label = { formatMessage(formLabel.isTransitable) }
+                                      onChange = { this.handleIsTransitableChange } />
+                            <Checkbox checked = { this.state.task.isRequired }
+                                      label = { formatMessage(formLabel.isRequired) }
+                                      onChange = { this.handleIsRequiredChange } />
+                            <Checkbox checked = { this.state.task.isDisabled }
+                                      label = { formatMessage(formLabel.isDisabled) }
+                                      onChange = { this.handleIsDisabledChange } />
+                        </CardText>
+                    );
+                case T.USER_CHOICE:
+                    return (
+                        <CardText styleName = 'inputs'>
+                            <Checkbox checked = { this.state.task.isTransitable }
+                                      label = { formatMessage(formLabel.isTransitable) }
+                                      onChange = { this.handleIsTransitableChange } />
+                            <Checkbox checked = { this.state.task.isRequired }
+                                      label = { formatMessage(formLabel.isRequired) }
+                                      onChange = { this.handleIsRequiredChange } />
+                            <Checkbox checked = { this.state.task.isDisabled }
+                                      label = { formatMessage(formLabel.isDisabled) }
+                                      onChange = { this.handleIsDisabledChange } />
+                        </CardText>
+                    );
+                case T.AUTOMATIC_CHOICE_END:
+                case T.USER_CHOICE_END:
+                case T.LOOP_END:
+                case T.AND_SPLIT_END:
+                    return <CardText styleName = 'inputs'>
                     </CardText>
-                )
-            case T.LAST_TASK:
-                return (
-                    <CardText>
-                        <Input
-                            label = { formatMessage(formLabel.name) }
-                            value = { formatMessage(values.lastTaskName) }
-                            disabled
-                        />
-                    </CardText>
-                )
-            case T.LOOP:
-                return (
-                    <CardText>
-                        <Input
-                            label = { formatMessage(formLabel.condition) }
-                            value = { this.state.task.condition }
-                            onChange = { this.handleConditionChange }
-                        />
-                    </CardText>
-                )
-            case T.AND_SPLIT:
-            case T.AUTOMATIC_CHOICE:
-                return (
-                    <CardText>
-                        <Input
-                            label = { formatMessage(formLabel.condition) }
-                            value = { this.state.task.condition }
-                            onChange = { this.handleConditionChange }
-                        />
-                        <Checkbox checked = { this.state.task.isTransitable }
-                                  label = { formatMessage(formLabel.isTransitable) }
-                                  onChange = { this.handleIsTransitableChange } />
-                    </CardText>
-                )
-            case T.USER_CHOICE:
-                return (
-                    <CardText>
-                        <Checkbox checked = { this.state.task.isTransitable }
-                                  label = { formatMessage(formLabel.isTransitable) }
-                                  onChange = { this.handleIsTransitableChange } />
-                    </CardText>
-                )
-            case T.USER_TASK:
-                return this.renderUserTaskDialog()
-            case T.AUTOMATIC_TASK:
-                return this.renderUserTaskDialog()
+                case T.USER_TASK:
+                case T.AUTOMATIC_TASK:
+                    return this.renderUserTaskDialog();
+            }
+        } else {
+            return <CardText styleName='inputs'>
+                <p>{ formatMessage(values.noTask) }</p>
+            </CardText>
         }
     }
 
     render(){
-        let {className, minimized} = this.props
+        let {className} = this.props;
 
-        if (!minimized)
-            return <Card raised className = {className} styleName = 'taskDialog'>
-                { this.renderFormInputsForTask() }
-                { this.renderFormActionsForTask() }
-            </Card>
+        return <Card raised className = {className} styleName = 'taskDialog'>
+            <Button
+                styleName='toggleButton'
+                label = { this.state.label }
+                onClick = { () => this.handleToggleTaskDialog() }/>
+            { this.renderFormInputsForTask() }
+            { this.renderFormActionsForTask() }</Card>
     }
 }
 

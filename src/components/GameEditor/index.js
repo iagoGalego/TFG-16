@@ -22,6 +22,7 @@ function mapStateToProps(state) {
         language: state.UIState.language,
         canUndo: state.GameEditorState.past.length,
         canRedo: state.GameEditorState.future.length,
+        isClean: state.GameEditorState.present.isClean
     }
 }
 

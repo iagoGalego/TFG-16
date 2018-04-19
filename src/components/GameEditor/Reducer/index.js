@@ -2,6 +2,7 @@ import TYPES from '../Actions/types'
 import undoable, { excludeAction } from 'redux-undo'
 import UUID from "uuid";
 import {DateType, Metadata, SequenceFlow, WorkflowTrigger} from "../../../common/lib/model";
+import Translator from "../../../common/lib/model/translator";
 
 const InitialState = {
     workflow : {
@@ -28,11 +29,17 @@ const InitialState = {
             {
                 id: 'start',
                 type: 'start',
+                isInitial: true,
+                isDisabled: false,
+                isRequired: true,
                 x: 100,
                 y: 250
             }, {
                 id: 'end',
                 type: 'end',
+                isFinal: true,
+                isDisabled: false,
+                isRequired: true,
                 x: 1300,
                 y: 250
             }
@@ -40,21 +47,55 @@ const InitialState = {
         links: [
             {
                 from: 'start',
-                to: 'end'
+                fromLevel: 0,
+                to: 'end',
+                toLevel: 0,
             }
         ]
     },
     selectedTask : null,
+    isClean: true
 };
 
 function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {type:'', payload: {}}){
     let newState, id1 = UUID.v4(), id2 = UUID.v4();
     switch (type){
-        case TYPES.SAVE:
-            alert(JSON.stringify(payload.workflow));
-            return {
-                ...state
+        case TYPES.SET_CLEAN:
+            newState = {
+                ...state,
+                isClean: payload.clean
             };
+            return newState;
+        case TYPES.SAVE:
+            let metadata = new Metadata();
+            metadata.name = payload.workflow.metadata.name;
+            metadata.metadataValue = payload.workflow.metadata.metadataValue;
+            let designer = {
+                name: payload.workflow.designer,
+                email: payload.workflow.designer,
+                completeName: payload.workflow.designer,
+                passwordSHA: payload.workflow.designer,
+                globalTagReference: [payload.workflow.designer],
+                metadata: [],
+            };
+
+            newState = {
+                ...state,
+                workflow: {
+                    ...state.workflow,
+                    name: payload.workflow.name,
+                    description: payload.workflow.description,
+                    startDate: payload.workflow.startDate,
+                    expiryDate: payload.workflow.expiryDate,
+                    metadata: state.workflow.metadata,
+                    modificationDate: payload.workflow.modificationDate,
+                    provider: payload.workflow.provider,
+                    designer: designer
+                }
+            };
+            newState.workflow.metadata.push(metadata)
+            alert(JSON.stringify(Translator.toOpenetFormat(newState)));
+            return newState;
         case TYPES.CLEAR_DIAGRAM:
             newState = {
                 ...state,
@@ -88,13 +129,13 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                                     {id: id2, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.to).x, y: payload.task.y, start: id1}
                                 ],
                                 links: [...state.graph.links.filter(({from, to}) => from !== payload.link.from || to !== payload.link.to),
-                                    {from: payload.link.from, to: payload.link.to, isBase: true, counter: newCounter },
-                                    {from: payload.task.id, to: close.task.id, isLoop: true, counter: 0},
-                                    {from: close.task.id, to: payload.task.id, type: 'return'},
-                                    {from: payload.link.from, to: id1, type: "verticalStart", level: newCounter },
-                                    {from: id1, to: payload.task.id, type: "parallelStart", level: newCounter },
-                                    {from: close.task.id, to: id2, type: "parallelEnd", level: newCounter },
-                                    {from: id2, to: payload.link.to, type: "verticalEnd", level: newCounter }
+                                    {from: payload.link.from, to: payload.link.to, isBase: true, counter: newCounter, fromLevel: 0, toLevel: 0 },
+                                    {from: payload.task.id, to: close.task.id, isLoop: true, counter: 0, fromLevel: 1, toLevel: 1, reverse: true},
+                                    {from: close.task.id, to: payload.task.id, type: 'return', fromLevel: 0, toLevel: 0, reverse: true},
+                                    {from: payload.link.from, to: id1, type: "verticalStart", level: newCounter, fromLevel: newCounter, toLevel: 0 },
+                                    {from: id1, to: payload.task.id, type: "parallelStart", level: newCounter, fromLevel: newCounter, toLevel: 0 },
+                                    {from: close.task.id, to: id2, type: "parallelEnd", level: newCounter, fromLevel: 0, toLevel: newCounter },
+                                    {from: id2, to: payload.link.to, type: "verticalEnd", level: newCounter, fromLevel: 0, toLevel: newCounter }
                                 ]
                             },
                             selectedTask: payload.task,
@@ -110,12 +151,12 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                                     {id: id2, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.to).x, y: payload.task.y, start: id1}
                                 ],
                                 links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
-                                    {from: payload.task.id, to: close.task.id, isLoop: true, counter: 0},
-                                    {from: close.task.id, to: payload.task.id, type: 'return'},
-                                    {from: payload.link.from, to: id1, type: "verticalStart", level: newCounter },
-                                    {from: id1, to: payload.task.id, type: "parallelStart", level: newCounter },
-                                    {from: close.task.id, to: id2, type: "parallelEnd", level: newCounter },
-                                    {from: id2, to: payload.link.to, type: "verticalEnd", level: newCounter }
+                                    {from: payload.task.id, to: close.task.id, isLoop: true, counter: 0, fromLevel: 1, toLevel: 1, reverse: true},
+                                    {from: close.task.id, to: payload.task.id, type: 'return', fromLevel: 0, toLevel: 0, reverse: true},
+                                    {from: payload.link.from, to: id1, type: "verticalStart", level: newCounter , fromLevel: newCounter, toLevel: 0},
+                                    {from: id1, to: payload.task.id, type: "parallelStart", level: newCounter , fromLevel: newCounter, toLevel: 0},
+                                    {from: close.task.id, to: id2, type: "parallelEnd", level: newCounter, fromLevel: 0, toLevel: newCounter },
+                                    {from: id2, to: payload.link.to, type: "verticalEnd", level: newCounter, fromLevel: 0, toLevel: newCounter }
                                 ]
                             },
                             selectedTask: payload.task,
@@ -129,10 +170,10 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                                     close.task
                                 ],
                                 links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
-                                    {from: payload.link.from, to: payload.task.id},
-                                    {from: payload.task.id, to: close.task.id, isLoop: true, counter: 0},
-                                    {from: close.task.id, to: payload.task.id, type: 'return'},
-                                    {from: close.task.id, to: payload.link.to}
+                                    {from: payload.link.from, to: payload.task.id, fromLevel: 0, toLevel: 0},
+                                    {from: payload.task.id, to: close.task.id, isLoop: true, counter: 0, fromLevel: 1, toLevel: 1, reverse: true},
+                                    {from: close.task.id, to: payload.task.id, type: 'return', fromLevel: 0, toLevel: 0, reverse: true},
+                                    {from: close.task.id, to: payload.link.to, fromLevel: 0, toLevel: 0}
                                 ]
                             },
                             selectedTask: payload.task,
@@ -151,12 +192,12 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                                     {id: id2, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.to).x, y: payload.task.y,start: id1}
                                 ],
                                 links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
-                                    {from: payload.link.from, to: payload.link.to, isBase: true, counter: newCounter },
-                                    {from: payload.task.id, to: close.task.id, isBase: true, counter: 0},
-                                    {from: payload.link.from, to: id1, type: "verticalStart", level: newCounter },
-                                    {from: id1, to: payload.task.id, type: "parallelStart", level: newCounter },
-                                    {from: close.task.id, to: id2, type: "parallelEnd", level: newCounter },
-                                    {from: id2, to: payload.link.to, type: "verticalEnd", level: newCounter }
+                                    {from: payload.link.from, to: payload.link.to, isBase: true, counter: newCounter , fromLevel: 0, toLevel: 0},
+                                    {from: payload.task.id, to: close.task.id, isBase: true, counter: 0, fromLevel: 0, toLevel: 0},
+                                    {from: payload.link.from, to: id1, type: "verticalStart", level: newCounter, fromLevel: newCounter, toLevel: 0 },
+                                    {from: id1, to: payload.task.id, type: "parallelStart", level: newCounter, fromLevel: newCounter, toLevel: 0 },
+                                    {from: close.task.id, to: id2, type: "parallelEnd", level: newCounter, fromLevel: 0, toLevel: newCounter },
+                                    {from: id2, to: payload.link.to, type: "verticalEnd", level: newCounter, fromLevel: 0, toLevel: newCounter }
                                 ]
                             },
                             selectedTask: payload.task,
@@ -173,11 +214,11 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                                     {id: id2, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.to).x, y: payload.task.y, start: id1,}
                                 ],
                                 links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
-                                    {from: payload.task.id, to: close.task.id, isBase: true, counter: 0},
-                                    {from: payload.link.from, to: id1, type: "verticalStart", level: newCounter },
-                                    {from: id1, to: payload.task.id, type: "parallelStart", level: newCounter },
-                                    {from: close.task.id, to: id2, type: "parallelEnd", level: newCounter },
-                                    {from: id2, to: payload.link.to, type: "verticalEnd", level: newCounter }
+                                    {from: payload.task.id, to: close.task.id, isBase: true, counter: 0, fromLevel: 0, toLevel: 0},
+                                    {from: payload.link.from, to: id1, type: "verticalStart", level: newCounter, fromLevel: newCounter, toLevel: 0 },
+                                    {from: id1, to: payload.task.id, type: "parallelStart", level: newCounter, fromLevel: newCounter, toLevel: 0 },
+                                    {from: close.task.id, to: id2, type: "parallelEnd", level: newCounter, fromLevel: 0, toLevel: newCounter },
+                                    {from: id2, to: payload.link.to, type: "verticalEnd", level: newCounter, fromLevel: 0, toLevel: newCounter }
                                 ]
                             },
                             selectedTask: payload.task,
@@ -191,9 +232,9 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                                     close.task
                             ],
                                 links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
-                                    {from: payload.link.from, to: payload.task.id},
-                                    {from: payload.task.id, to: close.task.id, isBase: true, counter: 0},
-                                    {from: close.task.id, to: payload.link.to}
+                                    {from: payload.link.from, to: payload.task.id, fromLevel: 0, toLevel: 0},
+                                    {from: payload.task.id, to: close.task.id, isBase: true, counter: 0, fromLevel: 0, toLevel: 0},
+                                    {from: close.task.id, to: payload.link.to, fromLevel: 0, toLevel: 0}
                                 ]
                             },
                             selectedTask: payload.task,
@@ -212,11 +253,11 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                                 {id: id2, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.to).x, y: payload.task.y, start: id1}
                             ],
                             links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
-                                {from: payload.link.from, to: payload.link.to, isBase: true, counter: newCounter },
-                                {from: payload.link.from, to: id1, type: "verticalStart", level: newCounter },
-                                {from: id1, to: payload.task.id, type: "parallelStart", level: newCounter },
-                                {from: payload.task.id, to: id2, type: "parallelEnd", level: newCounter },
-                                {from: id2, to: payload.link.to, type: "verticalEnd", level: newCounter }
+                                {from: payload.link.from, to: payload.link.to, isBase: true, counter: newCounter, fromLevel: 0, toLevel: 0 },
+                                {from: payload.link.from, to: id1, type: "verticalStart", level: newCounter, fromLevel: newCounter, toLevel: 0 },
+                                {from: id1, to: payload.task.id, type: "parallelStart", level: newCounter, fromLevel: newCounter, toLevel: 0 },
+                                {from: payload.task.id, to: id2, type: "parallelEnd", level: newCounter, fromLevel: 0, toLevel: newCounter },
+                                {from: id2, to: payload.link.to, type: "verticalEnd", level: newCounter, fromLevel: 0, toLevel: newCounter }
                             ]
                         },
                         selectedTask: payload.task,
@@ -232,10 +273,10 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                                 {id: id2, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.to).x,y: payload.task.y, start: id1}
                             ],
                             links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
-                                {from: payload.link.from, to: id1, type: "verticalStart", level: newCounter },
-                                {from: id1, to: payload.task.id, type: "parallelStart", level: newCounter },
-                                {from: payload.task.id, to: id2, type: "parallelEnd", level: newCounter },
-                                {from: id2, to: payload.link.to, type: "verticalEnd", level: newCounter }
+                                {from: payload.link.from, to: id1, type: "verticalStart", level: newCounter, fromLevel: newCounter, toLevel: 0 },
+                                {from: id1, to: payload.task.id, type: "parallelStart", level: newCounter, fromLevel: newCounter, toLevel: 0 },
+                                {from: payload.task.id, to: id2, type: "parallelEnd", level: newCounter, fromLevel: 0, toLevel: newCounter },
+                                {from: id2, to: payload.link.to, type: "verticalEnd", level: newCounter, fromLevel: 0, toLevel: newCounter }
                             ]
                         },
                         selectedTask: payload.task,
@@ -249,8 +290,8 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                                 payload.task
                             ],
                             links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
-                                {from: payload.link.from, to: payload.task.id},
-                                {from: payload.task.id, to: payload.link.to}
+                                {from: payload.link.from, to: payload.task.id, fromLevel: 0, toLevel: 0},
+                                {from: payload.task.id, to: payload.link.to, fromLevel: 0, toLevel: 0}
                             ]
                         },
                         selectedTask: payload.task,
@@ -289,7 +330,7 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                 if(nodes.find(({id}) => (id === linkToNode.from)).type === 'invisible' && nodes.find(({id}) => (id === linkFromEnd.to)).type === 'invisible' ){
                     let nodeEnd = nodes.find(({id}) => (id === links.find(({from}) => (from === nodes.find(({id}) => (id === nodes.find(({id}) => (id === linkFromEnd.to)).id)).id )).to))
                     if(nodeEnd.type === 'loopEnd'){
-                        links.push({from: nodeEnd.start, to: nodeEnd.id, isLoop: true, counter: 0})
+                        links.push({from: nodeEnd.start, to: nodeEnd.id, isLoop: true, counter: 0, fromLevel: 1, toLevel: 1})
                     } else{
                         links.find(({from, to}) => (from === nodeEnd.start && to === nodeEnd.id)).counter--
                     }
@@ -304,7 +345,7 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                     nodes = nodes.filter(({id}) => (id !== nodes.find(({id}) => (id === linkFromEnd.to)).id))
                 } else {
                     //si no lo estaba pone enlace
-                    let newLink = {from: linkToNode.from, to: linkFromEnd.to};
+                    let newLink = {from: linkToNode.from, to: linkFromEnd.to, fromLevel: 0, toLevel: 0};
                     links.push(newLink)
                 }
 
@@ -325,7 +366,7 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                     nodes.find(({id}) => (id === linkFromEnd.to)).type === 'invisible' ){
                     let x = nodes.find(({id}) => (id === links.find(({from}) => (from === nodes.find(({id}) => (id === nodes.find(({id}) => (id === linkFromEnd.to)).id)).id )).to))
                     if(x.type === 'loopEnd'){
-                        links.push({from: x.start, to: x.id, isLoop: true, counter: 0})
+                        links.push({from: x.start, to: x.id, isLoop: true, counter: 0, fromLevel: 1, toLevel: 1})
                     } else{
                         links.find(({from, to}) => (from === x.start && to === x.id)).counter--
                     }
@@ -336,7 +377,7 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                     nodes = nodes.filter(({id}) => (id !== nodes.find(({id}) => (id === linkToNode.from)).id));
                     nodes = nodes.filter(({id}) => (id !== nodes.find(({id}) => (id === linkFromEnd.to)).id));
                 } else {
-                    let newLink = {from: linkToNode.from, to: linkFromEnd.to};
+                    let newLink = {from: linkToNode.from, to: linkFromEnd.to, fromLevel: 0, toLevel: 0};
                     links.push(newLink)
                 }
             } else{
@@ -350,7 +391,7 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
 
                     let x = nodes.find(({id}) => (id === links.find(({from}) => (from === nodes.find(({id}) => (id === nodes.find(({id}) => (id === linkFromNode.to)).id)).id )).to))
                     if(x.type === 'loopEnd'){
-                        links.push({from: x.start, to: x.id, isLoop: true, counter: 0})
+                        links.push({from: x.start, to: x.id, isLoop: true, counter: 0, fromLevel: 1, toLevel: 1})
                     } else{
                         links.find(({from, to}) => (from === x.start && to === x.id)).counter--
                     }
@@ -360,7 +401,7 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                     nodes = nodes.filter(({id}) => (id !== nodes.find(({id}) => (id === linkToNode.from)).id))
                     nodes = nodes.filter(({id}) => (id !== nodes.find(({id}) => (id === linkFromNode.to)).id))
                 } else {
-                    let newLink = {from: linkToNode.from, to: linkFromNode.to};
+                    let newLink = {from: linkToNode.from, to: linkFromNode.to, fromLevel: 0, toLevel: 0};
                     links.push(newLink)
                 }
             }
@@ -373,7 +414,7 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                 }
             }
             relocate(newState.graph, newState.graph.nodes.find(({id}) => (id === 'start')), newState.graph.nodes.find(({id}) => (id === 'end')))
-            return newState
+            return newState;
         case TYPES.SAVE_TASK:
             return {
                 ...state,
@@ -394,15 +435,28 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                 }
             };
         case TYPES.SAVE_EDGE:
-            let destiny = state.graph.nodes.find(({start}) => start === payload.task.id);
+            let destiny = Object.assign({}, state.graph.nodes.find(({start}) => start === payload.task.id));
             let link = Object.assign({}, state.graph.links.find(({from, to}) => from === payload.task.id && to === destiny.id));
-            if(payload.task.isTransitable) link.isTransitable = true;
-            else  delete link.isTransitable;
+            if(payload.task.isTransitable) {
+                link.isTransitable = true;
+                link.counter++;
+            }
+            else {
+                delete link.isTransitable;
+                link.counter--;
+            }
+            destiny.isDisabled = payload.task.isDisabled;
             return {
                 ...state,
                 graph: {
-                    nodes: [...state.graph.nodes.filter(({id}) => id !== payload.task.id), payload.task],
-                    links: [...state.graph.links.filter(({from, to}) => from !== link.from || to !== link.to), link]
+                    nodes: [
+                        ...state.graph.nodes.filter(({id}) => id !== payload.task.id && id !== destiny.id),
+                        payload.task,
+                        destiny],
+                    links: [
+                        ...state.graph.links.filter(({from, to}) => from !== link.from || to !== link.to),
+                        link
+                    ]
                 }
             };
         default:
@@ -411,7 +465,7 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
 }
 
 export default undoable(GameEditorReducer, {
-    filter: excludeAction([TYPES.SET_SELECTED_TASK, TYPES.MOVE_TASK, TYPES.SAVE]),
+    filter: excludeAction([TYPES.SET_SELECTED_TASK, TYPES.MOVE_TASK, TYPES.SAVE, TYPES.SET_CLEAN]),
     undoType: TYPES.UNDO,
     redoType: TYPES.REDO,
     initTypes: ['@@redux-undo/GameEditor/INIT']
@@ -439,12 +493,13 @@ function createCloseNode(payload) {
         },
         link: {
             from: payload.task.id,
-            to: payload.link.to
+            to: payload.link.to,
+            fromLevel: 0,
+            toLevel: 0
         }
     };
 }
 
-//Check undo/redo
 function recursiveDelete(state,task, endId) {
     let linksFromNode, actualNode, newNodes = [task];
     while (newNodes.length !== 0){

@@ -1,12 +1,42 @@
 @import '../../../common/styles/theme';
 
 .taskDialog{
-  overflow: visible;
-  width: 840px;
-
+  width: 420px;
+  height: 95%;
 
   textarea {
     resize: none;
+  }
+}
+
+.toggleButton{
+  font-size: 20px;
+  background-color: #ffc400;
+  &:hover{
+    background-color: #e3ae00 !important;
+  }
+}
+
+.inputs{
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 420px;
+  height: 95%;
+
+  p{
+    text-align: center;
+    position: relative;
+    top: 50%;
+    color: rgba(0,0,0,.25);
+    font-style: italic;
+  }
+  span{
+    color: rgba(0,0,0,.25)!important;
+  }
+  label {
+    div{
+      border-color: rgba(0,0,0,.25)!important;
+    }
   }
 }
 
@@ -99,6 +129,21 @@
     &>span{
       font-size: 14px;
       line-height: 2rem;
+    }
+  }
+}
+
+.checkbox{
+  text-align: center;
+
+  span{
+    color: rgba(0,0,0,.25)!important;
+  }
+  label {
+    margin: 10px;
+    display: inline!important;
+    div{
+      border-color: rgba(0,0,0,.25)!important;
     }
   }
 }
