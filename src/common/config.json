@@ -41,6 +41,10 @@
     }
   },
 
+  "questionnairesApi" : {
+    "baseURL" : "http://localhost:8080"
+  },
+
   "sentry": {
     "url" : "http://38b0abb189c846bbb23ce34e115b5933@172.16.244.216:81/3"
   }

@@ -6,12 +6,6 @@ import LOGIN_TYPES from './types'
 import HMBAPI from '../../../common/lib/API'
 import { Logger, LEVELS } from '../../../common/lib/Logger'
 
-function requestAPICall(){
-    return {
-        type: LOGIN_TYPES.REQUEST
-    }
-}
-
 function loginSuccess() {
     return {
         type: LOGIN_TYPES.REQUEST_SUCCESS,
@@ -29,6 +23,12 @@ function logoutSuccess() {
             isAuthenticated: false,
             hasLoggedOut: true
         }
+    }
+}
+
+function requestAPICall(){
+    return {
+        type: LOGIN_TYPES.REQUEST
     }
 }
 

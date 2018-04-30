@@ -5,16 +5,22 @@ import { FormattedMessage, injectIntl, defineMessages } from 'react-intl'
 import styles from './styles.scss'
 import {connect} from "react-redux";
 import {bindActionCreators} from "redux";
-import {setTitle} from "../Layout/Actions";
 import { List, ListItem, ListSubHeader } from 'react-toolbox/lib/list';
+import Chip from 'react-toolbox/lib/chip'
 import Input from 'react-toolbox/lib/input';
 import Autocomplete from 'react-toolbox/lib/autocomplete';
 import { autobind } from 'core-decorators'
-import ROLE_NAME from "../../common/lib/model/RoleNames";
-import Button from 'react-toolbox/lib/button'
+import {Button, IconButton} from 'react-toolbox/lib/button';
+import { Route } from "react-router-dom";
 import QuestionnaireDialog from '../QuestionnaireDialog'
+import ProgressBar from 'react-toolbox/lib/progress_bar';
 import ReactDOM from "react-dom";
 import Questionnaires from "../Questionnaires";
+import {
+    getAllQuestionnaires, saveQuestionnaire, deleteQuestionnaire, getQuestionnairesByName,
+    setSelectedQuestionnaire, getAllTags, getTagsByName
+} from "./Actions";
+import {setTitle} from "../Layout/Actions";
 
 const messages = defineMessages({
     title : {
@@ -24,17 +30,19 @@ const messages = defineMessages({
     }
 });
 
-@connect(() => {return {}}, (dispatch) => {return {setAppTitle: bindActionCreators(setTitle, dispatch)}})
+@connect(mapStateToProps, mapDispatchToProps)
 @CSSModules(styles, {allowMultiple: true})
-@autobind class GameList extends Component {
+@autobind class QuestionnairesList extends Component {
     constructor(props){
         super(props);
 
         this.state = {
             tagsAllowed: [],
+            tag: '',
             isDisabled: false,
             activeDialog: false,
-            tags: []
+            name: '',
+            loading: true
         }
     }
 
@@ -45,133 +53,47 @@ const messages = defineMessages({
         HMBData: {
             tags: [
                 {
-                    "@class": "es.usc.citius.hmb.model.Tag",
-                    "isLoaded": true,
-                    "provider": "es.usc.citius.hmb.questionnaires",
-                    "user": [],
-                    "name": "gameadmin",
-                    "isSubTagOf": [
-                        {
-                            "@class": "es.usc.citius.hmb.model.Tag",
-                            "isLoaded": true,
-                            "provider": null,
-                            "user": [],
-                            "name": "admin",
-                            "isSubTagOf": [],
-                            "displayName": "Administrator",
-                            "uri": "http://citius.usc.es/hmb/questionnaires.owl#Tag_Admin"
-                        }
-                    ],
-                    "displayName": "Game admin",
-                    "uri": "http://citius.usc.es/hmb/questionnaires.owl#Tag_GameAdmin"
+                    "displayName": "POO",
+                    "uri": "POO"
                 },
                 {
-                    "@class": "es.usc.citius.hmb.model.Tag",
-                    "isLoaded": true,
-                    "provider": null,
-                    "user": [],
-                    "name": "admin",
-                    "isSubTagOf": [],
-                    "displayName": "Admin",
-                    "uri": "http://citius.usc.es/hmb/questionnaires.owl#Tag_Admin"
+                    "displayName": "AOS",
+                    "uri": "AOS"
                 },
                 {
-                    "@class": "es.usc.citius.hmb.model.Tag",
-                    "isLoaded": true,
-                    "provider": "es.usc.citius.hmb.questionnaires",
-                    "user": [],
-                    "name": "gameuser",
-                    "isSubTagOf": [
-                        {
-                            "@class": "es.usc.citius.hmb.model.Tag",
-                            "isLoaded": true,
-                            "provider": null,
-                            "user": [],
-                            "name": "user",
-                            "isSubTagOf": [],
-                            "displayName": "User",
-                            "uri": "http://citius.usc.es/hmb/questionnaires.owl#Tag_User"
-                        }
-                    ],
-                    "displayName": "Game User",
-                    "uri": "http://citius.usc.es/hmb/questionnaires.owl#Tag_GameUser"
+                    "displayName": "OXE",
+                    "uri": "OXE"
                 },
-                {
-                    "@class": "es.usc.citius.hmb.model.Tag",
-                    "isLoaded": true,
-                    "provider": null,
-                    "user": [],
-                    "name": "user",
-                    "isSubTagOf": [],
-                    "displayName": "User",
-                    "uri": "http://citius.usc.es/hmb/questionnaires.owl#Tag_User"
-                },
-                {
-                    "@class": "es.usc.citius.hmb.model.Tag",
-                    "isLoaded": true,
-                    "provider": null,
-                    "user": [],
-                    "name": "root",
-                    "isSubTagOf": [],
-                    "displayName": "Root",
-                    "uri": "http://citius.usc.es/hmb/questionnaires.owl#Tag_Root"
-                },
-                {
-                    "@class": "es.usc.citius.hmb.model.Tag",
-                    "isLoaded": true,
-                    "provider": "es.usc.citius.hmb.questionnaires",
-                    "user": [],
-                    "name": "useradmin",
-                    "isSubTagOf": [
-                        {
-                            "@class": "es.usc.citius.hmb.model.Tag",
-                            "isLoaded": true,
-                            "provider": null,
-                            "user": [],
-                            "name": "admin",
-                            "isSubTagOf": [],
-                            "displayName": "Administrator",
-                            "uri": "http://citius.usc.es/hmb/questionnaires.owl#Tag_Admin"
-                        }
-                    ],
-                    "displayName": "User admin",
-                    "uri": "http://citius.usc.es/hmb/questionnaires.owl#Tag_UserAdmin"
-                }],
+            ],
         }
     };
 
-    componentWillMount(){
+    componentDidMount(){
+        this.props.getAllTags();
+        this.props.getAllQuestionnaires();
+        this.setState(prevState => ({...prevState, loading: false}))
         this.props.setAppTitle(this.props.intl.formatMessage(messages.title))
     }
 
-    handleToggleDialog = () => {
+    handleToggleDialog() {
         this.setState(prevState => ({...prevState, activeDialog: !this.state.activeDialog}));
     };
 
-    getLocalizedRoleNameFromId(id){
-        let {intl: {formatMessage}} = this.props;
-
-        let defaultRole = this.props.HMBData.tags.filter(rol => rol.name === id)[0]
-        let defaultRoleName = ( defaultRole !== undefined && defaultRole.displayName ) || id
-
-        return (ROLE_NAME[id] && formatMessage(ROLE_NAME[id])) || defaultRoleName
+    handleDelete(value){
+        this.setState(prevState => ({...prevState, loading: true}));
+        this.props.deleteQuestionnaire(value);
+        this.setState(prevState => ({...prevState, loading: false}));
     }
 
-    handleRolesChange(value, tag){
-        if(value && tag.id === 'all')
-            this.setState(prevState => ({
-                    tagsAllowed: this.props.HMBData.tags.map(({name, displayName}) => ({
-                        id: name,
-                        name: displayName
-                    }))
-            }))
-        else if (value)
-            this.setState(prevState => ({tagsAllowed: [...prevState.tagsAllowed, tag]}))
-        else if (tag.id === 'all')
-            this.setState(prevState => ({tagsAllowed: []}));
-        else
-            this.setState(prevState => ({tagsAllowed: prevState.tagsAllowed.filter(({id}) => id !== tag.id)}))
-
+    searchQuestionnaires(name, tags){
+        let st = '';
+        for(let i = 0; i < tags.length; i++){
+            if(i === 0 && tags[0] !== 'all') st += tags[i];
+            else if(i !== 0) st += ","+ tags[i]
+        }
+        this.setState(prevState => ({...prevState, loading: true}))
+        this.props.getQuestionnairesByName(name, st)
+        this.setState(prevState => ({...prevState, loading: false}))
     }
 
     handleTagsChange(value){
@@ -180,14 +102,111 @@ const messages = defineMessages({
             disabled = true;
             this.setState(prevState => ({tagsAllowed: tag, isDisabled: disabled}));
             ReactDOM.findDOMNode(this.__autocomplete).classList.remove(styles['autocomplete']);
+            this.searchQuestionnaires(this.state.name,[]);
         }
         else {
             disabled = false;
             this.setState(prevState => ({tagsAllowed: value, isDisabled: disabled}));
             ReactDOM.findDOMNode(this.__autocomplete).classList.add(styles['autocomplete']);
+            this.searchQuestionnaires(this.state.name, value);
         }
         document.getElementsByTagName("input")[1].disabled = disabled
 
+    }
+
+    nameChange(value) {
+        this.setState((previousState) => {
+            return {
+                ...previousState,
+                name: value,
+            }
+        });
+        this.searchQuestionnaires(value, this.state.tagsAllowed);
+    }
+
+    handleSelectQuestionnaire(uri){
+        this.props.selectQuestionnaire(uri)
+    }
+
+    renderTagsAndActions(questionnaire){
+        let response = [];
+        for(let i = 0; i < questionnaire.tags.length; i++){
+            response.push(
+                <Chip
+                    key = { `${questionnaire.tags[i].value.stringValue}-chip` }>
+                    { questionnaire.tags[i].value.stringValue }
+                </Chip>
+            )
+        }
+        response.push(
+            <Route
+                key = { `${questionnaire.uri}-route` }
+                render={({ history}) => (
+                <IconButton
+                    icon="edit"
+                    key = { `${questionnaire.uri}-edit` }
+                    onClick={ () => {
+                        this.handleSelectQuestionnaire(questionnaire.uri);
+                        history.push('/app/questionnaires/edit')
+                    }}
+                />
+            )}/>
+        );
+        response.push(
+            <IconButton
+                icon="delete"
+                key = { `${questionnaire.uri}-delete` }
+                onClick={() => this.handleDelete(questionnaire.uri)}
+            />);
+        return response
+    }
+
+    handleSave(questionnaire){
+        this.props.saveQuestionnaire(questionnaire);
+        this.setState(prevState => ({...prevState, name: '', tagsAllowed: [], activeDialog: !this.state.activeDialog}));
+    }
+
+    renderList(){
+        if(this.props.questionnaires.length === 0){
+            return <div styleName = 'empty'>
+                <p>No questionnaire was found</p>
+            </div>
+        } else {
+            return <List selectable ripple styleName = 'list'>
+                <ListSubHeader caption='Questionnaires' />
+                {
+                    this.props.questionnaires.map(
+                        (questionnaire) => {
+                            return <ListItem
+                                key={questionnaire.uri}
+                                caption= {questionnaire.name.stringValue}
+                                ripple={false}
+                                rightActions={ this.renderTagsAndActions(questionnaire) }
+                            />
+                        }
+                    )
+                }
+            </List>
+        }
+
+    }
+
+    getAutocompleteSource(){
+        if(this.props.tags !== null){
+            return this.props.tags.map(
+                ({uri, displayName}) => {
+                    return [displayName, uri]
+                }).concat([["all", "All"]])
+        } else return []
+    }
+
+    handleQueryChange(value){
+        this.props.getTagsByName(value)
+        this.setState(prevState => ({...prevState, tag: value}));
+    }
+
+    handleAutocompleteFocus(){
+        this.props.getTagsByName(this.state.tag);
     }
 
     render() {
@@ -204,111 +223,74 @@ const messages = defineMessages({
                                 description = 'Graph editor - Tasks Dialog - Form Inputs - Labels - Tags'
                             />
                         </h1>
-                            <Input styleName = 'input' type='text' label='Field'/>
-                            <div
-                                styleName = 'autocomplete'
-                                ref = { element => this.__autocomplete = element }
-                            >
-                                <Autocomplete
-                                    styleName = 'ac'
-                                    direction="down"
-                                    onChange={this.handleTagsChange}
-                                    label="Choose Tags"
-                                    suggestionMatch='anywhere'
-                                    source={HMBData.tags.map(({uri, displayName}) => {return [uri, displayName]}).concat([["all", "All"]])}
-                                    value={this.state.tagsAllowed}
-                                />
-                            </div>
+                        <Input styleName = 'input' type='text' label='Field'
+                               value={this.state.name}
+                               onChange = { this.nameChange }
+                        />
+                        <div
+                            styleName = 'autocomplete'
+                            ref = { element => this.__autocomplete = element }
+                        >
+                            <Autocomplete
+                                styleName = 'ac'
+                                direction="down"
+                                onChange={this.handleTagsChange}
+                                label="Choose Tags"
+                                suggestionMatch='anywhere'
+                                source={this.getAutocompleteSource()}
+                                onQueryChange={this.handleQueryChange}
+                                onFocus={(value) => this.handleAutocompleteFocus(value)}
+                                value={this.state.tagsAllowed}
+                            />
+                        </div>
                     </div>
                 </section>
-                <List selectable ripple styleName = 'list'>
-                    <ListSubHeader caption='Questionnaires' />
-                    <ListItem
-                        caption='Questionnaire_01'
-                        legend="POO, AOS"
-                        leftIcon='edit'
-                        rightIcon='delete'
+                {
+                    this.props.questionnaires === null ?
+                        <div styleName="loader">
+                            <ProgressBar type='circular' mode='indeterminate'/>
+                        </div>
+                        :
+                        this.renderList()
+                }
+                <div>
+                    <Button
+                        styleName='fullWidth'
+                        label='Add Questionnaire'
+                        onClick = {this.handleToggleDialog}
+                        raised
+                        accent
                     />
-                    <ListItem
-                        caption='Questionnaire_02'
-                        leftIcon='edit'
-                        rightIcon='delete'
-                    />
-                    <ListItem
-                        caption='Questionnaire_03'
-                        legend='POO'
-                        leftIcon='edit'
-                        rightIcon='delete'
-                    />
-                    <ListItem
-                        caption='Questionnaire_01'
-                        legend="POO, AOS"
-                        leftIcon='edit'
-                        rightIcon='delete'
-                    />
-                    <ListItem
-                        caption='Questionnaire_02'
-                        leftIcon='edit'
-                        rightIcon='delete'
-                    />
-                    <ListItem
-                        caption='Questionnaire_03'
-                        legend='POO'
-                        leftIcon='edit'
-                        rightIcon='delete'
-                    />
-                    <ListItem
-                        caption='Questionnaire_01'
-                        legend="POO, AOS"
-                        leftIcon='edit'
-                        rightIcon='delete'
-                    />
-                    <ListItem
-                        caption='Questionnaire_02'
-                        leftIcon='edit'
-                        rightIcon='delete'
-                    />
-                    <ListItem
-                        caption='Questionnaire_03'
-                        legend='POO'
-                        leftIcon='edit'
-                        rightIcon='delete'
-                    />
-                    <ListItem
-                        caption='Questionnaire_01'
-                        legend="POO, AOS"
-                        leftIcon='edit'
-                        rightIcon='delete'
-                    />
-                    <ListItem
-                        caption='Questionnaire_02'
-                        leftIcon='edit'
-                        rightIcon='delete'
-                    />
-                    <ListItem
-                        caption='Questionnaire_03'
-                        legend='POO'
-                        leftIcon='edit'
-                        rightIcon='delete'
-                    />
-                </List>
-                <Button
-                    styleName='fullWidth'
-                    label='Add Questionnaire'
-                    onClick = {this.handleToggleDialog}
-                    raised
-                    accent
-                />
+                </div>
 
                 <QuestionnaireDialog
                     active={this.state.activeDialog}
                     onCancel = { this.handleToggleDialog }
-                    onSave = { this.handleToggleDialog }
-                    tags = {this.state.tags}
+                    onSave = { this.handleSave }
                 />
             </div>
         )
     }
 }
 
-export default injectIntl(GameList)
+function mapStateToProps(state) {
+    return {
+        questionnaires: state.QuestionnairesState.questionnaires,
+        tags: state.QuestionnairesState.tags,
+    }
+}
+
+function mapDispatchToProps(dispatch) {
+    return {
+        saveQuestionnaire: bindActionCreators(saveQuestionnaire, dispatch),
+        selectQuestionnaire: bindActionCreators(setSelectedQuestionnaire, dispatch),
+        getQuestionnairesByName: bindActionCreators(getQuestionnairesByName, dispatch),
+        getAllQuestionnaires: bindActionCreators(getAllQuestionnaires, dispatch),
+        setAppTitle: bindActionCreators(setTitle, dispatch),
+        deleteQuestionnaire: bindActionCreators(deleteQuestionnaire, dispatch),
+        getAllTags: bindActionCreators(getAllTags, dispatch),
+        getTagsByName: bindActionCreators(getTagsByName, dispatch),
+    }
+}
+
+export default injectIntl(QuestionnairesList)

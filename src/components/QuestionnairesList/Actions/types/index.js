@@ -2,6 +2,13 @@
  * Created by victorjose.gallego on 2/4/16.
  */
 export const TYPES = {
-}
+    REQUEST : Symbol('REQUEST'),
+    REQUEST_SUCCESS : Symbol('REQUEST_SUCCESS'),
+    REQUEST_FAILURE : Symbol('REQUEST_FAILURE'),
+    REQUEST_TAGS_SUCCESS : Symbol('REQUEST_TAGS_SUCCESS'),
+    REQUEST_TAGS_FAILURE : Symbol('REQUEST_TAGS_FAILURE'),
+    SET_SELECTED_QUESTIONNAIRE : Symbol('SET_SELECTED_QUESTIONNAIRE'),
+    SET_ERROR: Symbol('SET_ERROR'),
+};
 
 export default TYPES

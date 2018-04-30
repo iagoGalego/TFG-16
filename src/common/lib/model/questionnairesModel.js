@@ -1,4 +1,55 @@
-import { Sort, StringType, IntegerType, BooleanType } from './es.usc.citius.hmb.model'
+class Thing {
+    static RDFS_CLASS = 'http://www.w3.org/2000/01/rdf-schema#Class';
+    uri = undefined
+    isLoaded = undefined
+
+    constructor(options = {}) {
+        if (options['uri']) {
+            this.uri = options['uri'];
+        }
+    }
+    genURI() {
+        if (this.uri === undefined || this.uri === null || this.uri.length <= 0) {
+            this.uri = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                let r = Math.random()*16|0
+                let v = c === 'x' ? r : (r&0x3|0x8)
+                return v.toString(16)
+            })
+        }
+    }
+}
+export { Thing }
+
+class Sort extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Sort';
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Sort";
+    }
+}
+export { Sort }
+
+class NativeDataObject extends Sort {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#NativeDataObject';
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.NativeDataObject";
+    }
+}
+export { NativeDataObject }
+
+class StringType extends NativeDataObject {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#StringType';
+    stringValue = undefined;
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.StringType";
+    }
+}
+export { StringType }
 
 class Tag extends Sort {
 	static RDFS_CLASS = 'http://citius.usc.es/hmb/citius.owl#Tag';

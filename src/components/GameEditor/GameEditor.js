@@ -140,7 +140,16 @@ const messages = defineMessages({
                     "@class": "es.usc.citius.hmb.model.Operator",
                     "isLoaded": true,
                     "description": null,
-                    "parameter": [],
+                    "parameter": [
+                        {
+                            "@class": "es.usc.citius.hmb.model.Parameter",
+                            "isLoaded": true,
+                            "isMandatory": true,
+                            "name": "taskId",
+                            "mType": "http://citius.usc.es/hmb/questionnaires.owl#StringType",
+                            "uri": "http://citius.usc.es/hmb/questionnaires.owl#TaskId"
+                        }
+                    ],
                     "provider": "es.usc.citius.hmb.questionnaires",
                     "name": "finish",
                     "readsProperty": [],
@@ -244,7 +253,16 @@ const messages = defineMessages({
                     "@class": "es.usc.citius.hmb.model.Operator",
                     "isLoaded": true,
                     "description": null,
-                    "parameter": [],
+                    "parameter": [
+                        {
+                            "@class": "es.usc.citius.hmb.model.Parameter",
+                            "isLoaded": true,
+                            "isMandatory": true,
+                            "name": "taskId",
+                            "mType": "http://citius.usc.es/hmb/questionnaires.owl#StringType",
+                            "uri": "http://citius.usc.es/hmb/questionnaires.owl#TaskId"
+                        }
+                    ],
                     "provider": "es.usc.citius.hmb.questionnaires",
                     "name": "start",
                     "readsProperty": [],

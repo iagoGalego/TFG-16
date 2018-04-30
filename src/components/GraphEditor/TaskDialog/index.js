@@ -22,6 +22,9 @@ import ROLE_NAME from '../../../common/lib/model/RoleNames'
 import { stringTypeToSymbol } from '../../GraphEditor/Utils'
 
 import styles from './styles.scss'
+import {getAllQuestionnaires} from "../../QuestionnairesList/Actions";
+import {bindActionCreators} from "redux";
+import {connect} from "react-redux";
 
 const TooltipedAvatar = Tooltip(Avatar)
 
@@ -122,6 +125,7 @@ const actionLabel = defineMessages({
     },
 });
 
+@connect(mapStateToProps, mapDispatchToProps)
 @CSSModules(styles, {allowMultiple: true})
 @autobind class TaskDialog extends Component{
     constructor(props){
@@ -129,6 +133,7 @@ const actionLabel = defineMessages({
 
         this.state = {
             modified: false,
+            questionnaires: [],
             task : {
                 name: '',
                 description: '',
@@ -162,6 +167,10 @@ const actionLabel = defineMessages({
         toggleTaskDialog : () => {}
     };
 
+    componentWillMount(){
+        this.props.getAllQuestionnaires();
+    }
+
     componentWillUpdate(props, state){
         if(props.selectedTask === null && state.modified && this.isValid() ) {
             if (confirm('Do you want to save?')) {
@@ -185,6 +194,20 @@ const actionLabel = defineMessages({
                     ...props.selectedTask
                 }
             })
+        if(props.questionnaires !== null){
+            const newQuestionnaires = props.questionnaires.map(
+                (questionnaire) => {
+                    return {
+                        value: questionnaire.uri,
+                        label: questionnaire.name.stringValue
+                    }
+                }
+            )
+            this.setState(prevState => ({
+                ...prevState,
+                questionnaires: newQuestionnaires
+            }));
+        }
     }
 
     isValid(){
@@ -370,7 +393,7 @@ const actionLabel = defineMessages({
                     { this.renderRolesSelector() }
                 </div>
 
-                <div>
+                <div styleName="marginBottom">
                     <CardText styleName = 'checkbox'>
                         <Checkbox checked = { this.state.task.isRequired }
                                   label = { formatMessage(formLabel.isRequired) }
@@ -661,6 +684,14 @@ const actionLabel = defineMessages({
                                                            label = { this.getLocalizedParameterNameFromId(name) }
                                                            value = { this.state.task.parameters[name] || '' }
                                                            onChange = { value => this.handleParameterValueChange(name, value) } />
+                                    case 'Questionnaire':
+                                        return <Dropdown
+                                            auto
+                                            source={this.state.questionnaires}
+                                            label="Questionnaire"
+                                            onChange={value => this.handleParameterValueChange(name, value)}
+                                            value = { this.state.task.parameters[name] || '' }
+                                        />
                                     default:
                                         return <span key = { name }>
                                             Parameter type [{ mType.split('#')[1].toUpperCase() }] not suported yet
@@ -774,6 +805,18 @@ const actionLabel = defineMessages({
                 onClick = { () => this.handleToggleTaskDialog() }/>
             { this.renderFormInputsForTask() }
             { this.renderFormActionsForTask() }</Card>
+    }
+}
+
+function mapStateToProps(state) {
+    return {
+        questionnaires: state.QuestionnairesState.questionnaires,
+    }
+}
+
+function mapDispatchToProps(dispatch) {
+    return {
+        getAllQuestionnaires: bindActionCreators(getAllQuestionnaires, dispatch),
     }
 }
 
