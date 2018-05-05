@@ -512,9 +512,11 @@ const messages = defineMessages({
     render() {
         if( this.state.windowWidth < 720 )
             return (
-                <div styleName = 'mainContainer' >
-                    <img src={ image } />
-                    <h1>
+                <div styleName = 'minHeight' >
+                    <div>
+                        <img src={ image } />
+                    </div>
+                        <h1>
                         <FormattedMessage id = 'gameditor.error.display.minsize'
                                           description = 'Game editor error: minimum size of screen'
                                           defaultMessage = 'Sorry, this application is intended to be used in screens with a minimum width of 720px'

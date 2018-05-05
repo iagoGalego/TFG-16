@@ -12,7 +12,7 @@ import Avatar from 'react-toolbox/lib/avatar'
 import Tooltip from 'react-toolbox/lib/tooltip'
 import { IconMenu, MenuItem } from 'react-toolbox/lib/menu'
 import Chip from 'react-toolbox/lib/chip'
-
+import Autocomplete from 'react-toolbox/lib/autocomplete';
 
 import { TASK_TYPE as T } from '../../../common/lib/model/builders'
 import OPERATOR_NAME from '../../../common/lib/model/OperatorNames'
@@ -22,7 +22,7 @@ import ROLE_NAME from '../../../common/lib/model/RoleNames'
 import { stringTypeToSymbol } from '../../GraphEditor/Utils'
 
 import styles from './styles.scss'
-import {getAllQuestionnaires} from "../../QuestionnairesList/Actions";
+import {getAllQuestionnaires, getAllTags} from "../../QuestionnairesList/Actions";
 import {bindActionCreators} from "redux";
 import {connect} from "react-redux";
 
@@ -63,21 +63,6 @@ const formLabel = defineMessages({
         id : 'games.editor.taskDialog.form.inputs.labels.endingDate',
         description : 'Graph editor - Tasks Dialog - Form Inputs - Labels - Ending date',
         defaultMessage : 'Ending date'
-    },
-    giveBadge: {
-        id : 'games.editor.taskDialog.form.inputs.labels.onTaskFinish.giveBadges',
-        description : 'Graph editor - Tasks Dialog - Form Inputs - Labels - On task finish - Give badges',
-        defaultMessage : 'Give badges'
-    },
-    givePoints: {
-        id : 'games.editor.taskDialog.form.inputs.labels.onTaskFinish.givePoints',
-        description : 'Graph editor - Tasks Dialog - Form Inputs - Labels - On task finish - Give points',
-        defaultMessage : 'Give points'
-    },
-    numberOfPoints: {
-        id : 'games.editor.taskDialog.form.inputs.labels.onTaskFinish.numberOfPoints',
-        description : 'Graph editor - Tasks Dialog - Form Inputs - Labels - On task finish - Number of points',
-        defaultMessage : 'Points'
     },
     isTransitable: {
         id : 'games.editor.taskDialog.form.inputs.labels.isTransitable',
@@ -134,6 +119,7 @@ const actionLabel = defineMessages({
         this.state = {
             modified: false,
             questionnaires: [],
+            tagsAllowed: [],
             task : {
                 name: '',
                 description: '',
@@ -142,18 +128,13 @@ const actionLabel = defineMessages({
                 rolesAllowed: [],
                 initialDate: null,
                 endingDate: null,
-                giveBadges: false,
-                badges: [],
-                givePoints: false,
                 isTransitable: false,
                 isRequired: true,
                 isDisabled: false,
                 condition: '',
-                points: '',
                 ...props.selectedTask
             },
             ui: {
-                showPointsLabel: true,
                 showError: true
             },
             label: "▾"
@@ -168,6 +149,7 @@ const actionLabel = defineMessages({
     };
 
     componentWillMount(){
+        this.props.getAllTags();
         this.props.getAllQuestionnaires();
     }
 
@@ -197,10 +179,7 @@ const actionLabel = defineMessages({
         if(props.questionnaires !== null){
             const newQuestionnaires = props.questionnaires.map(
                 (questionnaire) => {
-                    return {
-                        value: questionnaire.uri,
-                        label: questionnaire.name.stringValue
-                    }
+                    return questionnaire.name.stringValue
                 }
             )
             this.setState(prevState => ({
@@ -280,12 +259,6 @@ const actionLabel = defineMessages({
     handleEndingDateChange(value){
         this.setState(prevState => ({task: {...prevState.task, endingDate: value}, modified: true}))
     }
-    handleGiveBadgeChange(value){
-        this.setState(prevState => ({task: {...prevState.task, giveBadge: value}, modified: true}))
-    }
-    handleGivePointsChange(value){
-        this.setState(prevState => ({task: {...prevState.task, givePoints: value}, modified: true}))
-    }
     handleIsTransitableChange(value){
         this.setState(prevState => ({task: {...prevState.task, isTransitable: value}, modified: true}))
     }
@@ -294,18 +267,6 @@ const actionLabel = defineMessages({
     }
     handleIsDisabledChange(value){
         this.setState(prevState => ({task: {...prevState.task, isDisabled: value}, modified: true}))
-    }
-    handlePointsChange(value){
-        if(value === '' || !Number.isNaN(Number.parseInt(value)) && value >= 0){
-            this.setState(prevState => ({task: {...prevState.task, points: value}, modified: true}))
-        }
-    }
-
-    handlePointsInputFocus(){
-        this.setState(prevState => ({ui: {...prevState.ui, showPointsLabel: false}}))
-    }
-    handlePointsInputBlur(){
-        this.setState(prevState => ({ui: {...prevState.ui, showPointsLabel: true}}))
     }
 
     handleSaveTaskClick(){
@@ -374,7 +335,7 @@ const actionLabel = defineMessages({
                         onChange = { this.handleDescriptionChange }
                         multiline
                     />
-                    <section styleName = 'columns'>
+                    <section styleName = 'datePicker'>
                         <DatePicker label = { formatMessage(formLabel.initialDate) }
                                     locale = { this.props.language }
                                     value = { this.state.task.initialDate }
@@ -418,91 +379,6 @@ const actionLabel = defineMessages({
             </CardText>
 
         )
-    }
-
-    renderbadges(){
-        return <section styleName = 'multiSelector'>
-            <h1>
-                <FormattedMessage
-                    id = 'games.editor.taskDialog.form.inputs.labels.onTaskFinish'
-                    defaultMessage = 'On task finish'
-                    description = 'Graph editor - Tasks Dialog - Form Inputs - Labels - On task finish'
-                />
-            </h1>
-
-            <div styleName='columns'>
-                <Checkbox checked = { this.state.task.giveBadge }
-                          label = { formatMessage(formLabel.giveBadge) }
-                          onChange={ this.handleGiveBadgeChange } />
-
-                <div styleName = 'badges'>
-                    <TooltipedAvatar tooltip = 'tooltip'
-                                     tooltipPosition = 'bottom'
-                                     icon='folder'
-                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                    <TooltipedAvatar tooltip = 'tooltip2'
-                                     tooltipPosition = 'bottom'
-                                     icon='build'
-                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                    <TooltipedAvatar tooltip = 'tooltip3'
-                                     tooltipPosition = 'bottom'
-                                     icon='explore'
-                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                    <TooltipedAvatar tooltip = 'tooltip'
-                                     tooltipPosition = 'bottom'
-                                     icon='folder'
-                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                    <TooltipedAvatar tooltip = 'tooltip2'
-                                     tooltipPosition = 'bottom'
-                                     icon='build'
-                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                    <TooltipedAvatar tooltip = 'tooltip3'
-                                     tooltipPosition = 'bottom'
-                                     icon='explore'
-                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                    <TooltipedAvatar tooltip = 'tooltip'
-                                     tooltipPosition = 'bottom'
-                                     icon='folder'
-                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                    <TooltipedAvatar tooltip = 'tooltip2'
-                                     tooltipPosition = 'bottom'
-                                     icon='build'
-                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                    <TooltipedAvatar tooltip = 'tooltip3'
-                                     tooltipPosition = 'bottom'
-                                     icon='explore'
-                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                    <TooltipedAvatar tooltip = 'tooltip'
-                                     tooltipPosition = 'bottom'
-                                     icon='folder'
-                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                    <TooltipedAvatar tooltip = 'tooltip2'
-                                     tooltipPosition = 'bottom'
-                                     icon='build'
-                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                    <TooltipedAvatar tooltip = 'tooltip3'
-                                     tooltipPosition = 'bottom'
-                                     icon='explore'
-                                     style={{backgroundColor: `#${parseInt(Math.random() * 16777215).toString(16)}`}}/>
-                </div>
-
-            </div>
-            <div styleName='columns'>
-                <Checkbox checked = { this.state.task.givePoints }
-                          label = { formatMessage(formLabel.givePoints) }
-                          onChange = { this.handleGivePointsChange } />
-
-                <Input styleName = 'noPadding noMargin'
-                       label = { !this.state.task.points && this.state.ui.showPointsLabel && formatMessage(formLabel.numberOfPoints) || ''}
-                       hint = { formatMessage(formLabel.numberOfPoints) }
-                       disabled = { !this.state.task.givePoints }
-                       onChange = { this.handlePointsChange }
-                       onFocus = { this.handlePointsInputFocus }
-                       onBlur = { this.handlePointsInputBlur }
-                       value = { this.state.task.points } />
-            </div>
-
-        </section>
     }
 
     renderRolesSelector(){
@@ -638,11 +514,13 @@ const actionLabel = defineMessages({
 
     }
     renderFormInputsForOperatorParameters(){
+        let { HMBData } = this.props;
+
         let o = (this.state.task.operator)? this.state.task.operator.name : null
-        let operator = this.props.HMBData.operators.filter(({name}) => name === o)[0]
+        let operator = HMBData.operators.filter(({name}) => name === o)[0]
         if (operator !== undefined && Array.isArray(operator.parameter) && operator.parameter.length > 0)
             return (
-                <div className = { styles.multiSelector }>
+                <section styleName = 'multiSelector tags'>
                     <h1>
                         <FormattedMessage
                             id = 'games.editor.taskDialog.form.inputs.labels.parameters'
@@ -685,13 +563,30 @@ const actionLabel = defineMessages({
                                                            value = { this.state.task.parameters[name] || '' }
                                                            onChange = { value => this.handleParameterValueChange(name, value) } />
                                     case 'Questionnaire':
+                                        /*
                                         return <Dropdown
+                                            key={ name }
                                             auto
                                             source={this.state.questionnaires}
                                             label="Questionnaire"
                                             onChange={value => this.handleParameterValueChange(name, value)}
                                             value = { this.state.task.parameters[name] || '' }
                                         />
+                                         */
+                                        return <div key={ name + "_div" }
+                                                    styleName='questionnaire'>
+                                            <Autocomplete
+                                                key={ name + "_autocomplete" }
+                                                label="Choose a questionnaire"
+                                                hint="You can only choose one..."
+                                                suggestionMatch='anywhere'
+                                                multiple={false}
+                                                onChange={value => this.handleParameterValueChange(name, value)}
+                                                source={this.state.questionnaires}
+                                                value = { this.state.task.parameters[name] || '' }
+                                            />
+                                        </div>
+
                                     default:
                                         return <span key = { name }>
                                             Parameter type [{ mType.split('#')[1].toUpperCase() }] not suported yet
@@ -700,14 +595,14 @@ const actionLabel = defineMessages({
                             })
                         }
                     </section>
-                </div>
+                </section>
             )
     }
 
     handleToggleTaskDialog(){
+        this.props.toggleTaskDialog();
         if(this.state.label === "▾") this.setState(prevState => ({label: "▴"}))
         else this.setState(prevState => ({label: "▾"}))
-        this.props.toggleTaskDialog();
     }
 
     renderFormInputsForTask(){
@@ -811,12 +706,14 @@ const actionLabel = defineMessages({
 function mapStateToProps(state) {
     return {
         questionnaires: state.QuestionnairesState.questionnaires,
+        tags: state.QuestionnairesState.tags,
     }
 }
 
 function mapDispatchToProps(dispatch) {
     return {
         getAllQuestionnaires: bindActionCreators(getAllQuestionnaires, dispatch),
+        getAllTags: bindActionCreators(getAllTags, dispatch),
     }
 }
 

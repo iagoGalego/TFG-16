@@ -3,6 +3,7 @@ import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux'
 import Login from '../../components/Login'
 import {login, logout, setError} from '../../components/Login/Actions'
+import {loginQuestionnaires, logoutQuestionnaires, setErrorQuestionnaires} from '../../components/Questionnaires/Actions'
 import {setAppLanguage, setTitle} from "../../components/Layout/Actions";
 
 class LoginWrapper extends Component {
@@ -30,6 +31,9 @@ function mapDispatchToProps(dispatch) {
         login: bindActionCreators(login, dispatch),
         logout: bindActionCreators(logout, dispatch),
         setError: bindActionCreators(setError, dispatch),
+        loginQuestionnaires: bindActionCreators(loginQuestionnaires, dispatch),
+        logoutQuestionnaires: bindActionCreators(logoutQuestionnaires, dispatch),
+        setErrorQuestionnaires: bindActionCreators(setErrorQuestionnaires, dispatch),
         changeLanguage: bindActionCreators(setAppLanguage, dispatch),
         setAppTitle: bindActionCreators(setTitle, dispatch),
 

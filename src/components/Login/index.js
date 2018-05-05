@@ -91,7 +91,7 @@ const messages = defineMessages({
     }
 
     handleLoginRequest(){
-        const {login} = this.props;
+        const {login, loginQuestionnaires} = this.props;
 
         if(this.state.user.length === 0)
             this.setState((previousState) => {
@@ -109,8 +109,10 @@ const messages = defineMessages({
                 }
             });
 
-        if ( this.state.user.length !== 0 && this.state.pass.length !== 0 )
+        if ( this.state.user.length !== 0 && this.state.pass.length !== 0 ){
             login(this.state.user, this.state.pass)
+            loginQuestionnaires(this.state.user, this.state.pass)
+        }
     }
 
     handleUserInput( value ){

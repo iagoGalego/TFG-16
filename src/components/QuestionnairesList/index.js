@@ -42,36 +42,24 @@ const messages = defineMessages({
             isDisabled: false,
             activeDialog: false,
             name: '',
-            loading: true
+            loading: true,
+            questionnaires: []
         }
     }
 
     componentWillReceiveProps(props){
-    }
-
-    static defaultProps = {
-        HMBData: {
-            tags: [
-                {
-                    "displayName": "POO",
-                    "uri": "POO"
-                },
-                {
-                    "displayName": "AOS",
-                    "uri": "AOS"
-                },
-                {
-                    "displayName": "OXE",
-                    "uri": "OXE"
-                },
-            ],
+        if(props.questionnaires !== null){
+            this.setState({
+                loading: false,
+                questionnaires: [...props.questionnaires]
+            })
         }
-    };
+    }
 
     componentDidMount(){
         this.props.getAllTags();
         this.props.getAllQuestionnaires();
-        this.setState(prevState => ({...prevState, loading: false}))
+        this.setState(prevState => ({...prevState, loading: false}));
         this.props.setAppTitle(this.props.intl.formatMessage(messages.title))
     }
 
@@ -80,9 +68,11 @@ const messages = defineMessages({
     };
 
     handleDelete(value){
-        this.setState(prevState => ({...prevState, loading: true}));
-        this.props.deleteQuestionnaire(value);
-        this.setState(prevState => ({...prevState, loading: false}));
+        this.setState(prevState => ({...prevState, loading: true}), () =>{
+            this.forceUpdate();
+            this.props.deleteQuestionnaire(value);
+        });
+
     }
 
     searchQuestionnaires(name, tags){
@@ -91,9 +81,11 @@ const messages = defineMessages({
             if(i === 0 && tags[0] !== 'all') st += tags[i];
             else if(i !== 0) st += ","+ tags[i]
         }
-        this.setState(prevState => ({...prevState, loading: true}))
-        this.props.getQuestionnairesByName(name, st)
-        this.setState(prevState => ({...prevState, loading: false}))
+        this.setState(prevState => ({...prevState, loading: true}), () =>{
+            this.forceUpdate();
+            this.props.getQuestionnairesByName(name, st);
+            this.setState(prevState => ({...prevState}))
+        })
     }
 
     handleTagsChange(value){
@@ -124,10 +116,6 @@ const messages = defineMessages({
         this.searchQuestionnaires(value, this.state.tagsAllowed);
     }
 
-    handleSelectQuestionnaire(uri){
-        this.props.selectQuestionnaire(uri)
-    }
-
     renderTagsAndActions(questionnaire){
         let response = [];
         for(let i = 0; i < questionnaire.tags.length; i++){
@@ -146,8 +134,7 @@ const messages = defineMessages({
                     icon="edit"
                     key = { `${questionnaire.uri}-edit` }
                     onClick={ () => {
-                        this.handleSelectQuestionnaire(questionnaire.uri);
-                        history.push('/app/questionnaires/edit')
+                        history.push(`/app/questionnaires/${questionnaire.uri}/edit`)
                     }}
                 />
             )}/>
@@ -162,12 +149,15 @@ const messages = defineMessages({
     }
 
     handleSave(questionnaire){
-        this.props.saveQuestionnaire(questionnaire);
-        this.setState(prevState => ({...prevState, name: '', tagsAllowed: [], activeDialog: !this.state.activeDialog}));
+        this.setState(prevState => ({...prevState, loading: true, activeDialog: !this.state.activeDialog}),() =>{
+            this.forceUpdate()
+            this.props.saveQuestionnaire(questionnaire);
+            this.setState(prevState => ({...prevState, name: '', tagsAllowed: []}));
+        })
     }
 
     renderList(){
-        if(this.props.questionnaires.length === 0){
+        if(this.state.questionnaires.length === 0){
             return <div styleName = 'empty'>
                 <p>No questionnaire was found</p>
             </div>
@@ -175,7 +165,7 @@ const messages = defineMessages({
             return <List selectable ripple styleName = 'list'>
                 <ListSubHeader caption='Questionnaires' />
                 {
-                    this.props.questionnaires.map(
+                    this.state.questionnaires.map(
                         (questionnaire) => {
                             return <ListItem
                                 key={questionnaire.uri}
@@ -210,7 +200,6 @@ const messages = defineMessages({
     }
 
     render() {
-        let { HMBData } = this.props;
 
         return (
             <div styleName = 'mainContainer'>
@@ -223,30 +212,33 @@ const messages = defineMessages({
                                 description = 'Graph editor - Tasks Dialog - Form Inputs - Labels - Tags'
                             />
                         </h1>
-                        <Input styleName = 'input' type='text' label='Field'
-                               value={this.state.name}
-                               onChange = { this.nameChange }
-                        />
-                        <div
-                            styleName = 'autocomplete'
-                            ref = { element => this.__autocomplete = element }
-                        >
-                            <Autocomplete
-                                styleName = 'ac'
-                                direction="down"
-                                onChange={this.handleTagsChange}
-                                label="Choose Tags"
-                                suggestionMatch='anywhere'
-                                source={this.getAutocompleteSource()}
-                                onQueryChange={this.handleQueryChange}
-                                onFocus={(value) => this.handleAutocompleteFocus(value)}
-                                value={this.state.tagsAllowed}
+                        <div styleName='columns'>
+                            <Input styleName = 'input' type='text' label='Name'
+                                   value={this.state.name}
+                                   onChange = { this.nameChange }
                             />
+                            <div
+                                styleName = 'autocomplete'
+                                ref = { element => this.__autocomplete = element }
+                            >
+                                <Autocomplete
+                                    styleName = 'ac'
+                                    direction="down"
+                                    onChange={this.handleTagsChange}
+                                    label="Choose Tags"
+                                    suggestionMatch='anywhere'
+                                    selectedPosition='below'
+                                    source={this.getAutocompleteSource()}
+                                    onQueryChange={this.handleQueryChange}
+                                    onFocus={(value) => this.handleAutocompleteFocus(value)}
+                                    value={this.state.tagsAllowed}
+                                />
+                            </div>
                         </div>
                     </div>
                 </section>
                 {
-                    this.props.questionnaires === null ?
+                    this.props.questionnaires === null || this.state.loading ?
                         <div styleName="loader">
                             <ProgressBar type='circular' mode='indeterminate'/>
                         </div>

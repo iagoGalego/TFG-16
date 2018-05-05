@@ -1035,6 +1035,15 @@ const messages = defineMessages({
         }
     }
 
+    handleOverlayClick(){
+        let { onCancel} = this.props;
+
+        let r = confirm("You Will Lose All Unsaved Progress. Are You Sure You Want to Quit?");
+        if (r === true) {
+            onCancel()
+        }
+    }
+
     render(){
 
     let { active, onCancel, intl: {formatMessage} } = this.props;
@@ -1047,7 +1056,7 @@ const messages = defineMessages({
                 { label: this.state.isNew? 'Save' : 'Edit' , onClick: this.handleSave }
             ]}
             onEscKeyDown={onCancel}
-            onOverlayClick={onCancel}
+            onOverlayClick={this.handleOverlayClick}
             title={ this.state.isNew? 'Add New Question' : 'Edit Question' }
         >
             <form>

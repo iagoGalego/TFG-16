@@ -2,6 +2,36 @@
 
 $toolbarHeight: 48px;
 
+.minHeight{
+  margin: 10px;
+  height: auto;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+
+  &>h1{
+    flex: 0;
+    padding: 3rem;
+    font-size: 3rem;
+    font-family: monospace;
+    text-align: center;
+  }
+
+  &>img{
+    height: 100%;
+  }
+
+  div{
+    float:right;
+    height: 50%;
+    width: 55%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
 .mainContainer{
   height: calc(100vh - 64px);
   display: flex;
@@ -39,15 +69,15 @@ $toolbarHeight: 48px;
 
   &>.taskDialog{
     position: absolute;
-    bottom: 10px;
+    top: 50px;
     right: 8px;
     overflow: hidden;
     height: calc(100% - 60px);
-    transition: bottom 0.5s;
+    transition: top 0.5s
   }
 
   .toggled{
-    bottom: calc(100% - 1044px);
-    transition: bottom 0.5s;
+    top: calc(100vh - 100px);
+    transition: top 0.5s
   }
 }

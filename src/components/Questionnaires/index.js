@@ -15,7 +15,7 @@ export default class Questionnaires extends Component {
         return (
             <Switch>
                 <Route exact path='/app/questionnaires' component = { QuestionnairesList } />
-                <Route exact path='/app/questionnaires/edit' component = { QuestionnairesEditor } />
+                <Route exact path='/app/questionnaires/(.*)/edit' component = { QuestionnairesEditor } />
                 <Route path = '/app/games/editor' component = { GameEditorWrapper } />
             </Switch>
         )

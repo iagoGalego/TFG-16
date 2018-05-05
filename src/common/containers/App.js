@@ -7,6 +7,8 @@ import {setAppLanguage, setTitle} from '../../components/Layout/Actions'
 import { logout } from '../../components/Login/Actions'
 
 import HMBAPI from '../lib/API'
+import QuestionnairesAPI from '../lib/QuestionnairesAPI'
+
 
 import styles from '../styles/styles.scss'
 
@@ -17,6 +19,9 @@ class App extends Component {
 
         if(!!sessionStorage.getItem('__token')){
             HMBAPI.init(sessionStorage.getItem('__token'))
+        }
+        if(!!sessionStorage.getItem('__questionnairesToken')){
+            QuestionnairesAPI.init(sessionStorage.getItem('__questionnairesToken'))
         }
     }
 

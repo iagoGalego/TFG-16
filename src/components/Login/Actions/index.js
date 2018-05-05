@@ -62,7 +62,7 @@ export function login(user, pass) {
 
 export function logout() {
     return dispatch => {
-        dispatch(requestAPICall())
+        dispatch(requestAPICall());
 
         return HMBAPI.instance
             .logout()

@@ -11,6 +11,7 @@ import {connect} from "react-redux";
 import {bindActionCreators} from "redux";
 import {setAppLanguage, setTitle, toggleMenu, toggleSettingsPanel} from "../Layout/Actions";
 import {login, logout, setError} from "../Login/Actions";
+import { autobind } from 'core-decorators'
 
 const messages = defineMessages({
     home: {
@@ -60,12 +61,17 @@ function mapDispatchToProps(dispatch) {
 }
 @CSSModules(styles)
 @connect(mapStateToProps, mapDispatchToProps)
-class MainMenu extends Component{
+@autobind class MainMenu extends Component{
 
     constructor(props, context) {
         super(props, context);
     }
 
+    componentDidUpdate(){
+        if(this.props.menuOpened){
+            this.props.toggleMenu()
+        }
+    }
 
     render(){
         const {intl : {formatMessage} } = this.props;

@@ -161,3 +161,32 @@
   top: 0;
   right: 0;
 }
+
+.datePicker {
+  display: flex;
+  justify-content: space-between;
+
+  &>*{
+    flex-basis: 49%;
+  }
+}
+
+.questionnaire{
+  position: relative;
+  ul{
+    bottom:65px!important;
+  }
+  div div::after{
+    transform: rotate(180deg);
+  }
+}
+
+.tags{
+  position: relative;
+  color: rgba(0,0,0,.25);
+}
+.tagsSelector{
+  position: absolute;
+  top: 34px;
+  right: -13px;
+}
