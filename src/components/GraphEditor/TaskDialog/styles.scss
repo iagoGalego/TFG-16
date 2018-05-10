@@ -171,7 +171,18 @@
   }
 }
 
+.displayQuestionnaire{
+  top: 30px;
+  left: 5px;
+}
+
+.autocomplete{
+  width: 80%;
+}
+
 .questionnaire{
+  display: flex;
+  justify-content: center;
   position: relative;
   ul{
     bottom:65px!important;

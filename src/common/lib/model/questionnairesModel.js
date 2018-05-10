@@ -38,7 +38,6 @@ class NativeDataObject extends Sort {
         this['@class'] = "es.usc.citius.hmb.model.NativeDataObject";
     }
 }
-export { NativeDataObject }
 
 class StringType extends NativeDataObject {
     static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#StringType';
@@ -219,6 +218,39 @@ class InsertVariousTextsQuestion extends TextQuestionType {
 }
 export { InsertVariousTextsQuestion }
 
+class FillInTheBlanksQuestionType extends AnswerType {
+	static RDFS_CLASS = 'http://citius.usc.es/hmb/citius.owl#FillInTheBlanksQuestionType';
+	sentence = undefined
+
+	constructor(options = {}) {
+		super(options);
+		this['@class'] = "es.usc.citius.hmb.games.FillInTheBlanksQuestionType";
+	}
+}
+export { FillInTheBlanksQuestionType }
+
+class SimpleFillInTheBlanksQuestion extends FillInTheBlanksQuestionType {
+	static RDFS_CLASS = 'http://citius.usc.es/hmb/citius.owl#SimpleFillInTheBlanksQuestion';
+	solution = undefined
+
+	constructor(options = {}) {
+		super(options);
+		this['@class'] = "es.usc.citius.hmb.games.SimpleFillInTheBlanksQuestion";
+	}
+}
+export { SimpleFillInTheBlanksQuestion }
+
+class MultipleFillInTheBlanksQuestion extends FillInTheBlanksQuestionType {
+	static RDFS_CLASS = 'http://citius.usc.es/hmb/citius.owl#MultipleFillInTheBlanksQuestion';
+	solutions = undefined
+
+	constructor(options = {}) {
+		super(options);
+		this['@class'] = "es.usc.citius.hmb.games.MultipleFillInTheBlanksQuestion";
+	}
+}
+export { MultipleFillInTheBlanksQuestion }
+
 class Questionnaire extends Sort {
 	static RDFS_CLASS = 'http://citius.usc.es/hmb/citius.owl#Questionnaire';
 	name = undefined
@@ -308,6 +340,28 @@ class InsertVariousTextsQuestionAnswer extends Answer {
 	}
 }
 export { InsertVariousTextsQuestionAnswer }
+
+class SimpleFillInTheBlanksQuestionAnswer extends Answer {
+	static RDFS_CLASS = 'http://citius.usc.es/hmb/citius.owl#SimpleFillInTheBlanksQuestionAnswer';
+	solution = undefined
+
+	constructor(options = {}) {
+		super(options);
+		this['@class'] = "es.usc.citius.hmb.games.SimpleFillInTheBlanksQuestionAnswer";
+	}
+}
+export { SimpleFillInTheBlanksQuestionAnswer }
+
+class MultipleFillInTheBlanksQuestionAnswer extends Answer {
+	static RDFS_CLASS = 'http://citius.usc.es/hmb/citius.owl#MultipleFillInTheBlanksQuestionAnswer';
+	solutions = undefined
+
+	constructor(options = {}) {
+		super(options);
+		this['@class'] = "es.usc.citius.hmb.games.MultipleFillInTheBlanksQuestionAnswer";
+	}
+}
+export { MultipleFillInTheBlanksQuestionAnswer }
 
 class TrueFalseQuestionAnswer extends Answer {
 	static RDFS_CLASS = 'http://citius.usc.es/hmb/citius.owl#TrueFalseQuestionAnswer';

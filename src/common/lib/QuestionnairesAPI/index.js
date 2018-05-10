@@ -231,6 +231,22 @@ export class QuestionnairesAPIClient {
         })
     }
 
+    getQuestionnairesByNameOrTag(value){
+        return fetch(`${CONFIG.questionnairesApi.baseURL}/questionnaires?value=${value}`, {
+            method: 'GET',
+            headers: {
+                'X-Auth-Token' : __token,
+                'Accept': 'application/json;charset=utf-8',
+                'Content-Type': 'application/json;charset=utf-8',
+            },
+            mode: 'cors',
+        }).then( response => {
+            return response.ok
+                ? response.json()
+                : Promise.reject(new Error(`${response.status} ${response.statusText}`))
+        })
+    }
+
     getTagsByName(name){
         return fetch(`${CONFIG.questionnairesApi.baseURL}/tags?name=${name}`, {
             method: 'GET',

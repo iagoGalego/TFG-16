@@ -5,7 +5,7 @@ import { FormattedMessage, injectIntl, defineMessages } from 'react-intl'
 
 import { Route } from "react-router-dom";
 import Chip from 'react-toolbox/lib/chip'
-import { IconMenu, MenuItem } from 'react-toolbox/lib/menu'
+import { Dialog } from 'react-toolbox/lib/dialog'
 import styles from './styles.scss'
 import {connect} from "react-redux";
 import {bindActionCreators} from "redux";
@@ -30,7 +30,7 @@ const messages = defineMessages({
 
 @connect(mapStateToProps, mapDispatchToProps)
 @CSSModules(styles, {allowMultiple: true})
-@autobind class QuestionnairesEditor extends Component {
+@autobind class QuestionnairesDetails extends Component {
     static contextTypes = {
         router: PropTypes.object
     };
@@ -58,13 +58,11 @@ const messages = defineMessages({
         }
     }
 
-    handleToggleDialog() {
-        this.setState(prevState => ({...prevState, selectedQuestion: null, activeDialog: !this.state.activeDialog}));
-    };
-
     componentWillReceiveProps(props){
 
-        if(props.selectedQuestionnaire !== null){
+        let isDifferent = props.questionnaireUri !== this.props.questionnaireUri;
+        if(props.questionnaireUri !== undefined && isDifferent) this.props.selectQuestionnaire(props.questionnaireUri);
+        else if(props.selectedQuestionnaire !== null){
             if(Object.keys(props.selectedQuestionnaire).length === 0 && props.selectedQuestionnaire.constructor === Object)
                 this.setState({
                     loading: false,
@@ -120,33 +118,10 @@ const messages = defineMessages({
                 </Chip>
             )
         }
-        response.push(
-            <IconButton
-                icon="edit"
-                key = { `${question.uri}-edit` }
-                onClick={ () => {
-                    this.handleEditQuestion(question);
-                }}
-            />
-        );
-        response.push(
-            <IconButton
-                icon="delete"
-                key = { `${question.uri}-delete` }
-                onClick={() => this.handleDelete(question.uri)}
-            />);
         return response
     }
 
-    handleDelete(uri){
-        this.setState(prevState => ({...prevState, loading: true}), () => {
-            this.forceUpdate();
-            this.props.deleteQuestion(uri, this.state.questionnaire.uri);
-        })
-    }
-
     componentDidMount(){
-        this.props.selectQuestionnaire(this.props.location.pathname.split( '/' )[3]);
         this.props.setAppTitle(this.props.intl.formatMessage(messages.title));
         if(this.props.selectedQuestionnaire !== null){
             this.setState({
@@ -161,40 +136,6 @@ const messages = defineMessages({
                 }
             })
         }
-    }
-
-    handleSave(question){
-        this.setState(prevState => ({...prevState, loading: true}), () => {
-            this.forceUpdate();
-            this.props.saveQuestion(question, this.props.selectedQuestionnaire.uri);
-            this.setState(prevState => ({...prevState, selectedQuestion: null, activeDialog: !this.state.activeDialog}));
-        })
-
-    }
-
-    handleUpdate(question){
-        this.setState(prevState => ({...prevState, loading: true}), () => {
-            this.forceUpdate();
-            this.props.updateQuestion(question, this.props.selectedQuestionnaire.uri);
-            this.setState(prevState => ({...prevState, selectedQuestion: null, activeDialog: !this.state.activeDialog}));
-        })
-    }
-
-    changeName(value){
-        this.setState(prevState => ({...prevState, modified: true,
-            questionnaire: {...prevState.questionnaire, name: {...prevState.questionnaire.name, stringValue: value}}
-        }));
-    }
-
-    handleDeleteTag(value, t){
-        this.setState(prevState => ({...prevState, modified: true,
-            questionnaire: {...prevState.questionnaire, tags: [...prevState.questionnaire.tags.filter((tag) => tag.uri !== t)]}
-        }));
-    }
-
-    handleUpdateQuestionnaire(){
-        this.props.updateQuestionnaire(this.state.questionnaire)
-        this.setState(prevState => ({...prevState, modified: false}))
     }
 
     renderList(){
@@ -226,86 +167,30 @@ const messages = defineMessages({
         }
     }
 
-    tagChange(value) {
-        this.setState((previousState) => {
-            return {
-                ...previousState,
-                tag: value,
-                showTagMandatory: false,
-                showTagCreated: false
-            }
-        });
-    }
-
-    addTag(value){
-        let t = new Tag();
-        t.genURI();
-        t.value = new StringType();
-        t.value.stringValue = this.state.tag;
-        this.setState(prevState => ({...prevState, modified: true, tag: '',
-            questionnaire: {...prevState.questionnaire, tags: [...prevState.questionnaire.tags, t]}
-        }));
-    }
-
     render() {
-        let { selectedQuestionnaire } = this.props;
+        let { active, onCancel, intl: {formatMessage} } = this.props;
 
-        if (this.state.dontExist){
-            return  <div styleName="dontExist">
-                <div styleName="row">
-                    <p>The searched questionnaire does not exist</p>
-                    <div>
-                        <Route
-                            render={({ history}) => (
-                                <Button label='Search Questionnaires'
-                                        raised
-                                        primary
-                                        onClick={ () => {
-                                            history.push('/app/questionnaires')
-                                        }}
-                                />
-                            )}/>
-                    </div>
-                </div>
-
-            </div>
-        } else if (selectedQuestionnaire === null){
-            return <div styleName="loader">
-                <ProgressBar type='circular' mode='indeterminate'/>
-            </div>
-        } else {
             return (
-                <div styleName = 'mainContainer'>
+                <Dialog styleName = 'mainContainer'
+                        active={active}
+                        onEscKeyDown={onCancel}
+                        onOverlayClick={onCancel}
+
+                >
                     <section styleName = 'multiSelector tags' >
                         <div>
                             <h1>
                                 <FormattedMessage
-                                    id = 'games.editor.taskDialog.form.inputs.labels.tags'
-                                    defaultMessage = 'Edit Questionnaire'
-                                    description = 'Graph editor - Tasks Dialog - Form Inputs - Labels - Tags'
+                                    id = 'games.editor.taskDialog.form.inputs.labels.details'
+                                    defaultMessage = 'Questionnaire Details'
+                                    description = 'Graph editor - Tasks Dialog - Questionnaire Details'
                                 />
                             </h1>
-                            <div styleName="columns">
-                                <Input styleName = 'input' type='text' label='Field'
-                                       value={this.state.questionnaire.name.stringValue}
-                                       onChange={ this.changeName }
-                                />
-                                <div styleName="columns tagInput">
-                                    <Input
-                                        styleName = 'input'
-                                        type='text'
-                                        label='New Tag'
-                                        value={this.state.tag}
-                                        error = { this.state.showTagMandatory && formatMessage(messages.mandatory) || this.state.showTagCreated && formatMessage(messages.created) || ''}
-                                        onChange = { this.tagChange }
-                                    />
-                                    <IconButton
-                                        icon='add'
-                                        className={styles['button']}
-                                        onClick={this.addTag}
-                                    />
-                                </div>
-                            </div>
+                            <Input type='text' label='Name'
+                                   styleName="input"
+                                   value={this.state.questionnaire.name.stringValue}
+                                   disabled={true}
+                            />
 
                             {
                                 this.state.questionnaire.tags.map(
@@ -313,42 +198,19 @@ const messages = defineMessages({
                                         return <Chip
                                             styleName = "chip"
                                             key = { `${tag.uri}-chip` }
-                                            deletable={true}
-                                            onDeleteClick = { () => this.handleDeleteTag(false, tag.uri) }>
+                                            deletable={false}>
                                             { tag.value.stringValue }
                                         </Chip>
                                     }
                                 )
                             }
-                            <Button
-                                styleName='saveButton'
-                                label='Save'
-                                onClick = {this.handleUpdateQuestionnaire}
-                                disabled={ !this.state.modified }
-                                raised
-                                accent
-                            />
                         </div>
                     </section>
                     { this.renderList() }
-                    <Button
-                        styleName='fullWidth'
-                        label='Add Question'
-                        onClick = {this.handleToggleDialog}
-                        raised
-                        accent
-                    />
-                    <QuestionDialog
-                        active={this.state.activeDialog}
-                        question={ this.state.selectedQuestion }
-                        onCancel = { this.handleToggleDialog }
-                        onSave = { this.handleSave }
-                        onUpdate = { this.handleUpdate }
-                    />
-                </div>
+                </Dialog>
             )
         }
-    }
+
 }
 
 function mapStateToProps(state) {
@@ -369,4 +231,4 @@ function mapDispatchToProps(dispatch) {
     }
 }
 
-export default injectIntl(QuestionnairesEditor)
+export default injectIntl(QuestionnairesDetails)

@@ -4,7 +4,7 @@ import { FormattedMessage, injectIntl, defineMessages } from 'react-intl'
 import { autobind } from 'core-decorators'
 import { Card, CardText, CardActions } from 'react-toolbox/lib/card'
 import Input from 'react-toolbox/lib/input'
-import Button from 'react-toolbox/lib/button'
+import {Button, IconButton} from 'react-toolbox/lib/button';
 import Checkbox from 'react-toolbox/lib/checkbox'
 import Dropdown from 'react-toolbox/lib/dropdown'
 import DatePicker from 'react-toolbox/lib/date_picker'
@@ -13,6 +13,7 @@ import Tooltip from 'react-toolbox/lib/tooltip'
 import { IconMenu, MenuItem } from 'react-toolbox/lib/menu'
 import Chip from 'react-toolbox/lib/chip'
 import Autocomplete from 'react-toolbox/lib/autocomplete';
+import QuestionnairesDetails from '../../QuestionnairesDetails'
 
 import { TASK_TYPE as T } from '../../../common/lib/model/builders'
 import OPERATOR_NAME from '../../../common/lib/model/OperatorNames'
@@ -22,7 +23,7 @@ import ROLE_NAME from '../../../common/lib/model/RoleNames'
 import { stringTypeToSymbol } from '../../GraphEditor/Utils'
 
 import styles from './styles.scss'
-import {getAllQuestionnaires, getAllTags} from "../../QuestionnairesList/Actions";
+import {getAllQuestionnaires, getAllTags, getQuestionnairesByNameOrTag} from "../../QuestionnairesList/Actions";
 import {bindActionCreators} from "redux";
 import {connect} from "react-redux";
 
@@ -118,8 +119,10 @@ const actionLabel = defineMessages({
 
         this.state = {
             modified: false,
-            questionnaires: [],
+            questionnaires: {},
             tagsAllowed: [],
+            showDialog: false,
+            showQuestionnaire: false,
             task : {
                 name: '',
                 description: '',
@@ -177,11 +180,12 @@ const actionLabel = defineMessages({
                 }
             })
         if(props.questionnaires !== null){
-            const newQuestionnaires = props.questionnaires.map(
+            const newQuestionnaires = {};
+            props.questionnaires.map(
                 (questionnaire) => {
-                    return questionnaire.name.stringValue
+                    newQuestionnaires[questionnaire.uri] = questionnaire.name.stringValue
                 }
-            )
+            );
             this.setState(prevState => ({
                 ...prevState,
                 questionnaires: newQuestionnaires
@@ -219,6 +223,9 @@ const actionLabel = defineMessages({
     handleConditionChange(value){
         this.setState(prevState => ({task: {...prevState.task, condition: value}, modified: true}))
     }
+    handleToggleDialog(value){
+        this.setState(prevState => ({...prevState, showDialog: !this.state.showDialog}))
+    }
     handleDescriptionChange(value){
         this.setState(prevState => ({task: {...prevState.task, description: value}, modified: true}))
     }
@@ -245,12 +252,13 @@ const actionLabel = defineMessages({
             this.setState(prevState => ({task: {...prevState.task, rolesAllowed: prevState.task.rolesAllowed.filter(({id}) => id !== rol.id)}, modified: true}))
 
     }
+
     handleParameterValueChange(parameter, value){
         if (value !== '' && value !== null)
-            this.setState(prevState => ({task: {...prevState.task, parameters: {...prevState.task.parameters, [parameter]: value}}, modified: true}))
+            this.setState(prevState => ({task: {...prevState.task, parameters: {...prevState.task.parameters, [parameter]: value}}, modified: true, showQuestionnaire: true, selectedQuestionnaire: value}))
         else {
-            let parameters = delete {...this.state.parameters}[parameter]
-            this.setState(prevState => ({task: {...prevState.task, parameters}, modified: true}))
+            let parameters = delete {...this.state.parameters}[parameter];
+            this.setState(prevState => ({task: {...prevState.task, parameters}, modified: true, showQuestionnaire: false}))
         }
     }
     handleInitialDateChange(value){
@@ -270,11 +278,11 @@ const actionLabel = defineMessages({
     }
 
     handleSaveTaskClick(){
-        this.setState({modified: false})
+        this.setState({modified: false});
         this.props.saveTask(this.state.task)
     }
     handleSaveEdgeClick(){
-        this.setState({modified: false})
+        this.setState({modified: false});
         this.props.saveEdge(this.state.task)
     }
     handleDeleteTaskClick(){
@@ -293,14 +301,9 @@ const actionLabel = defineMessages({
     }
 
     getLocalizedOperatorNameFromId(id){
-        let {intl: {formatMessage}} = this.props
+        let {intl: {formatMessage}} = this.props;
 
         return (OPERATOR_NAME[id] && formatMessage(OPERATOR_NAME[id])) || id
-    }
-    getLocalizedOperatorIdFromName(name){
-        let {intl: {formatMessage}} = this.props
-
-        return (OPERATOR_NAME[name] && formatMessage(OPERATOR_NAME[name])) || name
     }
     getLocalizedParameterNameFromId(id){
         let {intl: {formatMessage}} = this.props
@@ -563,29 +566,23 @@ const actionLabel = defineMessages({
                                                            value = { this.state.task.parameters[name] || '' }
                                                            onChange = { value => this.handleParameterValueChange(name, value) } />
                                     case 'Questionnaire':
-                                        /*
-                                        return <Dropdown
-                                            key={ name }
-                                            auto
-                                            source={this.state.questionnaires}
-                                            label="Questionnaire"
-                                            onChange={value => this.handleParameterValueChange(name, value)}
-                                            value = { this.state.task.parameters[name] || '' }
-                                        />
-                                         */
                                         return <div key={ name + "_div" }
                                                     styleName='questionnaire'>
                                             <Autocomplete
+                                                styleName="autocomplete"
                                                 key={ name + "_autocomplete" }
                                                 label="Choose a questionnaire"
-                                                hint="You can only choose one..."
                                                 suggestionMatch='anywhere'
                                                 multiple={false}
                                                 onChange={value => this.handleParameterValueChange(name, value)}
                                                 source={this.state.questionnaires}
                                                 value = { this.state.task.parameters[name] || '' }
                                             />
-                                        </div>
+                                            <IconButton styleName="displayQuestionnaire" icon='assignment'
+                                                        disabled={!this.state.showQuestionnaire}
+                                                        onClick={ this.handleToggleDialog }
+                                                        accent />
+                                        </div>;
 
                                     default:
                                         return <span key = { name }>
@@ -699,7 +696,13 @@ const actionLabel = defineMessages({
                 label = { this.state.label }
                 onClick = { () => this.handleToggleTaskDialog() }/>
             { this.renderFormInputsForTask() }
-            { this.renderFormActionsForTask() }</Card>
+            { this.renderFormActionsForTask() }
+            <QuestionnairesDetails
+                active={this.state.showDialog}
+                questionnaireUri={this.state.selectedQuestionnaire}
+                onCancel={this.handleToggleDialog}
+            />
+            </Card>
     }
 }
 
@@ -713,6 +716,7 @@ function mapStateToProps(state) {
 function mapDispatchToProps(dispatch) {
     return {
         getAllQuestionnaires: bindActionCreators(getAllQuestionnaires, dispatch),
+        getQuestionnairesByNameOrTag: bindActionCreators(getQuestionnairesByNameOrTag, dispatch),
         getAllTags: bindActionCreators(getAllTags, dispatch),
     }
 }

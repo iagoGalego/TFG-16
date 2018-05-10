@@ -37,6 +37,16 @@ function selectQuestionnairesSuccess(questionnaire) {
     }
 }
 
+function selectQuestionnairesError(err) {
+    return {
+        type: TYPES.SELECTED_QUESTIONNAIRE_REQUEST_FAILURE,
+        payload: {
+            questionnaire: {},
+            err
+        }
+    }
+}
+
 function getQuestionnairesError(err) {
     return {
         type: TYPES.REQUEST_FAILURE,
@@ -65,7 +75,7 @@ export function setSelectedQuestionnaire(uri) {
             .getQuestionnaireByUri(uri)
             .then( questionnaire => {
                 dispatch(selectQuestionnairesSuccess(questionnaire))
-            }).catch( err => dispatch(getQuestionnairesError(err)) )
+            }).catch( err => dispatch(selectQuestionnairesError(err)) )
     }
 }
 
@@ -181,6 +191,18 @@ export function getQuestionnairesByName(name, tags) {
 
         return HMBAPI.instance
             .getQuestionnairesByName(name, tags)
+            .then( questionnaires => {
+                dispatch(getQuestionnairesSuccess(questionnaires))
+            }).catch( err => dispatch(getQuestionnairesError(err)) )
+    }
+}
+
+export function getQuestionnairesByNameOrTag(value) {
+    return dispatch => {
+        dispatch(requestAPICall());
+
+        return HMBAPI.instance
+            .getQuestionnairesByNameOrTag(value)
             .then( questionnaires => {
                 dispatch(getQuestionnairesSuccess(questionnaires))
             }).catch( err => dispatch(getQuestionnairesError(err)) )

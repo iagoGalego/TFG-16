@@ -41,6 +41,13 @@ export default function QuestionnairesListReducer(state = InitialState, {type = 
                 ...state,
                 selectedQuestionnaire: payload.questionnaire,
             };
+        case TYPES.SELECTED_QUESTIONNAIRE_REQUEST_FAILURE:
+            return {
+                ...state,
+                selectedQuestionnaire: payload.questionnaire,
+                isFetching: false,
+                err: payload.err
+            };
         case TYPES.REQUEST_FAILURE:
             return {
                 ...state,

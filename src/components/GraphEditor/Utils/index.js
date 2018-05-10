@@ -375,10 +375,11 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
                         },
                         link: {
                             from: edges[i].source().id(),
-                            to: edges[i].target().id()
+                            to: edges[i].target().id(),
                         }
-                    }
+                    };
 
+                    if(edges[i].data().type) newTask.link.type = edges[i].data().type;
                     if(edges[i].data().isBase) newTask.link.newEdge = true;
                     if(edges[i].data().isLoop) newTask.link.isLoop = true;
 
@@ -437,7 +438,7 @@ export function buildGraph({graph, container, graphDefinition, selectedTask, sca
     else {
         graph.elements().remove();
         graph.add( mapGraphToFormat(graphDefinition, selectedTask) );
-        graph.nodes().ungrabify()
+        //graph.nodes().ungrabify()
         return graph
     }
 }

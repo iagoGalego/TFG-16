@@ -281,7 +281,37 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                         },
                         selectedTask: payload.task,
                     }
-                }  else{
+                }  else if(payload.link.type === "parallelStart"){
+                    newState =  {
+                        ...Object.assign({}, state),
+                        graph : {
+                            nodes: [
+                                ...state.graph.nodes,
+                                payload.task
+                            ],
+                            links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
+                                {from: payload.link.from, to: payload.task.id, type: "parallelStart", fromLevel: 0, toLevel: 0},
+                                {from: payload.task.id, to: payload.link.to, fromLevel: 0, toLevel: 0}
+                            ]
+                        },
+                        selectedTask: payload.task,
+                    }
+                } else if(payload.link.type === "parallelEnd"){
+                    newState =  {
+                        ...Object.assign({}, state),
+                        graph : {
+                            nodes: [
+                                ...state.graph.nodes,
+                                payload.task
+                            ],
+                            links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
+                                {from: payload.link.from, to: payload.task.id, fromLevel: 0, toLevel: 0},
+                                {from: payload.task.id, to: payload.link.to, type: "parallelEnd", fromLevel: 0, toLevel: 0}
+                            ]
+                        },
+                        selectedTask: payload.task,
+                    }
+                } else {
                     newState =  {
                         ...Object.assign({}, state),
                         graph : {
@@ -503,12 +533,12 @@ function createCloseNode(payload) {
 function recursiveDelete(state,task, endId) {
     let linksFromNode, actualNode, newNodes = [task];
     while (newNodes.length !== 0){
-        actualNode = newNodes[0]
+        actualNode = newNodes[0];
         newNodes = newNodes.filter(({id}) => (id !== actualNode.id));
-        linksFromNode = state.graph.links.filter(({from}) => (from === actualNode.id))
+        linksFromNode = state.graph.links.filter(({from}) => (from === actualNode.id));
         for(let i = 0; i < linksFromNode.length; i++){
             if(linksFromNode[i].to !== endId){
-                newNodes.push(state.graph.nodes.find(({id}) => (id === linksFromNode[i].to)))
+                newNodes.push(state.graph.nodes.find(({id}) => (id === linksFromNode[i].to)));
                 state.graph.nodes = state.graph.nodes.filter(({id}) => (id !== linksFromNode[i].to));
                 state.graph.links = state.graph.links.filter(({to}) => (to !== linksFromNode[i].to))
             } else {
@@ -519,18 +549,21 @@ function recursiveDelete(state,task, endId) {
 }
 
 function relocate(graph, start, end){
-    let node = start, cont = 0, weight = 0, complex = 0, len = 0;
-    let totalDistance = end.x - start.x
+    let node = start, cont = 0, weight = 0;
+    //sumatorio distancias entre complejos (inicio fin)
+    let len = 0;
+    //distance from start to end
+    let totalDistance = end.x - start.x;
 
     //saber pesos y numero de elementos
     while(node.id !== end.id){
-        node = graph.nodes.find(({id}) => (id === graph.links.find(({from, type}) => (from === node.id && type !== 'return')).to))
+        //TODO Find interno devuelve mas de uno
+        node = graph.nodes.find(({id}) => (id === graph.links.find(({from, type}) => (from === node.id && type !== 'return')).to));
         if(node.type ===  'userChoice' || node.type ===  'automaticChoice' ||
             node.type ===  'andSplit' || node.type ===  'loop'){
-            len += graph.nodes.find(({start}) => (start === node.id)).x - node.x
-            node = graph.nodes.find(({start}) => (start === node.id))
-            weight += 2
-            complex ++
+            len += graph.nodes.find(({start}) => (start === node.id)).x - node.x;
+            node = graph.nodes.find(({start}) => (start === node.id));
+            weight += 2;
         } else if(node.type === 'userTask' || node.type === 'automaticTask') weight ++;
         cont ++
     }
@@ -538,57 +571,64 @@ function relocate(graph, start, end){
     //saber cuanto ha de aumentar el final
     if(weight > totalDistance * (5/1200) && (end.x + 200 * (weight - totalDistance * (5/1200))) >= 1300) {
         end.x = end.x + 200 * (weight - totalDistance * (5/1200))
-    } else if(end.type === 'end') end.x = 1300
-    totalDistance = end.x - start.x
-    let initialDistance = start.x
+    } else if(end.type === 'end') end.x = 1300;
+    totalDistance = end.x - start.x;
+    let initialDistance = start.x;
     let distance = ( totalDistance - len ) / cont, maxHeight;
-    if(distance < 100) distance = 100
-    node = graph.nodes.find(({id}) => (id === graph.links.find(({from}) => (from === start.id)).to))
+    if(distance < 100) distance = 100;
+    node = graph.nodes.find(({id}) => (id === graph.links.find(({from}) => (from === start.id)).to));
 
+    maxHeight = start.y;
+    let localMaxHeight = start.y;
     while(node.id !== end.id){
-        let  dif = 0, res = 0
-        maxHeight = start.y
-        initialDistance += distance
-        node.x = initialDistance
-        node.y = start.y
+        let  dif = 0, res = 0;
+        localMaxHeight =start.y;
+        initialDistance += distance;
+        node.x = initialDistance;
+        node.y = start.y;
         if(node.type === 'userChoice' || node.type === 'automaticChoice' ||
             node.type === 'andSplit' || node.type === 'loop'){
             let invisibles = graph.links.filter(({from, type}) => (from === node.id && type === 'verticalStart'));
 
             for(let i = 0; i < invisibles.length; i++){
-                graph.nodes.find(({id}) => (id === invisibles[i].to)).x = initialDistance
-                graph.nodes.find(({id}) => (id === invisibles[i].to)).y = maxHeight -85
+                graph.nodes.find(({id}) => (id === invisibles[i].to)).x = initialDistance;
+                graph.nodes.find(({id}) => (id === invisibles[i].to)).y = localMaxHeight -85;
 
                 res = relocate(graph,
                     graph.nodes.find(({id}) => (id === invisibles[i].to)),
                     graph.nodes.find(({start}) => (start === invisibles[i].to))
-                )
-                if(res.x > dif) dif = res.x
-                if(res.y < maxHeight) maxHeight = res.y
+                );
+                if(res.x > dif) dif = res.x;
+                if(res.y < localMaxHeight) localMaxHeight = res.y;
+                graph.nodes.find(({start}) => (start === invisibles[i].to)).y = graph.nodes.find(({id}) => (id === invisibles[i].to)).y
             }
 
             for(let i = 0; i < invisibles.length; i++){
                 if(graph.nodes.find(({start}) => (start === invisibles[i].to)).x < dif){
                     //TODO revisar esta parte del if por rendimiento
-                    graph.nodes.find(({id}) => (id === invisibles[i].to)).x = initialDistance
-                    graph.nodes.find(({start}) => (start === invisibles[i].to)).x = dif
+                    graph.nodes.find(({id}) => (id === invisibles[i].to)).x = initialDistance;
+
+                    graph.nodes.find(({start}) => (start === invisibles[i].to)).x = dif;
                     res = relocate(graph,
                         graph.nodes.find(({id}) => (id === invisibles[i].to)),
                         graph.nodes.find(({start}) => (start === invisibles[i].to))
-                    )
+                    );
+                    //TODO esta sobra
+                    graph.nodes.find(({start}) => (start === invisibles[i].to)).x = dif;
                 }
                 graph.nodes.find(({start}) => (start === invisibles[i].to)).y = graph.nodes.find(({id}) => (id === invisibles[i].to)).y
             }
 
-            graph.nodes.find(({start}) => (start === node.id)).y = node.y
-            node = graph.nodes.find(({start}) => (start === node.id))
+            graph.nodes.find(({start}) => (start === node.id)).y = node.y;
+            node = graph.nodes.find(({start}) => (start === node.id));
             if(dif !== 0){
                 initialDistance = dif
-            } else initialDistance += 300
+            } else initialDistance += 300;
             node.x = initialDistance
         }
+        if(localMaxHeight < maxHeight) maxHeight = localMaxHeight;
         node = graph.nodes.find(({id}) => (id === graph.links.find(({from, type}) => (from === node.id && type !== 'return')).to))
     }
-    end.x = initialDistance + distance
+    end.x = initialDistance + distance;
     return {x: end.x, y: maxHeight}
 }

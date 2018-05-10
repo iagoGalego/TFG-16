@@ -5,8 +5,11 @@
   flex-direction: column;
   justify-content: center;
   position: relative;
-  overflow-y: auto;
+  overflow-y: hidden;
   overflow-x: hidden;
+  section{
+    padding: 0;
+  }
 }
 
 .miniLoader{
@@ -23,10 +26,9 @@
 }
 
 .empty{
-  height: calc(100vh - 243px);
+  height: calc(100vh - 196px);
   overflow-y: auto;
   overflow-x: hidden;
-  border-bottom: solid 1px rgba(0,0,0,.1);
 
   p{
     text-align: center;
@@ -48,7 +50,6 @@
   height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
-  border-bottom: solid 1px rgba(0,0,0,.1);
 
   .row{
     width: auto;
@@ -133,6 +134,10 @@
   margin: 7px 5px 0 0;
 }
 
+.input{
+  padding: 20px 0 0 0;
+}
+
 .fullWidth{
   float: right;
   margin-right: 5px;
@@ -155,7 +160,7 @@
   border: solid 1px rgba(0,0,0,.1);
   border-radius: 3px;
   margin: 0 -8px;
-  padding: 8px 8px 0 8px;
+  padding: 8px 8px 0 8px!important;
 
   &>:last-child{
     &, *{
@@ -191,10 +196,9 @@
 }
 
 .list{
-  height: calc(100vh - 250px);
+  height: calc(100vh - 196px);
   overflow-y: auto;
   overflow-x: hidden;
-  border-bottom: solid 1px rgba(0,0,0,.1);
 }
 
 .autocomplete{
@@ -206,7 +210,7 @@
 
 .columns{
   display: flex;
-  justify-content: space-around;
+  justify-content: start;
 }
 
 .tagInput{
@@ -217,9 +221,4 @@
   position: relative;
   top: 23px;
   color: #ffc400!important;
-}
-
-.input{
-  width: 75%;
-  padding: 20px 0 0 0;
 }

@@ -71,9 +71,10 @@ const loaders = [
     }, {
         test: /\.(png|jpg|jpeg|gif|woff|svg)$/,
         loader: 'url-loader?limit=8192'
-    }, {
-        test: /\.json$/,
-        loader: 'json-loader'
+    },{
+        test: /\.json/,
+        type: 'javascript/auto',
+        use: [require.resolve('json-loader')],
     }, {
         test: /\.html$/,
         loader: 'html-loader'

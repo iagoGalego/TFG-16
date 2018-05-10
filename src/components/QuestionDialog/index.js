@@ -17,7 +17,8 @@ import {
     Question, Tag, StringType, QuestionType, VideoQuestionType,
     PictureQuestionType, TrueFalseQuestionType, ChooseOneOptionQuestion, ChooseVariousOptionsQuestion,
     Option, TextSolution, QuestionWithRating,
-    InsertOneTextQuestion, InsertVariousTextsQuestion
+    InsertOneTextQuestion, InsertVariousTextsQuestion, SimpleFillInTheBlanksQuestion,
+    MultipleFillInTheBlanksQuestion
 } from "../../common/lib/model/questionnairesModel";
 import { RadioGroup, RadioButton } from 'react-toolbox/lib/radio';
 import Dropdown from 'react-toolbox/lib/dropdown';
@@ -65,6 +66,26 @@ const messages = defineMessages({
         description : 'Message to show when a mandatory input is not fulfilled',
         defaultMessage: 'This input is mandatory'
     },
+    misformed: {
+        id: 'questionnaires.input.misformed',
+        description : 'Message to show when the sentence input is misformed',
+        defaultMessage: 'The sentence is misformed'
+    },
+    positive: {
+        id: 'questionnaires.input.positive',
+        description : 'Message to show when the score input should be positive',
+        defaultMessage: 'The score should be positive'
+    },
+    incorrect: {
+        id: 'questionnaires.input.incorrect',
+        description : 'Message to show when the score is incorrect',
+        defaultMessage: 'The score is not a number'
+    },
+    negative: {
+        id: 'questionnaires.input.negative',
+        description : 'Message to show when the score input should be positive',
+        defaultMessage: 'The score should be negative'
+    },
     created: {
         id: 'questionnaires.input.isCreated',
         description : 'Message to show when a tag is already created',
@@ -86,24 +107,37 @@ const messages = defineMessages({
         this.state = {
             uri: '',
             statement: '',
+            sentence: '',
             tag: '',
             tags: [],
             videoURL: '',
             pictureURL: '',
             showStatementMandatory: false,
+            showSentenceMandatory: false,
+            showSentenceMisformed: false,
             showVideoMandatory: false,
             showPictureMandatory: false,
             showScoreMandatory: false,
             showTagMandatory: false,
             showTagCreated: false,
             showTrueFalseScoreMandatory: false,
+            showTrueFalseScoreIncorrect: false,
             showTextResponseError: [{
                 textMandatory: false,
                 numberMandatory: false,
+                numberIncorrect: false,
+            }],
+            showFillInResponseError: [{
+                textMandatory: false,
+                numberMandatory: false,
+                numberIncorrect: false,
             }],
             showOptionResponseError: [{
                 textMandatory: false,
                 numberMandatory: false,
+                numberIncorrect: false,
+                numberPositive: false,
+                numberNegative: false
             }],
             questionType: 'es.usc.citius.hmb.games.QuestionType',
             answerType: 'optionAnswer',
@@ -116,6 +150,10 @@ const messages = defineMessages({
                 text: '',
                 score: 0
             }],
+            fillInResponse: [{
+                text: '',
+                score: 0
+            }],
             optionResponse: [{
                 text: '',
                 score: 0,
@@ -123,52 +161,65 @@ const messages = defineMessages({
             }],
             optionSelected: 0,
             isRated: false,
-            rate: 0,
-            isNew: true
+            rate: '',
+            isNew: true,
+            opening: true,
         }
     }
 
     componentWillReceiveProps(props) {
         if (props.question !== null){
             let cardinality, answerType, options=[], trueFalseResponse= {value: 'true', score: 0};
-            let textErrors = [], optionErrors = [];
-            let textResponses= [], selectedOption = 0;
+            let textErrors = [], optionErrors = [], fillInResponses=[], fillInErrors = [];
+            let textResponses= [], selectedOption = 0, sentence;
             if(props.question.answerType["@class"] === "es.usc.citius.hmb.games.ChooseOneOptionQuestion"){
                 cardinality = 'simple';
-                answerType = 'optionAnswer'
+                answerType = 'optionAnswer';
                 options = props.question.answerType.options.map(
                     (option, idx) => {
-                        optionErrors.push({textMandatory: false, numberMandatory: false});
+                        optionErrors.push({
+                            textMandatory: false, numberMandatory: false, numberIncorrect: false,
+                            numberPositive: false, numberNegative: false
+                        });
                         if(props.question.answerType.solution.uri === option.uri) selectedOption = idx;
                         return {text: option.text.stringValue, score: option.score.integerValue, selected: false}
                     }
-                )
+                );
                 textResponses.push({
                     text: '',
                     score: 0
-                })
-                textErrors.push({
-                    textMandatory: false,
-                    numberMandatory: false,
                 });
+                textErrors.push({textMandatory: false, numberMandatory: false, numberIncorrect: false});
+                fillInResponses.push({
+                    text: '',
+                    score: 0
+                });
+                fillInErrors.push({textMandatory: false, numberMandatory: false, numberIncorrect: false});
+                sentence='';
             } else if(props.question.answerType["@class"] === "es.usc.citius.hmb.games.ChooseVariousOptionsQuestion"){
                 cardinality = 'multiple';
                 answerType = 'optionAnswer';
                 options = props.question.answerType.options.map(
                     (option) => {
                         let selected = props.question.answerType.solutions.find( ({uri}) =>  uri === option.uri ) !== undefined;
-                        optionErrors.push({textMandatory: false, numberMandatory: false});
+                        optionErrors.push({
+                            textMandatory: false, numberMandatory: false, numberIncorrect: false,
+                            numberPositive: false, numberNegative: false
+                        });
                         return {text: option.text.stringValue, score: option.score.integerValue, selected: selected}
                     }
-                )
+                );
                 textResponses.push({
                     text: '',
                     score: 0
-                })
-                textErrors.push({
-                    textMandatory: false,
-                    numberMandatory: false,
                 });
+                textErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
+                fillInResponses.push({
+                    text: '',
+                    score: 0
+                });
+                fillInErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
+                sentence='';
             } else if(props.question.answerType["@class"] === "es.usc.citius.hmb.games.TrueFalseQuestionType"){
                 cardinality = 'simple';
                 answerType = 'trueFalseAnswer';
@@ -178,23 +229,26 @@ const messages = defineMessages({
                     text: '',
                     score: 0
                 });
-                textErrors.push({
-                    textMandatory: false,
-                    numberMandatory: false,
-                });
+                textErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
                 options.push({
                     text: '',
                     score: 0,
                     selected: false
                 });
                 optionErrors.push({
-                    textMandatory: false,
-                    numberMandatory: false,
-                })
+                    textMandatory: false, numberMandatory: false, numberIncorrect: false,
+                    numberPositive: false, numberNegative: false
+                });
+                fillInResponses.push({
+                    text: '',
+                    score: 0
+                });
+                fillInErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
+                sentence='';
             } else if(props.question.answerType["@class"] === "es.usc.citius.hmb.games.InsertOneTextQuestion"){
                 cardinality = 'simple';
                 answerType = 'textAnswer';
-                textErrors.push({textMandatory: false, numberMandatory: false});
+                textErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
                 textResponses.push({
                     text: props.question.answerType.solution.solution.stringValue,
                     score: props.question.answerType.solution.score.integerValue
@@ -203,37 +257,100 @@ const messages = defineMessages({
                     text: '',
                     score: 0,
                     selected: false
-                })
+                });
                 optionErrors.push({
-                    textMandatory: false,
-                    numberMandatory: false,
-                })
+                    textMandatory: false, numberMandatory: false, numberIncorrect: false,
+                    numberPositive: false, numberNegative: false
+                });
+                fillInResponses.push({
+                    text: '',
+                    score: 0
+                });
+                fillInErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
             } else if(props.question.answerType["@class"] === "es.usc.citius.hmb.games.InsertVariousTextsQuestion"){
                 cardinality = 'multiple';
                 answerType = 'textAnswer';
                 props.question.answerType.solutions.map(
                     (solution) => {
-                        textErrors.push({textMandatory: false, numberMandatory: false});
+                        textErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
                         textResponses.push({
                             text: solution.solution.stringValue,
                             score: solution.score.integerValue
                         });
                     }
-                )
+                );
                 options.push({
                     text: '',
                     score: 0,
                     selected: false
-                })
+                });
                 optionErrors.push({
-                    textMandatory: false,
-                    numberMandatory: false,
-                })
+                    textMandatory: false, numberMandatory: false, numberIncorrect: false,
+                    numberPositive: false, numberNegative: false
+                });
+                fillInResponses.push({
+                    text: '',
+                    score: 0
+                });
+                fillInErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
+                sentence='';
+
+            } else if(props.question.answerType["@class"] === "es.usc.citius.hmb.games.SimpleFillInTheBlanksQuestion"){
+                cardinality = 'simple';
+                answerType = 'fillInTheBlanksAnswer';
+                sentence = props.question.answerType.sentence.stringValue;
+                fillInErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
+                fillInResponses.push({
+                    text: props.question.answerType.solution.solution.stringValue,
+                    score: props.question.answerType.solution.score.integerValue
+                });
+                options.push({
+                    text: '',
+                    score: 0,
+                    selected: false
+                });
+                optionErrors.push({
+                    textMandatory: false, numberMandatory: false, numberIncorrect: false,
+                    numberPositive: false, numberNegative: false
+                });
+                textResponses.push({
+                    text: '',
+                    score: 0
+                });
+                textErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
+            } else if(props.question.answerType["@class"] === "es.usc.citius.hmb.games.MultipleFillInTheBlanksQuestion"){
+                cardinality = 'multiple';
+                answerType = 'fillInTheBlanksAnswer';
+                sentence=props.question.answerType.sentence.stringValue;
+                props.question.answerType.solutions.map(
+                    (solution) => {
+                        fillInErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
+                        fillInResponses.push({
+                            text: solution.solution.stringValue,
+                            score: solution.score.integerValue
+                        });
+                    }
+                );
+                options.push({
+                    text: '',
+                    score: 0,
+                    selected: false
+                });
+                optionErrors.push({
+                    textMandatory: false, numberMandatory: false, numberIncorrect: false,
+                    numberPositive: false, numberNegative: false
+                });
+                textResponses.push({
+                    text: '',
+                    score: 0
+                });
+                textErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
             }
 
             this.setState({
                 uri: props.question.uri,
                 statement: props.question.statement.stringValue,
+                sentence: sentence,
                 tag: '',
                 tags: props.question.tags.map((tag) => {return tag.value.stringValue}),
                 videoURL: props.question.questionType["@class"] === 'es.usc.citius.hmb.games.VideoQuestionType'?
@@ -241,45 +358,56 @@ const messages = defineMessages({
                 pictureURL: props.question.questionType["@class"] === 'es.usc.citius.hmb.games.PictureQuestionType'?
                     props.question.questionType.imageURL.stringValue : '',
                 showStatementMandatory: false,
+                showSentenceMandatory: false,
+                showSentenceMisformed: false,
                 showScoreMandatory: false,
                 showTagMandatory: false,
                 showTagCreated: false,
                 showTrueFalseScoreMandatory: false,
+                showTrueFalseScoreIncorrect: false,
                 showTextResponseError: textErrors,
+                showFillInResponseError: fillInErrors,
                 showOptionResponseError: optionErrors,
                 questionType: props.question.questionType["@class"],
                 answerType: answerType,
                 cardinality: cardinality,
                 trueFalseResponse: trueFalseResponse,
                 textResponse: textResponses,
+                fillInResponse: fillInResponses,
                 optionResponse: options,
                 optionSelected: selectedOption,
                 isRated: props.question["@class"] === "es.usc.citius.hmb.games.QuestionWithRating",
                 rate: props.question["@class"] === "es.usc.citius.hmb.games.QuestionWithRating"?
-                    props.question.rating.integerValue : 0,
-                isNew: false
+                    props.question.rating.integerValue : '',
+                isNew: false,
+                opening: false
             })
-        } else {
+        } else if(props.question === null && this.state.opening){
             this.setState({
                 statement: '',
+                sentence: '',
                 tag: '',
                 tags: [],
                 videoURL: '',
                 pictureURL: '',
                 showStatementMandatory: false,
+                showSentenceMandatory: false,
+                showSentenceMisformed: false,
                 showVideoMandatory: false,
                 showPictureMandatory: false,
                 showTagMandatory: false,
                 showTagCreated: false,
                 showScoreMandatory: false,
                 showTrueFalseScoreMandatory: false,
-                showTextResponseError: [{
-                    textMandatory: false,
-                    numberMandatory: false,
-                }],
+                showTrueFalseScoreIncorrect: false,
+                showTextResponseError: [{textMandatory: false, numberMandatory: false,numberIncorrect: false}],
+                showFillInResponseError: [{textMandatory: false, numberMandatory: false,numberIncorrect: false}],
                 showOptionResponseError: [{
                     textMandatory: false,
                     numberMandatory: false,
+                    numberIncorrect: false,
+                    numberPositive: false,
+                    numberNegative: false
                 }],
                 questionType: 'es.usc.citius.hmb.games.QuestionType',
                 answerType: 'optionAnswer',
@@ -292,6 +420,11 @@ const messages = defineMessages({
                     text: '',
                     score: 0
                 }],
+                fillInResponse: [{
+                    text: '',
+                    score: 0,
+                    selected: false
+                }],
                 optionResponse: [{
                     text: '',
                     score: 0,
@@ -299,16 +432,21 @@ const messages = defineMessages({
                 }],
                 optionSelected: 0,
                 isRated: false,
-                rate: 0,
-                isNew: true
+                rate: '',
+                isNew: true,
+                opening: false
             })
+        } else if(props.question === null && !this.state.opening){
+            this.setState(prevState => ({
+                ...prevState,
+                opening: true
+            }))
         }
 
     }
 
     handleQuestionTypeChange(value){
         this.setState(prevState => ({...prevState, questionType: value}))
-
     }
 
     handleAnswerTypeChange(value){
@@ -325,7 +463,8 @@ const messages = defineMessages({
         if(value === '' || !Number.isNaN(Number.parseInt(value)) && value >= 0) {
             this.setState(prevState => ({...prevState,
                 trueFalseResponse: {... prevState.trueFalseResponse, score: value},
-                showTrueFalseScoreMandatory: false
+                showTrueFalseScoreMandatory: false,
+                showTrueFalseScoreIncorrect: false
             }))
         }
     }
@@ -360,21 +499,83 @@ const messages = defineMessages({
         });
     }
 
+    sentenceChange(value) {
+        let prevCount = (this.state.sentence.match(/\[Blank\]/g) || []).length;
+        let count = (value.match(/\[Blank\]/g) || []).length;
+        let newFillInResponse = [...this.state.fillInResponse];
+        let newShowFillInResponseError = [...this.state.showFillInResponseError];
+
+        if(count - prevCount > 0 && count !== 1){
+            for(let i = 0; i < count - prevCount; i++){
+                newFillInResponse.push({
+                    text: '',
+                    score: 0
+                });
+                newShowFillInResponseError.push({textMandatory: false, numberMandatory: false,numberIncorrect: false})
+            }
+        } else if(count - prevCount < 0 && count === 0){
+            for(let i = 0; i < prevCount - count - 1; i++){
+                newFillInResponse.pop();
+                newShowFillInResponseError.pop();
+            }
+        } else if(count - prevCount < 0 && count !== 0){
+            for(let i = 0; i < prevCount - count; i++){
+                newFillInResponse.pop();
+                newShowFillInResponseError.pop();
+            }
+        }
+
+        this.setState((previousState) => {
+            return {
+                ...previousState,
+                sentence: value,
+                fillInResponse: newFillInResponse,
+                showFillInResponseError: newShowFillInResponseError,
+                showSentenceMandatory: false,
+                showSentenceMisformed: false
+            }
+        });
+    }
+
     anyOptionInvalid(){
         for(let i = 0; i < this.state.optionResponse.length; i++){
             if(this.state.optionResponse[i].text.length === 0 ||
-                this.state.optionResponse[i].score.length === 0) return true
+                this.state.optionResponse[i].score.length === 0 ||
+                this.state.optionResponse[i].score[this.state.optionResponse[i].score.length - 1] === '.' ||
+                this.state.optionResponse[i].score < 0 && this.state.optionResponse[i].selected && this.state.cardinality ==='multiple' ||
+                this.state.optionResponse[i].score < 0 && this.state.optionSelected === i && this.state.cardinality ==='simple' ||
+                this.state.optionResponse[i].score > 0 && !this.state.optionResponse[i].selected && this.state.cardinality ==='multiple' ||
+                this.state.optionResponse[i].score > 0 && this.state.optionSelected !== i && this.state.cardinality ==='simple'){
+                return true
+            }
         }
         return false;
     }
     anyTextInvalid(){
         for(let i = 0; i < this.state.textResponse.length; i++){
             if(this.state.textResponse[i].text.length === 0 ||
-                this.state.textResponse[i].score.length === 0) return true
+                this.state.textResponse[i].score.length === 0 ||
+                this.state.textResponse[i].score[this.state.textResponse[i].score.length - 1] === '.') return true
+        }
+        return false;
+    }
+    anyFillInvalid(){
+        for(let i = 0; i < this.state.fillInResponse.length; i++){
+            if(this.state.fillInResponse[i].text.length === 0 ||
+                this.state.fillInResponse[i].score.length === 0 ||
+                this.state.fillInResponse[i].score[this.state.fillInResponse[i].score.length - 1] === '.') return true
         }
         return false;
     }
 
+    sentenceInvalid(){
+        let count = (this.state.sentence.match(/\[Blank\]/g) || []).length;
+        if(this.state.cardinality === 'simple'){
+            return count !== 1
+        } else if(this.state.cardinality === 'multiple'){
+            return count !== this.state.fillInResponse.length
+        }
+    }
 
     isAnyOptionSelected(){
         for(let i = 0; i < this.state.optionResponse.length; i++){
@@ -408,12 +609,57 @@ const messages = defineMessages({
                     showPictureMandatory: true
                 }
             });
+        else if(this.state.answerType === 'fillInTheBlanksAnswer' && this.state.sentence.length === 0)
+            this.setState((previousState) => {
+                return {
+                    ...previousState,
+                    showSentenceMandatory: true
+                }
+            });
         else if(this.state.answerType === 'optionAnswer' && this.anyOptionInvalid()){
             const newOptionErrors = this.state.optionResponse.map((optionResponse, sidx) => {
                 if (optionResponse.text.length === 0) {
-                    return {textMandatory: true, numberMandatory: this.state.showOptionResponseError[sidx].numberMandatory};
+                    return {
+                        textMandatory: true,
+                        numberMandatory: this.state.showOptionResponseError[sidx].numberMandatory,
+                        numberIncorrect: this.state.showOptionResponseError[sidx].numberIncorrect,
+                        numberPositive: this.state.showOptionResponseError[sidx].numberPositive,
+                        numberNegative: this.state.showOptionResponseError[sidx].numberNegative
+                    };
                 } else if(optionResponse.score.length === 0){
-                    return {textMandatory: this.state.showOptionResponseError[sidx].textMandatory, numberMandatory: true};
+                    return {
+                        textMandatory: this.state.showOptionResponseError[sidx].textMandatory,
+                        numberMandatory: true,
+                        numberIncorrect: this.state.showOptionResponseError[sidx].numberIncorrect,
+                        numberPositive: this.state.showOptionResponseError[sidx].numberPositive,
+                        numberNegative: this.state.showOptionResponseError[sidx].numberNegative
+                    };
+                } else if (optionResponse.score[optionResponse.score.length - 1] === '.'){
+                    return {
+                        textMandatory: this.state.showOptionResponseError[sidx].textMandatory,
+                        numberMandatory: this.state.showOptionResponseError[sidx].numberMandatory,
+                        numberIncorrect: true,
+                        numberPositive: this.state.showOptionResponseError[sidx].numberPositive,
+                        numberNegative: this.state.showOptionResponseError[sidx].numberNegative
+                    };
+                } else if( (optionResponse.score < 0 && optionResponse.selected && this.state.cardinality ==='multiple') ||
+                    ((optionResponse.score < 0 && this.state.optionSelected === sidx && this.state.cardinality ==='simple')) ){
+                    return {
+                        textMandatory: this.state.showOptionResponseError[sidx].textMandatory,
+                        numberMandatory: this.state.showOptionResponseError[sidx].numberMandatory,
+                        numberIncorrect: this.state.showOptionResponseError[sidx].numberIncorrect,
+                        numberPositive: true,
+                        numberNegative: this.state.showOptionResponseError[sidx].numberNegative
+                    };
+                } else if( (optionResponse.score > 0 && !optionResponse.selected  && this.state.cardinality ==='multiple') ||
+                    (optionResponse.score > 0 && this.state.optionSelected !== sidx  && this.state.cardinality ==='simple') ){
+                    return {
+                        textMandatory: this.state.showOptionResponseError[sidx].textMandatory,
+                        numberMandatory: this.state.showOptionResponseError[sidx].numberMandatory,
+                        numberIncorrect: this.state.showOptionResponseError[sidx].numberIncorrect,
+                        numberPositive: this.state.showOptionResponseError[sidx].numberPositive,
+                        numberNegative: true
+                    };
                 }
                 return this.state.showOptionResponseError[sidx];
             });
@@ -428,9 +674,14 @@ const messages = defineMessages({
         } else if(this.state.answerType === 'textAnswer' && this.anyTextInvalid()){
             const newTextErrors = this.state.textResponse.map((textResponse, sidx) => {
                 if (textResponse.text.length === 0) {
-                    return {textMandatory: true, numberMandatory: this.state.showTextResponseError[sidx].numberMandatory};
+                    return {textMandatory: true, numberIncorrect: this.state.showTextResponseError[sidx].numberIncorrect,
+                        numberMandatory: this.state.showTextResponseError[sidx].numberMandatory};
                 } else if(textResponse.score.length === 0){
-                    return {textMandatory: this.state.showTextResponseError[sidx].textMandatory, numberMandatory: true};
+                    return {textMandatory: this.state.showTextResponseError[sidx].textMandatory,
+                        numberIncorrect: this.state.showTextResponseError[sidx].numberIncorrect, numberMandatory: true};
+                } else if(textResponse.score[textResponse.score.length - 1] === '.'){
+                    return {textMandatory: this.state.showTextResponseError[sidx].textMandatory,
+                        numberIncorrect: true, numberMandatory: this.state.showTextResponseError[sidx].numberMandatory};
                 }
                 return this.state.showTextResponseError[sidx];
             });
@@ -441,12 +692,47 @@ const messages = defineMessages({
                     showTextResponseError: newTextErrors
                 }
             });
+        } else if(this.state.answerType === 'fillInTheBlanksAnswer' && this.sentenceInvalid()) {
+            this.setState((previousState) => {
+                return {
+                    ...previousState,
+                    showSentenceMisformed: true
+                }
+            });
+        } else if(this.state.answerType === 'fillInTheBlanksAnswer' && this.anyFillInvalid()){
+            const newFillInErrors = this.state.fillInResponse.map((fillInResponse, sidx) => {
+                if (fillInResponse.text.length === 0) {
+                    return {textMandatory: true, numberMandatory: this.state.showFillInResponseError[sidx].numberMandatory,
+                        numberIncorrect: this.state.showFillInResponseError[sidx].numberIncorrect};
+                } else if(fillInResponse.score.length === 0){
+                    return {textMandatory: this.state.showFillInResponseError[sidx].textMandatory,
+                        numberMandatory: true, numberIncorrect: this.state.showFillInResponseError[sidx].numberIncorrect};
+                } else if(fillInResponse.score[fillInResponse.score.length -1] === '.'){
+                    return {textMandatory: this.state.showFillInResponseError[sidx].textMandatory,
+                        numberMandatory: this.state.showFillInResponseError[sidx].numberMandatory,numberIncorrect: true};
+                }
+                return this.state.showFillInResponseError[sidx];
+            });
+
+            this.setState((previousState) => {
+                return {
+                    ...previousState,
+                    showFillInResponseError: newFillInErrors
+                }
+            });
         }
         else if(this.state.trueFalseResponse.score.length === 0)
             this.setState((previousState) => {
                 return {
                     ...previousState,
                     showTrueFalseScoreMandatory: true
+                }
+            });
+        else if(this.state.trueFalseResponse.score[this.state.trueFalseResponse.score.length - 1] === '.')
+            this.setState((previousState) => {
+                return {
+                    ...previousState,
+                    showTrueFalseScoreIncorrect: true
                 }
             });
         else if(this.state.isRated && this.state.rate.length === 0)
@@ -575,6 +861,41 @@ const messages = defineMessages({
                     question.answerType.solutions.push(solution)
                 }
 
+            } else if(this.state.answerType === 'fillInTheBlanksAnswer' && this.state.cardinality === 'simple'){
+                question.answerType = new SimpleFillInTheBlanksQuestion();
+                question.answerType.genURI();
+                question.answerType.sentence = new StringType();
+                question.answerType.sentence.genURI();
+                question.answerType.sentence.stringValue = this.state.sentence;
+                question.answerType.solution = new TextSolution();
+                question.answerType.solution.genURI();
+                question.answerType.solution.solution = new StringType();
+                question.answerType.solution.solution.genURI();
+                question.answerType.solution.solution.stringValue = this.state.fillInResponse[0].text;
+                question.answerType.solution.score = new IntegerType();
+                question.answerType.solution.score.genURI();
+                question.answerType.solution.score.integerValue = this.state.fillInResponse[0].score;
+
+            } else if(this.state.answerType === 'fillInTheBlanksAnswer' && this.state.cardinality === 'multiple'){
+                question.answerType = new MultipleFillInTheBlanksQuestion();
+                question.answerType.genURI();
+                question.answerType.sentence = new StringType();
+                question.answerType.sentence.genURI();
+                question.answerType.sentence.stringValue = this.state.sentence;
+                question.answerType.solutions = [];
+                for(let i = 0; i < this.state.fillInResponse.length; i++ ){
+                    let solution = new TextSolution();
+                    solution.solution = new StringType();
+                    solution.score = new IntegerType();
+                    solution.genURI();
+                    solution.solution.genURI();
+                    solution.solution.stringValue = this.state.fillInResponse[i].text;
+                    solution.score.genURI();
+                    solution.score.integerValue = this.state.fillInResponse[i].score;
+
+                    question.answerType.solutions.push(solution)
+                }
+
             } else if(this.state.answerType === 'trueFalseAnswer'){
                 question.answerType = new TrueFalseQuestionType();
                 question.answerType.genURI();
@@ -652,7 +973,7 @@ const messages = defineMessages({
                 newTextErrors.push(this.state.showTextResponseError[sidx]);
                 return textResponse;
             }
-            newTextErrors.push({textMandatory: false, numberMandatory: false});
+            newTextErrors.push({textMandatory: false, numberMandatory: false, numberIncorrect: false});
             return { ...textResponse, text: value };
         });
 
@@ -663,6 +984,45 @@ const messages = defineMessages({
         }));
     }
 
+    fillInResponseChange(idx, value) {
+        let newFillInErrors = [];
+        const newFillInResponse = this.state.fillInResponse.map((fillInResponse, sidx) => {
+            if (idx !== sidx) {
+                newFillInErrors.push(this.state.showFillInResponseError[sidx]);
+                return fillInResponse;
+            }
+            newFillInErrors.push({textMandatory: false, numberMandatory: false, numberIncorrect: false});
+            return { ...fillInResponse, text: value };
+        });
+
+        this.setState(prevState => ({
+            ...prevState,
+            fillInResponse: newFillInResponse,
+            showFillInResponseError: newFillInErrors
+        }));
+    }
+
+    fillInScoreChange(idx, value) {
+        if(value === '' || !Number.isNaN(Number.parseInt(value)) && value >= 0) {
+            let newFillInErrors = [];
+            const newFillInResponse = this.state.fillInResponse.map((fillInResponse, sidx) => {
+                if (idx !== sidx) {
+                    newFillInErrors.push(this.state.showFillInResponseError[sidx]);
+                    return fillInResponse;
+                }
+                newFillInErrors.push({textMandatory: false, numberMandatory: false, numberIncorrect: false});
+                return { ...fillInResponse, score: value };
+            });
+
+            this.setState(prevState => ({
+                ...prevState,
+                fillInResponse: newFillInResponse,
+                showFillInResponseError: newFillInErrors
+            }));
+        }
+
+    }
+
     textScoreChange(idx, value) {
         if(value === '' || !Number.isNaN(Number.parseInt(value)) && value >= 0) {
             let newTextErrors = [];
@@ -671,7 +1031,7 @@ const messages = defineMessages({
                     newTextErrors.push(this.state.showTextResponseError[sidx]);
                     return textResponse;
                 }
-                newTextErrors.push({textMandatory: false, numberMandatory: false});
+                newTextErrors.push({textMandatory: false, numberMandatory: false, numberIncorrect: false});
                 return { ...textResponse, score: value };
             });
 
@@ -703,7 +1063,7 @@ const messages = defineMessages({
                 newOptionErrors.push(this.state.showOptionResponseError[sidx]);
                 return optionResponse;
             }
-            newOptionErrors.push({textMandatory: false, numberMandatory: false});
+            newOptionErrors.push({textMandatory: false, numberMandatory: false, numberIncorrect: false});
             return { ...optionResponse, text: value };
         });
 
@@ -715,14 +1075,15 @@ const messages = defineMessages({
     }
 
     optionScoreChange(idx, value) {
-        if(value === '' || !Number.isNaN(Number.parseInt(value)) && value >= 0) {
+        let regex = /^[\+\-]?\d*\.?(\d+)?$/;
+        if(value === '-' || value === '' || regex.test(value)) {
             let newOptionErrors = [];
             const newOptionResponse = this.state.optionResponse.map((optionResponse, sidx) => {
                 if (idx !== sidx) {
                     newOptionErrors.push(this.state.showOptionResponseError[sidx]);
                     return optionResponse;
                 }
-                newOptionErrors.push({textMandatory: false, numberMandatory: false});
+                newOptionErrors.push({textMandatory: false, numberMandatory: false, numberIncorrect: false});
                 return { ...optionResponse, score: value };
             });
 
@@ -735,7 +1096,10 @@ const messages = defineMessages({
     }
 
     optionSelectedChange(idx, value){
-        this.setState(prevState => ({ ...prevState, optionSelected: idx }));
+        const newOptionErrors = this.state.showOptionResponseError.map((option, sidx) => {
+            return { ...option, numberPositive: false, numberNegative: false };
+        });
+        this.setState(prevState => ({ ...prevState, optionSelected: idx, showOptionResponseError: newOptionErrors }));
     }
 
     deleteOptionResponse(idx, value){
@@ -759,11 +1123,15 @@ const messages = defineMessages({
     }
 
     optionCheckedChange(idx, value){
+        let newOptionErrors = [...this.state.showOptionResponseError]
         const newOptionResponse = this.state.optionResponse.map((optionResponse, sidx) => {
             if (idx !== sidx) return optionResponse;
+            newOptionErrors.numberNegative = false;
+            newOptionErrors.numberPositive = false;
+            newOptionErrors.numberIncorrect = false;
             return { ...optionResponse, selected: !optionResponse.selected };
         });
-        this.setState(prevState => ({ ...prevState, optionResponse: newOptionResponse }));
+        this.setState(prevState => ({ ...prevState, optionResponse: newOptionResponse, showOptionResponseError: newOptionErrors }));
     }
 
     addTextResponse() {
@@ -773,7 +1141,7 @@ const messages = defineMessages({
             return textResponse;
         });
         newTextResponse.push({text: '', score: 0});
-        responseErrors.push({textMandatory: false, numberMandatory: false});
+        responseErrors.push({textMandatory: false, numberMandatory: false, numberIncorrect: false});
 
         this.setState(prevState => ({ ...prevState, textResponse: newTextResponse, showTextResponseError: responseErrors }));
     }
@@ -785,7 +1153,7 @@ const messages = defineMessages({
             return optionResponse;
         });
         newOptionResponse.push({text: '', score: 0});
-        responseErrors.push({textMandatory: false, numberMandatory: false});
+        responseErrors.push({textMandatory: false, numberMandatory: false, numberIncorrect: false});
 
         this.setState(prevState => ({ ...prevState, optionResponse: newOptionResponse, showOptionResponseError: responseErrors }));
     }
@@ -835,16 +1203,10 @@ const messages = defineMessages({
                                styleName = 'number'
                                label='Score'
                                value={this.state.textResponse[0].score}
-                               error = { this.state.showTextResponseError[0].numberMandatory && formatMessage(messages.mandatory) || ''}
+                               error = {
+                                   this.state.showTextResponseError[0].numberMandatory && formatMessage(messages.mandatory) ||
+                                   this.state.showTextResponseError[0].numberIncorrect && formatMessage(messages.incorrect) ||''}
                                onChange = { (value) => this.textScoreChange(0, value) }
-                        />
-                        <Button
-                            key={`Shareholder #${0} delete`}
-                            icon='delete'
-                            floating accent mini
-                            className={styles['buttonDelete']}
-                            disabled
-                            onClick = { (value) => this.deleteTextResponse(0, value) }
                         />
                     </div>
                 )
@@ -870,7 +1232,9 @@ const messages = defineMessages({
                                    key={`Shareholder #${idx + 1} score`}
 
                                    value={textResponse.score}
-                                   error = { this.state.showTextResponseError[idx].numberMandatory && formatMessage(messages.mandatory) || ''}
+                                   error = {
+                                       this.state.showTextResponseError[idx].numberMandatory && formatMessage(messages.mandatory) ||
+                                       this.state.showTextResponseError[idx].numberIncorrect && formatMessage(messages.incorrect) ||''}
                                    onChange = { (value) => this.textScoreChange(idx, value) }
                             />
                             <Button
@@ -880,6 +1244,64 @@ const messages = defineMessages({
                                 className={styles['buttonDelete']}
                                 disabled={this.state.textResponse.length === 1}
                                 onClick = { (value) => this.deleteTextResponse(idx, value) }
+                            />
+                        </div>
+                    </div>
+                ))
+            default:
+        }
+    }
+
+    renderFillInTheBlanksCase(){
+        let { intl: {formatMessage} } = this.props;
+
+        switch(this.state.cardinality){
+            case 'simple':
+                return (
+                    <div className={styles['textSolutions']}>
+                        <Input type='text'
+                               label='Fill In The Blanks Response'
+                               styleName = 'text'
+                               value={this.state.fillInResponse[0].text}
+                               error = { this.state.showFillInResponseError[0].textMandatory && formatMessage(messages.mandatory) || ''}
+                               onChange = { (value) => this.fillInResponseChange(0, value) }
+                        />
+                        <Input type='text'
+                               styleName = 'number'
+                               label='Score'
+                               value={this.state.fillInResponse[0].score}
+                               error = {
+                                   this.state.showFillInResponseError[0].numberMandatory && formatMessage(messages.mandatory) ||
+                                   this.state.showFillInResponseError[0].numberIncorrect && formatMessage(messages.incorrect) ||''}
+                               onChange = { (value) => this.fillInScoreChange(0, value) }
+                        />
+                    </div>
+                )
+            case 'multiple':
+                return this.state.fillInResponse.map((fillInResponse, idx) => (
+                    <div styleName="center"
+                         key={`Shareholder #${idx + 1} center`}
+                    >
+                        <div className={styles['textSolutions']}
+                             key={`Shareholder #${idx + 1} textSolution`}
+                        >
+                            <Input type='text'
+                                   label='Fill In The Blanks Response'
+                                   styleName = 'text'
+                                   key={`Shareholder #${idx + 1} name`}
+                                   value={fillInResponse.text}
+                                   error = { this.state.showFillInResponseError[idx].textMandatory && formatMessage(messages.mandatory) || ''}
+                                   onChange = { (value) => this.fillInResponseChange(idx, value) }
+                            />
+                            <Input type='text'
+                                   styleName = 'number'
+                                   label='Score'
+                                   key={`Shareholder #${idx + 1} score`}
+                                   value={fillInResponse.score}
+                                   error = {
+                                       this.state.showFillInResponseError[idx].numberMandatory && formatMessage(messages.mandatory) ||
+                                       this.state.showFillInResponseError[idx].numberIncorrect && formatMessage(messages.incorrect) ||''}
+                                   onChange = { (value) => this.fillInScoreChange(idx, value) }
                             />
                         </div>
                     </div>
@@ -930,7 +1352,12 @@ const messages = defineMessages({
                                    label='Score'
                                    key={`Shareholder #${idx + 1} score`}
                                    value={optionResponse.score}
-                                   error = { this.state.showOptionResponseError[idx].numberMandatory && formatMessage(messages.mandatory) || ''}
+                                   error = {
+                                       this.state.showOptionResponseError[idx].numberMandatory && formatMessage(messages.mandatory) ||
+                                       this.state.showOptionResponseError[idx].numberNegative && formatMessage(messages.negative)||
+                                       this.state.showOptionResponseError[idx].numberPositive && formatMessage(messages.positive) ||
+                                       this.state.showOptionResponseError[idx].numberIncorrect && formatMessage(messages.incorrect) ||''
+                                   }
                                    onChange = { (value) => this.optionScoreChange(idx, value) }
                             />
                             <Button
@@ -970,7 +1397,12 @@ const messages = defineMessages({
                                    label='Score'
                                    key={`Shareholder #${idx + 1} score`}
                                    value={optionResponse.score}
-                                   error = { this.state.showOptionResponseError[idx].numberMandatory && formatMessage(messages.mandatory) || ''}
+                                   error = {
+                                       this.state.showOptionResponseError[idx].numberMandatory && formatMessage(messages.mandatory) ||
+                                       this.state.showOptionResponseError[idx].numberNegative && formatMessage(messages.negative)||
+                                       this.state.showOptionResponseError[idx].numberPositive && formatMessage(messages.positive) ||
+                                       this.state.showOptionResponseError[idx].numberIncorrect && formatMessage(messages.incorrect) ||''
+                                   }
                                    onChange = { (value) => this.optionScoreChange(idx, value) }
                             />
                             <Button
@@ -996,6 +1428,7 @@ const messages = defineMessages({
                 return  <div>
                     <Dropdown
                         auto
+                        label="Cardinality"
                         onChange={this.handleCardinalityChange}
                         source={cardinality}
                         value={this.state.cardinality}
@@ -1015,6 +1448,24 @@ const messages = defineMessages({
                         { this.renderTextCase() }
                         { this.renderTextActions() }
                     </div>)
+            case 'fillInTheBlanksAnswer':
+                return (
+                    <div>
+                        <Dropdown
+                            auto
+                            onChange={this.handleCardinalityChange}
+                            source={cardinality}
+                            value={this.state.cardinality}
+                        />
+                        <Input type='text'
+                               label='Sentence'
+                               value={this.state.sentence}
+                               error = { this.state.showSentenceMandatory && formatMessage(messages.mandatory) || this.state.showSentenceMisformed && formatMessage(messages.misformed) || ''}
+                               onChange = { this.sentenceChange }
+                               multiline
+                        />
+                        { this.renderFillInTheBlanksCase() }
+                    </div>);
             case 'trueFalseAnswer':
                 return <div className={styles['trueFalseSolutions']}>
                     <Dropdown
@@ -1027,10 +1478,12 @@ const messages = defineMessages({
                            styleName = 'number'
                            label='Score'
                            value={this.state.trueFalseResponse.score}
-                           error = { this.state.showTrueFalseScoreMandatory && formatMessage(messages.mandatory) || ''}
+                           error = {
+                               this.state.showTrueFalseScoreMandatory && formatMessage(messages.mandatory) ||
+                               this.state.showTrueFalseScoreIncorrect && formatMessage(messages.incorrect) || ''}
                            onChange = { this.handleTrueFalseScoreChange }
                     />
-                </div>
+                </div>;
             default:
         }
     }
@@ -1060,12 +1513,29 @@ const messages = defineMessages({
             title={ this.state.isNew? 'Add New Question' : 'Edit Question' }
         >
             <form>
-                <Input type='text'
-                       label='Question Statement'
-                       value={this.state.statement}
-                       error = { this.state.showStatementMandatory && formatMessage(messages.mandatory) || ''}
-                       onChange = { this.statementChange }
-                />
+                <div styleName="columns">
+                    <Input type='text'
+                           label='Question Statement'
+                           styleName="statement"
+                           value={this.state.statement}
+                           error = { this.state.showStatementMandatory && formatMessage(messages.mandatory) || ''}
+                           onChange = { this.statementChange }
+                    />
+                    <Checkbox
+                        checked= { this.state.isRated }
+                        styleName = "checkbox"
+                        onChange = { this.rateCheckedChange }
+                    />
+                    <Input type="text"
+                           disabled={!this.state.isRated}
+                           value={ this.state.rate }
+                           label= "Set Score"
+                           error = { this.state.showScoreMandatory && formatMessage(messages.mandatory) || ''}
+                           onChange={ this.rateChange }
+                    />
+                </div>
+
+
                 <section className = { styles['multiSelector'] } >
                     <h1>
                         <FormattedMessage
@@ -1079,7 +1549,6 @@ const messages = defineMessages({
                         <RadioButton label='Video Question' value='es.usc.citius.hmb.games.VideoQuestionType'/>
                         <RadioButton label='Picture Question' value='es.usc.citius.hmb.games.PictureQuestionType'/>
                     </RadioGroup>
-                    { this.renderQuestionType() }
                 </section>
                 <section className = { styles['multiSelector'] } >
                     <h1>
@@ -1093,9 +1562,22 @@ const messages = defineMessages({
                         <RadioButton label='Option Answer' value='optionAnswer'/>
                         <RadioButton label='Text Answer' value='textAnswer'/>
                         <RadioButton label='True/False Answer' value='trueFalseAnswer'/>
+                        <RadioButton label='Fill In The Blanks Answer' value='fillInTheBlanksAnswer'/>
                     </RadioGroup>
+                </section>
+
+                <section className = { styles['multiSelector'] } >
+                    <h1>
+                        <FormattedMessage
+                            id = 'games.editor.taskDialog.form.inputs.labels.question'
+                            defaultMessage = 'Question'
+                            description = 'Graph editor - Tasks Dialog - Form Inputs - Labels - Question'
+                        />
+                    </h1>
+                    { this.renderQuestionType() }
                     { this.renderAnswerType() }
                 </section>
+
                 <section className = { styles['multiSelector'] } >
                     <h1>
                         <FormattedMessage
@@ -1141,30 +1623,6 @@ const messages = defineMessages({
                             )
                         }
                     </section>
-                </section>
-                <section className = { styles['multiSelector'] } >
-                    <h1>
-                        <FormattedMessage
-                            id = 'games.editor.taskDialog.form.inputs.labels.rate'
-                            defaultMessage = 'Rating'
-                            description = 'Graph editor - Tasks Dialog - Form Inputs - Labels - Rate'
-                        />
-                    </h1>
-                    <div styleName="columns">
-                        <Checkbox
-                            checked= { this.state.isRated }
-                            styleName = "checkbox"
-                            label= "Is Rated"
-                            onChange = { this.rateCheckedChange }
-                        />
-                        <Input type="text"
-                               disabled={!this.state.isRated}
-                               value={ this.state.rate }
-                               label= "Score"
-                               error = { this.state.showScoreMandatory && formatMessage(messages.mandatory) || ''}
-                               onChange={ this.rateChange }
-                        />
-                    </div>
                 </section>
             </form>
         </Dialog>;
