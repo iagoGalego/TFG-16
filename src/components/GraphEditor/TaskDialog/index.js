@@ -23,7 +23,7 @@ import ROLE_NAME from '../../../common/lib/model/RoleNames'
 import { stringTypeToSymbol } from '../../GraphEditor/Utils'
 
 import styles from './styles.scss'
-import {getAllQuestionnaires, getAllTags, getQuestionnairesByNameOrTag} from "../../QuestionnairesList/Actions";
+import {getAllQuestionnaires} from "../../QuestionnairesList/Actions";
 import {bindActionCreators} from "redux";
 import {connect} from "react-redux";
 
@@ -151,10 +151,6 @@ const actionLabel = defineMessages({
         toggleTaskDialog : () => {}
     };
 
-    componentWillMount(){
-        this.props.getAllTags();
-        this.props.getAllQuestionnaires();
-    }
 
     componentWillUpdate(props, state){
         if(props.selectedTask === null && state.modified && this.isValid() ) {
@@ -165,7 +161,7 @@ const actionLabel = defineMessages({
         }
     }
     componentWillReceiveProps(props){
-        if(props.selectedTask !== null)
+        if(props.selectedTask !== null && this.state.task.id !== props.selectedTask.id)
 
             this.setState({
                 task: {
@@ -230,6 +226,8 @@ const actionLabel = defineMessages({
         this.setState(prevState => ({task: {...prevState.task, description: value}, modified: true}))
     }
     handleOperatorChange(value){
+        if(value === "questionnaire")
+            this.props.getAllQuestionnaires();
         this.setState(prevState => ({task: {...prevState.task, operator: this.props.HMBData.operators.find(({name}) => name === value)}, modified: true}))
     }
     handleRolesChange(value, rol){
@@ -254,8 +252,14 @@ const actionLabel = defineMessages({
     }
 
     handleParameterValueChange(parameter, value){
-        if (value !== '' && value !== null)
-            this.setState(prevState => ({task: {...prevState.task, parameters: {...prevState.task.parameters, [parameter]: value}}, modified: true, showQuestionnaire: true, selectedQuestionnaire: value}))
+        if (value !== '' && value !== null) {
+            this.setState(prevState => ({
+                task: {
+                    ...prevState.task,
+                    parameters: {...prevState.task.parameters, [parameter]: value}
+                }, modified: true, showQuestionnaire: true, selectedQuestionnaire: value
+            }))
+        }
         else {
             let parameters = delete {...this.state.parameters}[parameter];
             this.setState(prevState => ({task: {...prevState.task, parameters}, modified: true, showQuestionnaire: false}))
@@ -582,6 +586,11 @@ const actionLabel = defineMessages({
                                                         disabled={!this.state.showQuestionnaire}
                                                         onClick={ this.handleToggleDialog }
                                                         accent />
+                                            <QuestionnairesDetails
+                                                active={this.state.showDialog}
+                                                questionnaireUri={this.state.selectedQuestionnaire}
+                                                onCancel={this.handleToggleDialog}
+                                            />
                                         </div>;
 
                                     default:
@@ -697,12 +706,7 @@ const actionLabel = defineMessages({
                 onClick = { () => this.handleToggleTaskDialog() }/>
             { this.renderFormInputsForTask() }
             { this.renderFormActionsForTask() }
-            <QuestionnairesDetails
-                active={this.state.showDialog}
-                questionnaireUri={this.state.selectedQuestionnaire}
-                onCancel={this.handleToggleDialog}
-            />
-            </Card>
+        </Card>
     }
 }
 
@@ -715,9 +719,7 @@ function mapStateToProps(state) {
 
 function mapDispatchToProps(dispatch) {
     return {
-        getAllQuestionnaires: bindActionCreators(getAllQuestionnaires, dispatch),
-        getQuestionnairesByNameOrTag: bindActionCreators(getQuestionnairesByNameOrTag, dispatch),
-        getAllTags: bindActionCreators(getAllTags, dispatch),
+        getAllQuestionnaires: bindActionCreators(getAllQuestionnaires, dispatch)
     }
 }
 

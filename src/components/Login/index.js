@@ -110,8 +110,10 @@ const messages = defineMessages({
             });
 
         if ( this.state.user.length !== 0 && this.state.pass.length !== 0 ){
-            login(this.state.user, this.state.pass)
-            loginQuestionnaires(this.state.user, this.state.pass)
+            login(this.state.user, this.state.pass).then(
+                (response) => {
+                    if (response === undefined) loginQuestionnaires(this.state.user, this.state.pass)
+                });
         }
     }
 

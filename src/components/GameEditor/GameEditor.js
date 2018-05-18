@@ -12,6 +12,10 @@ import {connect} from "react-redux";
 import styles from './styles.scss'
 import image from './img/warning.svg'
 import ReactDOM from "react-dom";
+import {DateType, Metadata, SequenceFlow, WorkflowTranslation, WorkflowTrigger} from "../../common/lib/model";
+import Translator from "../../common/lib/model/translator";
+import HMBAPI from "../../common/lib/API";
+import PropTypes from "prop-types";
 
 const messages = defineMessages({
     title : {
@@ -24,8 +28,8 @@ const messages = defineMessages({
 @connect(() => {return {}}, (dispatch) => {return {setAppTitle: bindActionCreators(setTitle, dispatch)}})
 @CSSModules(styles)
 @autobind class GameEditor extends Component {
-    constructor(props) {
-        super(props);
+    constructor(props, context) {
+        super(props, context);
         this.state = {
             windowWidth: window.innerWidth,
             scale: 0.8,
@@ -34,6 +38,10 @@ const messages = defineMessages({
         };
         this.__full = null
     }
+
+    static contextTypes = {
+        router: PropTypes.object.isRequired,
+    };
 
     static defaultProps = {
         saveTask: () => alert('Not implemented yet'),
@@ -394,7 +402,15 @@ const messages = defineMessages({
     componentWillMount(){
         this.props.setAppTitle(this.props.intl.formatMessage(messages.title))
     }
+
     componentDidMount() {
+        if(this.props.location.pathname.split( '/' )[3] === 'editor'){
+            this.props.setSelectedWorkflow(null);
+            this.props.clearHistory()
+        } else{
+            this.props.setSelectedWorkflow(this.props.location.pathname.split( '/' )[3]);
+            this.props.clearHistory()
+        }
         window.addEventListener('resize', this.handleWindowResize);
         window.addEventListener('beforeunload', function (e) {
             //TODO save before leaving
@@ -414,13 +430,67 @@ const messages = defineMessages({
     handleWindowResize() {
         this.setState(previousState => ({...previousState, windowWidth: window.innerWidth}));
     }
-    handleSave(){
-        this.props.save({
-            name: "Workflow_01", description: "Description Sample",
-            startDate: null, expiryDate: null,
-            metadata: {name: "meta",metadataValue: "data"},
-            modificationDate: new Date().getDate(), provider: "iagoGalego",
-            designer: "iagoGalego"});
+    handleSave(payload){
+        let { language } = this.props;
+
+        let workflow = {
+            executionId: 0,
+            executionStatus: 0,
+            isSubWorkflow: false,
+            name: "",
+            description: "",
+            startDate: null,
+            expiryDate: null,
+            metadata: [],
+            modificationDate: null,
+            provider: "",
+            translation: [],
+            element: [],
+            sequenceFlow: [],
+            trigger: null,
+            versionNumber: 0,
+            isDesignFinished: false,
+            isValidated: false,
+            designer: ""
+        };
+        let metadata = payload.metadata.map(
+            (m) => {
+                let md = new Metadata();
+                md.name = "tag";
+                md.metadataValue = m.metadataValue;
+                return md;
+            }
+        );
+        HMBAPI.instance.DB.client.loggedUser.get().then(
+            (response) => {
+                let translation = new WorkflowTranslation();
+                translation.description = payload.description;
+                translation.name = payload.name;
+                translation.longDescription = payload.longDescription;
+                translation.languageCode = language;
+                translation.imageUrl = null;
+                let newWorkFlow = {
+                    ...workflow,
+                    uri: payload.uri,
+                    translation: translation,
+                    startDate: payload.startDate,
+                    expiryDate: payload.expiryDate,
+                    metadata: metadata,
+                    modificationDate: payload.modificationDate,
+                    provider: payload.provider,
+                    designer: response.content
+                };
+                alert("graph tiene que quedar así: "+ JSON.stringify(this.props.graph));
+                if(newWorkFlow.uri === ''){
+                    this.props.save(Translator.toOpenetFormat({workflow: newWorkFlow, graph:this.props.graph}));
+                } else {
+                    this.props.edit(Translator.toOpenetFormat({workflow: newWorkFlow, graph:this.props.graph}));
+                }
+                //alert("cambio ruta")
+                //this.context.router.history.push("/app/games");
+            }
+        );
+
     }
     handleZoom(action){
         switch (action){
@@ -509,6 +579,19 @@ const messages = defineMessages({
         ReactDOM.findDOMNode(this.__taskDialog).classList.toggle(styles['toggled']);
     }
 
+    fullScreenHandler(){
+        if(this.state.fullScreen){
+            //this.handleExit();
+            if(document.cancelFullScreen) {
+                document.cancelFullScreen();
+            } else if(document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if(document.webkitCancelFullScreen) {
+                document.webkitCancelFullScreen();
+            }
+        }
+    }
+
     render() {
         if( this.state.windowWidth < 720 )
             return (
@@ -532,6 +615,7 @@ const messages = defineMessages({
                          createTaskHandler = { this.handleTaskCreation }
                          printHandler = { this.handlePrint }
                          saveHandler = { this.handleSave }
+                         fullScreenHandler = {this.fullScreenHandler}
                          clearHandler = { this.handleClear }
                          helpHandler = { this.handleHelp }
                          historyHandler = {this.handleHistory}

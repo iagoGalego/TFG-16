@@ -24,10 +24,10 @@
   },
 
   "api" : {
-    "baseURL" : "https://tec.citius.usc.es/cuestionarios/backend",
-    "authAPI" : "HMBAuthenticationRESTAPI/auth",
-    "dbAPI" : "HMBOntologyRESTAPI/api",
-    "execAPI" : "HMBWFExecutionEngineRESTAPI/api",
+    "baseURL" : "http://localhost/backend",
+    "authAPI" : "session/auth",
+    "dbAPI" : "api/db",
+    "execAPI" : "api/exec",
     "versions" : {
       "db" : {
         "segmentationAPI " : "v3",

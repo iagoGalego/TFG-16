@@ -134,8 +134,16 @@
   margin: 7px 5px 0 0;
 }
 
+.chips{
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
 .input{
-  padding: 20px 0 0 0;
+  padding: 20px 10px 0 10px;
+  label{
+    padding-left: 10px;
+  }
 }
 
 .fullWidth{
@@ -159,8 +167,7 @@
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.26);
   border: solid 1px rgba(0,0,0,.1);
   border-radius: 3px;
-  margin: 0 -8px;
-  padding: 8px 8px 0 8px!important;
+  padding: 8px 0 0 0!important;
 
   &>:last-child{
     &, *{
@@ -174,6 +181,9 @@
     margin: 0 0 10px;
     padding-bottom: 5px;
     border-bottom: solid 1px rgba(0,0,0,.1);
+    span{
+      padding-left: 10px;
+    }
   }
 }
 

@@ -43,7 +43,9 @@ const messages = defineMessages({
             activeDialog: false,
             name: '',
             loading: true,
-            questionnaires: []
+            questionnaires: [],
+            typing: false,
+            typingTimeOut: 0
         }
     }
 
@@ -61,6 +63,20 @@ const messages = defineMessages({
         this.props.getAllQuestionnaires();
         this.setState(prevState => ({...prevState, loading: false}));
         this.props.setAppTitle(this.props.intl.formatMessage(messages.title))
+    }
+
+    changeTag(value) {
+
+        if (this.state.typingTimeout)
+            clearTimeout(this.state.typingTimeout);
+
+        this.setState({
+            tag: value,
+            typing: false,
+            typingTimeout: setTimeout(() => {
+                this.props.getTagsByName(value)
+            }, 500)
+        });
     }
 
     handleToggleDialog() {
@@ -190,11 +206,6 @@ const messages = defineMessages({
         } else return []
     }
 
-    handleQueryChange(value){
-        this.props.getTagsByName(value)
-        this.setState(prevState => ({...prevState, tag: value}));
-    }
-
     handleAutocompleteFocus(){
         this.props.getTagsByName(this.state.tag);
     }
@@ -229,7 +240,7 @@ const messages = defineMessages({
                                     suggestionMatch='anywhere'
                                     selectedPosition='below'
                                     source={this.getAutocompleteSource()}
-                                    onQueryChange={this.handleQueryChange}
+                                    onQueryChange={this.changeTag}
                                     onFocus={(value) => this.handleAutocompleteFocus(value)}
                                     value={this.state.tagsAllowed}
                                 />

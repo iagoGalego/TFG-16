@@ -2,6 +2,8 @@
  * Created by victorjose.gallego on 2/4/16.
  */
 import TYPES from './types'
+import HMBAPI from "../../../common/lib/API";
+import {LEVELS, Logger} from "../../../common/lib/Logger";
 
 export function addTaskInLink({task, link}){
     return [
@@ -86,6 +88,15 @@ export function undo(){
     }]
 }
 
+export function clear(){
+    return [{
+        type: TYPES.CLEAR_HISTORY
+    }, {
+        type: TYPES.SET_SELECTED_TASK,
+        payload: { task: null },
+    }]
+}
+
 export function redo(){
     return [{
         type: TYPES.REDO
@@ -95,9 +106,91 @@ export function redo(){
     }]
 }
 
-export function save(workflow){
+function requestAPICall(){
     return {
-        type: TYPES.SAVE,
-        payload: { workflow: workflow },
+        type: TYPES.REQUEST
     }
+}
+
+function requestAPIError(err) {
+    if(!err.message.includes('401'))
+        Logger.instance.log(LEVELS.ERROR, 'Error on API request', err);
+
+    return {
+        type: TYPES.REQUEST_FAILURE,
+        payload : {
+            err
+        }
+    }
+}
+
+function saveWorkFlowSuccess() {
+    return {
+        type: TYPES.REQUEST_SUCCESS,
+        payload: {}
+    }
+}
+
+export function save(workflow){
+    return dispatch => {
+        dispatch(requestAPICall());
+
+        return HMBAPI.instance
+            .DB.admin.workflows.create(workflow)
+            .then( () => dispatch(saveWorkFlowSuccess()))
+            .catch( err => dispatch(requestAPIError(err)) )
+    }
+}
+
+export function edit(workflow){
+    return dispatch => {
+        dispatch(requestAPICall());
+
+        return HMBAPI.instance
+            .DB.admin.workflows.delete(workflow.uri)
+            .then( () => {
+                HMBAPI.instance
+                    .DB.admin.workflows.create(workflow)
+                    .then( () => dispatch(saveWorkFlowSuccess()))
+                    .catch( err => dispatch(requestAPIError(err)) )
+            })
+    }
+}
+
+function selectWorkflowSuccess(workflow) {
+    return {
+        type: TYPES.SET_SELECTED_WORKFLOW,
+        payload: {
+            workflow: workflow,
+        }
+    }
+}
+
+function selectWorkflowError(err) {
+    return {
+        type: TYPES.SELECTED_WORKFLOW_REQUEST_FAILURE,
+        payload: {
+            workflow: {},
+            err
+        }
+    }
+}
+
+export function setSelectedWorkflow(uri) {
+    if(uri === null){
+        return dispatch => {
+            dispatch(selectWorkflowSuccess(null))
+        }
+    } else {
+        return dispatch => {
+            dispatch(requestAPICall());
+
+            return HMBAPI.instance
+                .DB.admin.workflows.get(uri)
+                .then( workflow => {
+                    dispatch(selectWorkflowSuccess(workflow.content))
+                }).catch( err => dispatch(selectWorkflowError(err)) )
+        }
+    }
+
 }

@@ -191,19 +191,21 @@ const messages = defineMessages({
                                    value={this.state.questionnaire.name.stringValue}
                                    disabled={true}
                             />
+                            <div styleName="chips">
+                                {
+                                    this.state.questionnaire.tags.map(
+                                        (tag) => {
+                                            return <Chip
+                                                styleName = "chip"
+                                                key = { `${tag.uri}-chip` }
+                                                deletable={false}>
+                                                { tag.value.stringValue }
+                                            </Chip>
+                                        }
+                                    )
+                                }
+                            </div>
 
-                            {
-                                this.state.questionnaire.tags.map(
-                                    (tag) => {
-                                        return <Chip
-                                            styleName = "chip"
-                                            key = { `${tag.uri}-chip` }
-                                            deletable={false}>
-                                            { tag.value.stringValue }
-                                        </Chip>
-                                    }
-                                )
-                            }
                         </div>
                     </section>
                     { this.renderList() }

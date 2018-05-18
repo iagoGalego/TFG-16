@@ -13,6 +13,15 @@
   }
 }
 
+.datePicker {
+  display: flex;
+  justify-content: space-between;
+
+  &>*{
+    flex-basis: 49%;
+  }
+}
+
 .dialog{
   section{
     overflow-y: auto;

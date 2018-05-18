@@ -14,6 +14,7 @@ export default class Games extends Component {
         return (
             <Switch>
                 <Route exact path='/app/games' component = { GameList } />
+                <Route exact path='/app/games/(.*)/editor' component = { GameEditorWrapper } />
                 <Route path = '/app/games/editor' component = { GameEditorWrapper } />
             </Switch>
         )

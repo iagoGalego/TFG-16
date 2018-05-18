@@ -46,6 +46,9 @@
     margin: 0 0 10px;
     padding-bottom: 5px;
     border-bottom: solid 1px rgba(0,0,0,.1);
+    span{
+      padding-left: 10px;
+    }
   }
 }
 
@@ -127,6 +130,9 @@
   padding: 25px 0 0 0;
   align-content: center;
   input{
+    width: 98%;
+  }
+  span{
     width: 98%;
   }
 }

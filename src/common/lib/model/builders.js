@@ -38,9 +38,10 @@ export const TASK_TYPE = Object.freeze({
 });
 
 export class TaskBuilder{
-    constructor(val = true, uri){
-        if(val === true)this.__task = new HumanTask(uri);
-        else this.__task = new AutomaticTask(uri);
+    constructor(val = "HumanTask", uri){
+        if(val === "HumanTask") this.__task = new HumanTask(uri);
+        else if(val === "AutomaticTask") this.__task = new AutomaticTask(uri);
+        else if(val === "Task") this.__task = new Task(uri);
         this.__task.genURI();
         this.setInitial(false);
         this.setFinal(false);
@@ -61,6 +62,10 @@ export class TaskBuilder{
     }
     setMetadata( metadata = [] ){
         this.__task.metadata = metadata;
+        return this
+    }
+    setTranslation( translation = [] ){
+        this.__task.translation = translation;
         return this
     }
     setUser( user = [] ){
@@ -329,6 +334,14 @@ export class WorkflowBuilder{
     }
     setMetadata( metadata = [] ){
         this.__wf.metadata = metadata;
+        return this
+    }
+    setUri(uri){
+        this.__wf.uri = uri;
+        return this
+    }
+    setTranslation( translation = [] ){
+        this.__wf.translation = translation;
         return this
     }
     addMetadata( metadata){

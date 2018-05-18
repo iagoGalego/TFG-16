@@ -12,6 +12,7 @@ class LoginWrapper extends Component {
     }
 
     render() {
+
         return <Login {...this.props}/>
     }
 }

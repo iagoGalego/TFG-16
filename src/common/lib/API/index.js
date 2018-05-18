@@ -39,8 +39,7 @@ export class APIClient {
         query.append('username', user);
         query.append('password', pass);
 
-        __token = "token";
-        return Promise.resolve("token")/*fetch(`${CONFIG.api.baseURL}/${CONFIG.api.authAPI}/login`, {
+        return fetch(`${CONFIG.api.baseURL}/${CONFIG.api.authAPI}/login`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json;charset=utf-8',
@@ -54,9 +53,9 @@ export class APIClient {
                 : Promise.reject(new Error(`${response.status} ${response.statusText}`))
         }).then( json => json.content
         ).then( token => {
-            __token = token
+            __token = token;
             return token
-        })*/
+        })
     }
     logout(){
         if(!__token){
@@ -412,17 +411,12 @@ class DB{
                         'Accept': 'application/json;charset=utf-8',
                         'Content-Type' : 'application/json;charset=utf-8'
                     },
-                    body: workflow
+                    body: JSON.stringify(workflow)
                 }).then( response => {
                     return response.ok
                         ? response.json()
                         : Promise.reject(new Error(`${response.status} ${response.statusText}`))
                 })
-
-
-
-
-
             },
             get( workflowId ){
                 if(!__token){
@@ -461,18 +455,42 @@ class DB{
                         : Promise.reject(new Error(`${response.status} ${response.statusText}`))
                 })
             },
+            getPaginatedWithoutQuery( { page = 0, pagesize = Number.MAX_SAFE_INTEGER } ){
+                if(!__token){
+                    let err = new Error('You must log in first!');
+
+                    return Promise.reject(err)
+                }
+
+                return fetch(`${CONFIG.api.baseURL}/${CONFIG.api.dbAPI}/admin/${CONFIG.api.versions.db.adminAPI}/workflows/page/${page}/size/${pagesize}`, {
+                    headers: {
+                        'X-Auth-Token' : __token,
+                        'Accept': 'application/json;charset=utf-8'
+                    }
+                }).then( response => {
+                    return response.ok
+                        ? response.json()
+                        : Promise.reject(new Error(`${response.status} ${response.statusText}`))
+                })
+            },
             getPaginated( { designer, metadata, provider, page = 0, pagesize = Number.MAX_SAFE_INTEGER } ){
                 if(!__token){
                     let err = new Error('You must log in first!');
-                    
+
                     return Promise.reject(err)
                 }
 
                 let query = new URLSearchParams();
 
-                query.append('designer', designer);
-                query.append('metadata', metadata);
-                query.append('provider', provider);
+                if(designer !== '') query.append('designer', designer);
+                if(metadata.length !== 0) {
+                    metadata.map(
+                        (m) => {
+                            query.append('metadata', m)
+                        }
+                    )
+                }
+                if(provider !== '') query.append('provider', provider);
 
                 return fetch(`${CONFIG.api.baseURL}/${CONFIG.api.dbAPI}/admin/${CONFIG.api.versions.db.adminAPI}/workflows/page/${page}/size/${pagesize}?${query.toString()}`, {
                     headers: {

@@ -1,16 +1,16 @@
 class Thing {
     static RDFS_CLASS = 'http://www.w3.org/2000/01/rdf-schema#Class';
-    URI = undefined
+    uri = undefined
     isLoaded = undefined
 
     constructor(options = {}) {
         if (options['uri']) {
-            this.URI = options['uri'];
+            this.uri = options['uri'];
         }
     }
     genURI() {
-        if (this.URI === undefined || this.URI === null || this.URI.length <= 0) {
-            this.URI = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        if (this.uri === undefined || this.uri === null || this.uri.length <= 0) {
+            this.uri = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
                 let r = Math.random()*16|0
                 let v = c === 'x' ? r : (r&0x3|0x8)
                 return v.toString(16)
@@ -30,11 +30,22 @@ class Sort extends Thing {
 }
 export { Sort }
 
+class Translation extends Sort {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Translation';
+    languageCode = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.Translation";
+    }
+}
+export { Translation }
+
 class ActionDescriptorParameter extends Thing {
     static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#ActionDescriptorParameter';
     displayName = undefined
     name = undefined
-    type = undefined
+    mType = undefined
 
     constructor(options = {}) {
         super(options);
@@ -169,7 +180,7 @@ class Property extends Knowledge {
     name = undefined
     provider = undefined
     tagReference = undefined
-    type = undefined
+    mType = undefined
     metadata = undefined
     propertyContext = undefined
     propertySource = undefined
@@ -358,7 +369,7 @@ export { StringType }
 class Parameter extends Thing {
     static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Parameter';
     name = undefined
-    type = undefined
+    mType = undefined
     isMandatory = undefined
 
     constructor(options = {}) {
@@ -454,12 +465,24 @@ class Tag extends Thing {
 }
 export { Tag }
 
-class Task extends Thing {
-    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Task';
+class TaskTranslation extends Translation {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#TaskTranslation';
     name = undefined
     description = undefined
-    expiryDate = undefined
+    imageUrl = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.TaskTranslation";
+    }
+}
+export { TaskTranslation }
+
+class Task extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#Task';
+    translation = undefined
     startDate = undefined
+    expiryDate = undefined
     lastVersionNumber = undefined
     metadata = undefined
     operator = undefined
@@ -468,12 +491,9 @@ class Task extends Thing {
     pathId = undefined
     tagReference = undefined
     versionNumber = undefined
-    workflow = undefined
-    xPosition = undefined
-    yPosition = undefined
     isDisabled = undefined
-    isFinal = undefined
     isInitial = undefined
+    isFinal = undefined
     isRequired = undefined
     user = undefined
 
@@ -579,10 +599,23 @@ class WorkflowRuleTrigger extends WorkflowTrigger {
 }
 export { WorkflowRuleTrigger }
 
-class WorkflowTemplate extends Thing {
-    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#WorkflowTemplate';
+class WorkflowTranslation extends Translation {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#WorkflowTranslation';
     name = undefined
     description = undefined
+    longDescription = undefined
+    imageUrl = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.WorkflowTranslation";
+    }
+}
+export { WorkflowTranslation }
+
+class WorkflowTemplate extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#WorkflowTemplate';
+    translation = undefined
     startDate = undefined
     expiryDate = undefined
     metadata = undefined
@@ -615,19 +648,6 @@ class Workflow extends WorkflowTemplate {
     }
 }
 export { Workflow }
-
-class HistoryEntry extends Sort {
-    static RDFS_CLASS = 'http://citius.usc.es/hmb/wfontology.owl#HistoryEntry';
-    property = undefined
-    user = undefined
-    values = undefined
-
-    constructor(options = {}) {
-        super(options);
-        this['@class'] = "es.usc.citius.hmb.model.HistoryEntry";
-    }
-}
-export { HistoryEntry }
 
 class ServiceGrounding extends Thing {
     static RDFS_CLASS = 'http://citius.usc.es/hmb/serviceonto.owl#ServiceGrounding';
@@ -685,6 +705,29 @@ class User extends Thing {
 }
 export { User }
 
+class UserPropertyValue extends Thing {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/systemontology.owl#UserPropertyValue';
+    name = undefined
+    value = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.UserPropertyValue";
+    }
+}
+export { UserPropertyValue }
+
+class ExtendedUser extends User {
+    static RDFS_CLASS = 'http://citius.usc.es/hmb/systemontology.owl#ExtendedUser';
+    propertyValue = undefined
+
+    constructor(options = {}) {
+        super(options);
+        this['@class'] = "es.usc.citius.hmb.model.ExtendedUser";
+    }
+}
+export { ExtendedUser }
+
 class TaskExecution extends Thing {
     static RDFS_CLASS = 'http://citius.usc.es/hmb/systemontology.owl#TaskExecution';
     name = undefined
@@ -700,4 +743,3 @@ class TaskExecution extends Thing {
     }
 }
 export { TaskExecution }
-

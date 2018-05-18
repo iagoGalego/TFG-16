@@ -178,6 +178,7 @@ const messages = defineMessages({
             onEscKeyDown={this.handleCancel}
             onOverlayClick={this.handleCancel}
             title='Add New Questionnaire'
+            styleName="dialog"
         >
             <form>
                 <Input type='text'

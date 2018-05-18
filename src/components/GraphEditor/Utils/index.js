@@ -131,7 +131,7 @@ function mapGraphToFormat({nodes, links}, selectedTask){
         selected: selectedTask !== null && selectedTask.id === id,
         data: {id, name, type, image: getImage(type), isDisabled: isDisabled, isTransitable: isTransitable},
         position: { x, y }}));
-    links.map(({from, to, isLoop, isBase, isTransitable, type, level}) => formatedGraph.edges.push({selectable: false, data: {source: from, target: to, isBase: isBase, isTransitable: isTransitable, isLoop: isLoop, type: type, level: level}}))
+    links.map(({from, to, fromLevel, toLevel, isLoop, isBase, isTransitable, type, level}) => formatedGraph.edges.push({selectable: false, data: {source: from, target: to, fromLevel: fromLevel, toLevel: toLevel, isBase: isBase, isTransitable: isTransitable, isLoop: isLoop, type: type, level: level}}))
 
     return formatedGraph
 }
@@ -376,11 +376,14 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
                         link: {
                             from: edges[i].source().id(),
                             to: edges[i].target().id(),
+                            fromLevel: edges[i].data().fromLevel,
+                            toLevel: edges[i].data().toLevel,
                         }
                     };
 
                     if(edges[i].data().type) newTask.link.type = edges[i].data().type;
                     if(edges[i].data().isBase) newTask.link.newEdge = true;
+                    if(edges[i].data().isTransitable) newTask.link.isTransitable = true;
                     if(edges[i].data().isLoop) newTask.link.isLoop = true;
 
                     addTask(newTask)

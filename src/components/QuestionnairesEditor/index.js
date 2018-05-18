@@ -307,27 +307,34 @@ const messages = defineMessages({
                                 </div>
                             </div>
 
-                            {
-                                this.state.questionnaire.tags.map(
-                                    (tag) => {
-                                        return <Chip
-                                            styleName = "chip"
-                                            key = { `${tag.uri}-chip` }
-                                            deletable={true}
-                                            onDeleteClick = { () => this.handleDeleteTag(false, tag.uri) }>
-                                            { tag.value.stringValue }
-                                        </Chip>
+                            <div styleName="columns2">
+                                <div styleName="chips">
+                                    {
+                                        this.state.questionnaire.tags.map(
+                                            (tag) => {
+                                                return <Chip
+                                                    styleName = "chip"
+                                                    key = { `${tag.uri}-chip` }
+                                                    deletable={true}
+                                                    onDeleteClick = { () => this.handleDeleteTag(false, tag.uri) }>
+                                                    { tag.value.stringValue }
+                                                </Chip>
+                                            }
+                                        )
                                     }
-                                )
-                            }
-                            <Button
-                                styleName='saveButton'
-                                label='Save'
-                                onClick = {this.handleUpdateQuestionnaire}
-                                disabled={ !this.state.modified }
-                                raised
-                                accent
-                            />
+                                </div>
+                                <div styleName="buttonBotton">
+                                    <Button
+                                        styleName='saveButton'
+                                        label='Save'
+                                        onClick = {this.handleUpdateQuestionnaire}
+                                        disabled={ !this.state.modified }
+                                        raised
+                                        accent
+                                    />
+                                </div>
+
+                            </div>
                         </div>
                     </section>
                     { this.renderList() }
