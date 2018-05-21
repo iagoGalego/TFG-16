@@ -406,10 +406,8 @@ const messages = defineMessages({
     componentDidMount() {
         if(this.props.location.pathname.split( '/' )[3] === 'editor'){
             this.props.setSelectedWorkflow(null);
-            this.props.clearHistory()
         } else{
             this.props.setSelectedWorkflow(this.props.location.pathname.split( '/' )[3]);
-            this.props.clearHistory()
         }
         window.addEventListener('resize', this.handleWindowResize);
         window.addEventListener('beforeunload', function (e) {
@@ -607,7 +605,8 @@ const messages = defineMessages({
                     </h1>
                 </div>
             );
-        else return (
+        else
+            return (
             <div styleName = 'mainContainer'
                  ref =  { element => this.__full = element }>
                 <Toolbar styleName='toolbar'
@@ -621,6 +620,7 @@ const messages = defineMessages({
                          historyHandler = {this.handleHistory}
                          canUndo = { this.props.canUndo }
                          canRedo = { this.props.canRedo }
+                         isLoading = {this.props.isLoading }
                 />
 
                 <Editor styleName = 'editor'
@@ -630,6 +630,7 @@ const messages = defineMessages({
                         addTask = { this.props.addTask }
                         selectTask = { this.props.selectTask }
                         moveTask = { this.props.moveTask }
+                        isLoading = {this.props.isLoading}
                 />
 
                 <TaskDialog styleName = 'taskDialog'

@@ -100,7 +100,7 @@ const messages = defineMessages({
     }
 
     render() {
-        let {className, saveHandler, dragHandler, createTaskHandler, historyHandler, canUndo, canRedo, printHandler, clearHandler, helpHandler, zoomHandler, intl: {formatMessage}} = this.props;
+        let {className, isLoading, saveHandler, dragHandler, createTaskHandler, historyHandler, canUndo, canRedo, printHandler, clearHandler, helpHandler, zoomHandler, intl: {formatMessage}} = this.props;
 
         return (
             <nav className = { className } styleName='toolbar'>
@@ -117,11 +117,11 @@ const messages = defineMessages({
                         <TooltipButton icon = 'undo'
                                        tooltip = {formatMessage( messages.undo )}
                                        onClick = { () => historyHandler('undo') }
-                                       disabled = { canUndo === 0 }/>
+                                       disabled = { canUndo === 0 || isLoading}/>
                         <TooltipButton icon = 'redo'
                                        tooltip = {formatMessage( messages.redo )}
                                        onClick = { () => historyHandler('redo') }
-                                       disabled = { canRedo === 0 }/>
+                                       disabled = { canRedo === 0 || isLoading }/>
                     </section>
                     <section>
                         <TooltipButton icon = 'zoom_in'

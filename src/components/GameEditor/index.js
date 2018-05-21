@@ -23,7 +23,8 @@ function mapStateToProps(state) {
         language: state.UIState.language,
         canUndo: state.GameEditorState.past.length,
         canRedo: state.GameEditorState.future.length,
-        isClean: state.GameEditorState.present.isClean
+        isClean: state.GameEditorState.present.isClean,
+        isLoading: state.GameEditorState.present.isLoading
     }
 }
 
@@ -39,7 +40,6 @@ function mapDispatchToProps(dispatch) {
         clear: bindActionCreators(clearDiagram, dispatch),
         undo: bindActionCreators(undo, dispatch),
         redo: bindActionCreators(redo, dispatch),
-        clearHistory: bindActionCreators(clear, dispatch),
         save: bindActionCreators(save, dispatch),
         edit: bindActionCreators(edit, dispatch)
     }

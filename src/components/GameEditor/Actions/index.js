@@ -88,15 +88,6 @@ export function undo(){
     }]
 }
 
-export function clear(){
-    return [{
-        type: TYPES.CLEAR_HISTORY
-    }, {
-        type: TYPES.SET_SELECTED_TASK,
-        payload: { task: null },
-    }]
-}
-
 export function redo(){
     return [{
         type: TYPES.REDO
@@ -158,12 +149,14 @@ export function edit(workflow){
 }
 
 function selectWorkflowSuccess(workflow) {
-    return {
+    return [{
         type: TYPES.SET_SELECTED_WORKFLOW,
         payload: {
             workflow: workflow,
-        }
+        }},{
+        type: TYPES.CLEAR_HISTORY
     }
+    ]
 }
 
 function selectWorkflowError(err) {
@@ -179,7 +172,9 @@ function selectWorkflowError(err) {
 export function setSelectedWorkflow(uri) {
     if(uri === null){
         return dispatch => {
-            dispatch(selectWorkflowSuccess(null))
+            dispatch(requestAPICall());
+
+            return dispatch(selectWorkflowSuccess(null))
         }
     } else {
         return dispatch => {

@@ -135,6 +135,8 @@ const actionLabel = defineMessages({
                 isRequired: true,
                 isDisabled: false,
                 condition: '',
+                x: null,
+                y: null,
                 ...props.selectedTask
             },
             ui: {
@@ -161,7 +163,7 @@ const actionLabel = defineMessages({
         }
     }
     componentWillReceiveProps(props){
-        if(props.selectedTask !== null && this.state.task.id !== props.selectedTask.id)
+        if(props.selectedTask !== null)
 
             this.setState({
                 task: {
@@ -172,6 +174,8 @@ const actionLabel = defineMessages({
                     parameters: {},
                     rolesAllowed: [],
                     isRequired: true,
+                    x: null,
+                    y: null,
                     ...props.selectedTask
                 }
             })
