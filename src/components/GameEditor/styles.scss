@@ -80,4 +80,8 @@ $toolbarHeight: 48px;
     top: calc(100vh - 100px);
     transition: top 0.5s
   }
+  .toggledFullScreen{
+    top: calc(100vh - 36px);
+    transition: top 0.5s
+  }
 }

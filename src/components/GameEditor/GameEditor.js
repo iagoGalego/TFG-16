@@ -423,6 +423,14 @@ const messages = defineMessages({
     }
 
     handleExit() {
+        alert("exit")
+        if(ReactDOM.findDOMNode(this.__taskDialog).classList.contains(styles['toggledFullScreen'])){
+            ReactDOM.findDOMNode(this.__taskDialog).classList.toggle(styles['toggled']);
+            ReactDOM.findDOMNode(this.__taskDialog).classList.toggle(styles['toggledFullScreen']);
+        } else if(ReactDOM.findDOMNode(this.__taskDialog).classList.contains(styles['toggled'])){
+            ReactDOM.findDOMNode(this.__taskDialog).classList.toggle(styles['toggled']);
+            ReactDOM.findDOMNode(this.__taskDialog).classList.toggle(styles['toggledFullScreen']);
+        }
         this.setState(previousState => ({...previousState, fullScreen: !this.state.fullScreen}));
     }
     handleWindowResize() {
@@ -574,12 +582,15 @@ const messages = defineMessages({
     }
 
     toggleTaskDialog(){
-        ReactDOM.findDOMNode(this.__taskDialog).classList.toggle(styles['toggled']);
+        if(!this.state.fullScreen){
+            ReactDOM.findDOMNode(this.__taskDialog).classList.toggle(styles['toggled']);
+        } else {
+            ReactDOM.findDOMNode(this.__taskDialog).classList.toggle(styles['toggledFullScreen']);
+        }
     }
 
     fullScreenHandler(){
         if(this.state.fullScreen){
-            //this.handleExit();
             if(document.cancelFullScreen) {
                 document.cancelFullScreen();
             } else if(document.mozCancelFullScreen) {
