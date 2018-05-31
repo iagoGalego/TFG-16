@@ -3,6 +3,8 @@
  */
 import TYPES from './types'
 import HMBAPI from '../../../common/lib/QuestionnairesAPI'
+import HMBAPI2 from '../../../common/lib/API'
+
 
 function requestAPICall(){
     return {

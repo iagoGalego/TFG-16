@@ -140,7 +140,7 @@ export function edit(workflow){
         return HMBAPI.instance
             .DB.admin.workflows.delete(workflow.uri)
             .then( () => {
-                HMBAPI.instance
+                return HMBAPI.instance
                     .DB.admin.workflows.create(workflow)
                     .then( () => dispatch(saveWorkFlowSuccess()))
                     .catch( err => dispatch(requestAPIError(err)) )
@@ -169,6 +169,63 @@ function selectWorkflowError(err) {
     }
 }
 
+function getRolesSuccess(roles) {
+    return {
+        type: TYPES.SET_ROLES,
+        payload: {
+            roles: roles,
+        }
+    }
+}
+
+function getRolesError(err) {
+    return {
+        type: TYPES.SET_ROLES_FAILURE,
+        payload: {
+            roles: [],
+            err
+        }
+    }
+}
+
+function getOperatorsSuccess(operators) {
+    return {
+        type: TYPES.SET_OPERATORS,
+        payload: {
+            operators: operators,
+        }
+    }
+}
+
+function getOperatorsError(err) {
+    return {
+        type: TYPES.SET_OPERATORS_FAILURE,
+        payload: {
+            operators: [],
+            err
+        }
+    }
+}
+
+function getPropertiesSuccess(properties) {
+    return {
+        type: TYPES.SET_PROPERTIES,
+        payload: {
+            properties: properties,
+        }
+    }
+}
+
+function getPropertiesError(err) {
+    return {
+        type: TYPES.SET_PROPERTIES_FAILURE,
+        payload: {
+            properties: [],
+            err
+        }
+    }
+}
+
 export function setSelectedWorkflow(uri) {
     if(uri === null){
         return dispatch => {
@@ -188,4 +245,40 @@ export function setSelectedWorkflow(uri) {
         }
     }
 
+}
+
+export function getRoles() {
+    return dispatch => {
+        dispatch(requestAPICall());
+
+        return HMBAPI.instance
+            .DB.admin.tags.getAll()
+            .then( roles => {
+                dispatch(getRolesSuccess(roles.content))
+            }).catch( err => dispatch(getRolesError(err)) )
+    }
+}
+
+export function getOperators() {
+    return dispatch => {
+        dispatch(requestAPICall());
+
+        return HMBAPI.instance
+            .DB.admin.operators.getAll()
+            .then( operators => {
+                dispatch(getOperatorsSuccess(operators.content))
+            }).catch( err => dispatch(getOperatorsError(err)) )
+    }
+}
+
+export function getAllProperties() {
+    return dispatch => {
+        dispatch(requestAPICall());
+
+        return HMBAPI.instance
+            .DB.admin.globalResourceProperties.getAllWithourProvider()
+            .then( properties => {
+                dispatch(getPropertiesSuccess(properties.content))
+            }).catch( err => dispatch(getPropertiesError(err)) )
+    }
 }

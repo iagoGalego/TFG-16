@@ -12,7 +12,9 @@ import { autobind } from 'core-decorators'
 import DatePicker from 'react-toolbox/lib/date_picker'
 import {setTitle} from "../Layout/Actions";
 import {Button} from 'react-toolbox/lib/button';
+import ProgressBar from 'react-toolbox/lib/progress_bar';
 import {setSelectedQuestionnaire, saveQuestion, updateQuestion, updateQuestionnaire, deleteQuestion} from "../QuestionnairesList/Actions";
+import {setSelectedWorkflow} from "../GameEditor/Actions";
 
 
 const messages = defineMessages({
@@ -20,6 +22,11 @@ const messages = defineMessages({
         id: 'questionnaires.input.isMandatory',
         description : 'Message to show when a mandatory input is not fulfilled',
         defaultMessage: 'This input is mandatory'
+    },
+    incorrect: {
+        id: 'questionnaires.input.isIncorrect',
+        description : 'Message to show when a mandatory input is incorrect',
+        defaultMessage: 'The interval time is incorrect'
     },
     created: {
         id: 'questionnaires.input.isCreated',
@@ -47,6 +54,11 @@ const formLabel = defineMessages({
         id : 'games.editor.taskDialog.form.inputs.labels.mandatory',
         description : 'Graph editor - Tasks Dialog - Form Inputs - Labels - Mandatory',
         defaultMessage : 'Mandatory'
+    },
+    incorrect: {
+        id : 'games.editor.taskDialog.form.inputs.labels.incorrect',
+        description : 'Graph editor - Tasks Dialog - Form Inputs - Labels - Incorrect',
+        defaultMessage : 'Incorrect'
     },
     operator: {
         id : 'games.editor.taskDialog.form.inputs.labels.operator',
@@ -96,13 +108,16 @@ const formLabel = defineMessages({
             tags: [],
             showNameMandatory: false,
             showProviderMandatory: false,
-            showDescriptionMandatory: false,
-            showInitialDateMandatory: false,
-            showEndingDateMandatory: false,
+            showInitialTimeMandatory: false,
+            showEndingTimeMandatory: false,
+            showEndingTimeIncorrect: false,
             showTagMandatory: false,
             showTagCreated: false,
             initialDate: null,
             endingDate: null,
+            initialTimeString: '',
+            endingTimeString: '',
+            loading: true
         }
     }
 
@@ -111,29 +126,15 @@ const formLabel = defineMessages({
     }
 
     componentWillReceiveProps(props) {
-        if (props.selectedWorkflow !== null) {
-            let tags = props.selectedWorkflow.metadata.filter(m => m.name === 'tag');
+        if(props.workflowUri !== null && props.workflowUri !== this.props.workflowUri){
+            this.props.setSelectedWorkflow(props.workflowUri);
             this.setState(prevState => ({
                 ...prevState,
-                uri: props.selectedWorkflow.uri,
-                modified: false,
-                name: props.selectedWorkflow.translation[0].name,
-                description: props.selectedWorkflow.translation[0].longDescription,
-                provider: props.selectedWorkflow.provider,
-                tag: '',
-                tags: tags.map(m => m.metadataValue),
-                showNameMandatory: false,
-                showProviderMandatory: false,
-                showDescriptionMandatory: false,
-                showInitialDateMandatory: false,
-                showEndingDateMandatory: false,
-                showTagMandatory: false,
-                showTagCreated: false,
-                initialDate: new Date(props.selectedWorkflow.startDate),
-                endingDate: new Date(props.selectedWorkflow.expiryDate),
+                loading: true
             }))
-        } else if(!this.state.modified) {
+        }  else if(props.workflowUri === null) {
             this.setState(prevState => ({
+                ...prevState,
                 uri: '',
                 name: '',
                 description: '',
@@ -145,10 +146,50 @@ const formLabel = defineMessages({
                 showDescriptionMandatory: false,
                 showInitialDateMandatory: false,
                 showEndingDateMandatory: false,
-                showTagMandatory: false,
-                showTagCreated: false,
+                showInitialTimeMandatory: false,
+                showEndingTimeMandatory: false,
+                showEndingTimeIncorrect: false,
                 initialDate: null,
                 endingDate: null,
+                initialTimeString: '',
+                endingTimeString: '',
+                loading: false
+            }))
+        } else if (props.selectedWorkflow !== null) {
+            alert(JSON.stringify(props.selectedWorkflow))
+            let tags = props.selectedWorkflow.metadata.filter(m => m.name === 'tag');
+
+            let initialDate = null, endingDate = null, initialTimeString = '', endingTimeString = '';
+            if(props.selectedWorkflow.startDate){
+                initialDate = new Date(props.selectedWorkflow.startDate);
+                initialTimeString = initialDate.getHours() + ":" + initialDate.getMinutes()
+            }
+            if(props.selectedWorkflow.expiryDate){
+                endingDate = new Date(props.selectedWorkflow.expiryDate);
+                endingTimeString= endingDate.getHours() + ":" + endingDate.getMinutes();
+            }
+
+            this.setState(prevState => ({
+                ...prevState,
+                uri: props.selectedWorkflow.uri,
+                modified: false,
+                name: props.selectedWorkflow.translation[0].name,
+                description: props.selectedWorkflow.translation[0].longDescription,
+                provider: props.selectedWorkflow.provider,
+                tag: '',
+                tags: tags.map(m => m.metadataValue),
+                showNameMandatory: false,
+                showProviderMandatory: false,
+                showTagMandatory: false,
+                showTagCreated: false,
+                showInitialTimeMandatory: false,
+                showEndingTimeMandatory: false,
+                showEndingTimeIncorrect: false,
+                initialDate: initialDate,
+                endingDate: endingDate,
+                initialTimeString: initialTimeString,
+                endingTimeString: endingTimeString,
+                loading: false
             }))
         }
     }
@@ -169,7 +210,6 @@ const formLabel = defineMessages({
         this.setState(prevState => ({...prevState,
             description: value,
             modified: true,
-            showDescriptionMandatory: false
         }))
     }
 
@@ -219,18 +259,63 @@ const formLabel = defineMessages({
         }
 
     }
+
     handleInitialDateChange(value){
+        if(this.state.initialTimeString !== ''){
+            let res = this.state.initialTimeString.split(":");
+            value.setHours(Number(res[0]));
+            value.setMinutes(Number(res[1]));
+            value.setSeconds(0);
+        }
         this.setState(prevState => ({...prevState,
             initialDate: value,
             modified: true,
-            showInitialDateMandatory: false
         }))
     }
     handleEndingDateChange(value){
+        if(this.state.endingTimeString !== ''){
+            let res = this.state.endingTimeString.split(":");
+            value.setHours(Number(res[0]));
+            value.setMinutes(Number(res[1]));
+            value.setSeconds(0);
+        }
         this.setState(prevState => ({...prevState,
             endingDate: value,
             modified: true,
-            showEndingDateMandatory: false
+        }))
+    }
+    handleInitialTimeChange(value){
+        alert(value)
+        let t = this.state.initialDate;
+        if(value !== '') {
+            let res = value.split(":");
+            t.setHours(Number(res[0]));
+            t.setMinutes(Number(res[1]));
+            t.setSeconds(0);
+        }
+        this.setState(prevState => ({...prevState,
+            initialTimeString: value,
+            initialDate: t,
+            showInitialTimeMandatory: false,
+            showEndingTimeIncorrect: false,
+            modified: true,
+        }))
+    }
+    handleEndingTimeChange(value){
+        let t = this.state.endingDate;
+        if(value !== ''){
+            let res = value.split(":");
+            t.setHours(Number(res[0]));
+            t.setMinutes(Number(res[1]));
+            t.setSeconds(0);
+        }
+        this.setState(prevState => ({
+            ...prevState,
+            endingTimeString: value,
+            endingDate: t,
+            modified: true,
+            showEndingTimeMandatory: false,
+            showEndingTimeIncorrect: false
         }))
     }
     handleSave(){
@@ -243,25 +328,26 @@ const formLabel = defineMessages({
                     showNameMandatory: true
                 }
             });
-        else if(this.state.description.length === 0)
+        else if(this.state.initialDate !== null && this.state.initialTimeString === '')
             this.setState((previousState) => {
                 return {
                     ...previousState,
-                    showDescriptionMandatory: true
+                    showInitialTimeMandatory: true
                 }
             });
-        else if(this.state.initialDate === null)
+        else if(this.state.endingDate !== null && this.state.endingTimeString === '')
             this.setState((previousState) => {
                 return {
                     ...previousState,
-                    showInitialDateMandatory: true
+                    showEndingTimeMandatory: true,
                 }
             });
-        else if(this.state.endingDate === null)
+        else if(this.state.endingDate !== null && this.state.initialDate !== null &&
+            this.state.endingDate.getTime() <= this.state.initialDate.getTime())
             this.setState((previousState) => {
                 return {
                     ...previousState,
-                    showEndingDateMandatory: true
+                    showEndingTimeIncorrect: true
                 }
             });
         else if(this.state.provider.length === 0)
@@ -273,19 +359,21 @@ const formLabel = defineMessages({
             });
         else{
             let description;
-            if(this.state.description.length <= 10){
+            if(this.state.description.length <= 80){
                 description = this.state.description;
             } else{
-                description = this.state.description.slice(0, 11) + "...";
+                description = this.state.description.slice(0, 81) + "...";
             }
 
             let payload = {
                 uri: this.state.uri,
                 name: this.state.name, description: description, longDescription: this.state.description,
-                startDate: this.state.initialDate.getTime(), expiryDate: this.state.endingDate.getTime(),
                 metadata: [],
                 modificationDate: new Date().getTime(), provider: this.state.provider
             };
+            if(this.state.initialDate) payload.startDate = this.state.initialDate.getTime();
+            if(this.state.endingDate) payload.expiryDate= this.state.endingDate.getTime();
+
             payload.metadata = this.state.tags.map(
                 (tag) => {
                     return {name: tag, metadataValue: tag}
@@ -312,91 +400,106 @@ const formLabel = defineMessages({
                     onOverlayClick={onCancel}
                     title='Save Workflow'
                 >
-                    <form>
-                        <Input type='text'
-                               label='Workflow Name'
-                               value={this.state.name}
-                               error = { this.state.showNameMandatory && formatMessage(messages.mandatory) || ''}
-                               onChange = { this.nameChange }
-                        />
-                        <Input
-                            type='text'
-                            label = { formatMessage(formLabel.description) }
-                            value = { this.state.description }
-                            error = { this.state.showDescriptionMandatory && formatMessage(messages.mandatory) || ''}
-                            onChange = { this.handleDescriptionChange }
-                            multiline
-                        />
-                        <section styleName = 'datePicker'>
-                            <DatePicker label = { formatMessage(formLabel.initialDate) }
-                                        locale = { this.props.language }
-                                        value = { this.state.initialDate }
-                                        maxDate = { this.state.endingDate }
-                                        error = { this.state.showInitialDateMandatory && formatMessage(messages.mandatory) || ''}
-                                        onChange = { this.handleInitialDateChange }
-                                        autoOk
-                            />
-                            <DatePicker label = { formatMessage(formLabel.endingDate) }
-                                        locale = { this.props.language }
-                                        error = { this.state.showEndingDateMandatory && formatMessage(messages.mandatory) || ''}
-                                        value = { this.state.endingDate }
-                                        minDate = { this.state.initialDate }
-                                        onChange = { this.handleEndingDateChange }
-                                        autoOk
-                            />
-                        </section>
-                        <Input type='text'
-                               label='Provider Name'
-                               value={this.state.provider}
-                               error = { this.state.showProviderMandatory && formatMessage(messages.mandatory) || ''}
-                               onChange = { this.providerChange }
-                        />
-                        <section className = { styles['multiSelector'] } >
-                            <h1>
-                                <FormattedMessage
-                                    id = 'games.editor.taskDialog.form.inputs.labels.tags'
-                                    defaultMessage = 'Add Tags'
-                                    description = 'Graph editor - Tasks Dialog - Form Inputs - Labels - Tags'
+                    {
+                        this.state.loading?
+                            <div styleName="loader">
+                                <ProgressBar type='circular' mode='indeterminate'/>
+                            </div>
+                            :
+                            <form>
+                                <Input type='text'
+                                       label='Workflow Name'
+                                       value={this.state.name}
+                                       error = { this.state.showNameMandatory && formatMessage(messages.mandatory) || ''}
+                                       onChange = { this.nameChange }
                                 />
-                                <div className={styles['columns']}>
-                                    <Input
-                                        type='text'
-                                        label='New Tag'
-                                        value={this.state.tag}
-                                        error = { this.state.showTagMandatory && formatMessage(messages.mandatory) || this.state.showTagCreated && formatMessage(messages.created) || ''}
-                                        onChange = { this.tagChange }
+                                <Input
+                                    type='text'
+                                    label = { formatMessage(formLabel.description) }
+                                    value = { this.state.description }
+                                    onChange = { this.handleDescriptionChange }
+                                    multiline
+                                />
+                                <section styleName = 'datePicker'>
+                                    <DatePicker label = { formatMessage(formLabel.initialDate) }
+                                                locale = { this.props.language }
+                                                value = { this.state.initialDate }
+                                                maxDate = { this.state.endingDate }
+                                                onChange = { this.handleInitialDateChange }
+                                                autoOk
                                     />
-                                    <Button
-                                        icon='add'
-                                        floating accent mini
-                                        className={styles['button']}
-                                        onClick={this.addTag}
-                                    />
-                                </div>
-                            </h1>
+                                    <Input styleName="timeStart" type="time" label='Initial time'
+                                           onChange={this.handleInitialTimeChange}
+                                           error = { this.state.showInitialTimeMandatory && formatMessage(messages.mandatory) || this.state.showEndingTimeIncorrect && formatMessage(messages.incorrect) || ''}
+                                           disabled={this.state.initialDate === null}
+                                           value={this.state.initialTimeString}/>
 
-                            <section>
-                                {
-                                    this.state.tags.length === 0 &&
-                                    <FormattedMessage
-                                        id='games.editor.taskDialog.form.inputs.values.roles.none'
-                                        description='Graph editor - Tasks Dialog - Form Inputs - Values - Roles - No tag has been added'
-                                        defaultMessage='No tag has been added'
+                                    <DatePicker label = { formatMessage(formLabel.endingDate) }
+                                                locale = { this.props.language }
+                                                value = { this.state.endingDate }
+                                                onChange = { this.handleEndingDateChange }
+                                                autoOk
                                     />
-                                }
-                                {
-                                    this.state.tags.map((id) =>
-                                        <Chip
-                                            key = { `${id}-chip` }
-                                            deletable
-                                            onDeleteClick={() => this.handleTagChange({id})}>
-                                            { id }
-                                        </Chip>
-                                    )
-                                }
-                            </section>
-                        </section>
-                    </form>
+                                    <Input styleName="timeFinish" type="time" label='Ending time'
+                                           onChange={this.handleEndingTimeChange}
+                                           error = { this.state.showEndingTimeMandatory && formatMessage(messages.mandatory) || this.state.showEndingTimeIncorrect && formatMessage(messages.incorrect) || ''}
+                                           disabled={this.state.endingDate === null}
+                                           value={this.state.endingTimeString}/>
+
+                                </section>
+                                <Input type='text'
+                                       label='Provider Name'
+                                       value={this.state.provider}
+                                       error = { this.state.showProviderMandatory && formatMessage(messages.mandatory) || ''}
+                                       onChange = { this.providerChange }
+                                />
+                                <section className = { styles['multiSelector'] } >
+                                    <h1>
+                                        <FormattedMessage
+                                            id = 'games.editor.taskDialog.form.inputs.labels.tags'
+                                            defaultMessage = 'Add Tags'
+                                            description = 'Graph editor - Tasks Dialog - Form Inputs - Labels - Tags'
+                                        />
+                                        <div className={styles['columns']}>
+                                            <Input
+                                                type='text'
+                                                label='New Tag'
+                                                value={this.state.tag}
+                                                error = { this.state.showTagMandatory && formatMessage(messages.mandatory) || this.state.showTagCreated && formatMessage(messages.created) || ''}
+                                                onChange = { this.tagChange }
+                                            />
+                                            <Button
+                                                icon='add'
+                                                floating accent mini
+                                                className={styles['button']}
+                                                onClick={this.addTag}
+                                            />
+                                        </div>
+                                    </h1>
+
+                                    <section>
+                                        {
+                                            this.state.tags.length === 0 &&
+                                            <FormattedMessage
+                                                id='games.editor.taskDialog.form.inputs.values.roles.none'
+                                                description='Graph editor - Tasks Dialog - Form Inputs - Values - Roles - No tag has been added'
+                                                defaultMessage='No tag has been added'
+                                            />
+                                        }
+                                        {
+                                            this.state.tags.map((id) =>
+                                                <Chip
+                                                    key = { `${id}-chip` }
+                                                    deletable
+                                                    onDeleteClick={() => this.handleTagChange({id})}>
+                                                    { id }
+                                                </Chip>
+                                            )
+                                        }
+                                    </section>
+                                </section>
+                            </form>
+                    }
                 </Dialog>
             )
         }
@@ -419,6 +522,7 @@ function mapDispatchToProps(dispatch) {
         updateQuestionnaire: bindActionCreators(updateQuestionnaire, dispatch),
         deleteQuestion: bindActionCreators(deleteQuestion, dispatch),
         selectQuestionnaire: bindActionCreators(setSelectedQuestionnaire, dispatch),
+        setSelectedWorkflow: bindActionCreators(setSelectedWorkflow, dispatch),
     }
 }
 

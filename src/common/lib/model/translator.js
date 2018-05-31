@@ -7,7 +7,10 @@ import {
     ParameterValueBuilder, UserChoiceBuilder, TASK_TYPE, OrJoinBuilder, AndJoinBuilder
 } from './builders'
 import HMBAPI from "../../../common/lib/API";
-import {Metadata, OrJoin, TaskTranslation, UserChoice, Workflow, WorkflowTranslation} from "./index";
+import {
+    Metadata, OrJoin, ParameterValue, StringType, TaskTranslation, UserChoice, Workflow,
+    WorkflowTranslation
+} from "./index";
 import UUID from "uuid";
 
 export default class Translator{
@@ -122,16 +125,23 @@ export default class Translator{
                             .setFinal(node.isFinal)
                             .isDisabled(node.isDisabled)
                             .setRequired(node.isRequired)
-                            .setTagReference()
+                            .setTagReference(node.rolesAllowed)
+                            .setOperator(node.operator)
                             .setTranslation([translationTask])
                             .setMetadata(metadataArray)
                             .setLastVersionNumber(versionNumber)
                             .setVersionNumber(versionNumber)
                             .setUser([designer]);
-                            //.setOperator(node.operator)
-                            //.setParameters(node.parameters)
-                            //.setWorkflow(workflow)
 
+                        if(node.parameters["Questionnaire"]){
+                            let parameterValues = [];
+                            let parameterValue = new ParameterValue();
+                            parameterValues.push(parameterValue);
+                            parameterValue.namedParameter = node.parameters["Questionnaire"].parameter;
+                            parameterValue.namedParameterValue = new StringType();
+                            parameterValue.namedParameterValue.stringValue = node.parameters["Questionnaire"].value;
+                            task.setParameters(parameterValues)
+                        }
                         task.setNumberOfPaths();
 
                         //alert(node.initialDate +" e "+ Object.prototype.toString.call(node.initialDate) === '[object Date]'+ " e "+node.startDateIsRelative)
@@ -357,17 +367,6 @@ export default class Translator{
         sequenceFlow.forEach( link => {
             from = elements.find(({uri}) => uri === link.sourceTask);
             to = elements.find(({uri}) => uri === link.targetTask);
-            /*if(link.type === 'parallelStart'){
-                from = links.find( l => l.to === link.from && link.type !== 'verticalStart' ).from;
-                if(nodes.find(n => n.id === from).type === "loop"){
-                    from = nodes.find(n => n.start === from).id
-                }
-            } else if (link.type === 'parallelEnd'){
-                to = links.find( l => l.from === link.to && link.type !== 'verticalEnd' ).to;
-                if(nodes.find(n => n.id === to).type === "loopEnd"){
-                    to = nodes.find(n => n.id === to).start
-                }
-            }*/
             //TODO revisable
 
             let l = {
@@ -403,7 +402,7 @@ export default class Translator{
                 alert("guau")
                 let id = UUID.v4();
                 ele.push({
-                    id: id, type: 'invisible', x: Number(from.metadata.find(m => m.name === "x").metadataValue), y: Number(to.metadata.find(m => m.name === "y").metadataValue)
+                    id: id, type: 'invisible', fromLevel: link.sourceIndex, x: Number(from.metadata.find(m => m.name === "x").metadataValue), y: Number(to.metadata.find(m => m.name === "y").metadataValue)
                 });
                 links.push({
                     from: from.uri, to: id, type: "verticalStart", fromLevel: link.sourceIndex, toLevel: link.targetIndex
@@ -466,11 +465,10 @@ export default class Translator{
                         description: node.translation[0].description,
                         isInitial: node.isInitial,
                         isFinal: node.isFinal,
+                        parameters: {},
                         isDisabled: node.isDisabled,
-                        operator: node.operator,
-                        rolesAllowed: [],
+                        rolesAllowed: node.tagReference,
                         isRequired: node.isRequired,
-                        tagReference: node.tagReference,
                         x: Number(node.metadata.find(m => m.name === "x").metadataValue),
                         y: Number(node.metadata.find(m => m.name === "y").metadataValue)
                     };
@@ -479,6 +477,19 @@ export default class Translator{
 
                     if(node.startDate) task.initialDate = new Date(node.startDate.time);
                     if(node.expiryDate) task.endingDate = new Date(node.expiryDate.time);
+                    if(node.operator) task.operator = node.operator.uri;
+                    else task.operator = '';
+                    alert(JSON.stringify(node.parameterValue))
+                    if(node.parameterValue) {
+                        node.parameterValue.map(
+                            (parameterValue) => {
+                                task.parameters[parameterValue.namedParameter.name] = {
+                                    value: parameterValue.namedParameterValue.stringValue,
+                                    parameter: parameterValue.namedParameter
+                                }
+                            }
+                        );
+                    }
 
                     alert("post: "+JSON.stringify(task));
 
@@ -637,6 +648,14 @@ export default class Translator{
         ele.forEach(
             node => {
                 if(node.type === "userChoice" || node.type === "automaticChoice" ||node.type === "andSplit"){
+                    if(links.find(({from, isBase}) => from === node.id && isBase).fromLevel > 0)
+                        node.fromLevel = links.find(({from, isBase}) => from === node.id && isBase).fromLevel;
+                    node.conditions = [];
+                    links.filter(({from}) => from === node.id).map(
+                        () => {
+                            node.conditions.push({condition: '', comparator: '', conditionValue: ''})
+                        }
+                    );
                     alert("jiji" +JSON.stringify(node))
                     let endNode = ele.find(e => e.start === node.id);
                     alert("jiji2 "+JSON.stringify(endNode))
@@ -654,7 +673,7 @@ export default class Translator{
                     alert("ultimo loopEnd")
                     let save_x
                     let verticalEnd = links.find(l => l.from === node.id && l.type === "verticalStart");
-alert(JSON.stringify(verticalEnd))
+                    ele.find(e => e.id === node.start).conditions = [{condition: '', comparator: '', conditionValue: ''}];
                     if(verticalEnd){
                         alert("lol")
                         let invisibleEnd = ele.find(e => e.id === verticalEnd.to)

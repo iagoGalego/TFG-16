@@ -8,6 +8,7 @@ const InitialState = {
     err : null,
     showErrorMessages: false,
     isAuthenticated: !!sessionStorage.getItem('__token'),
+    loggedUser: JSON.parse(sessionStorage.getItem('__loggedUser')),
     hasLoggedOut: false,
 };
 
@@ -23,6 +24,13 @@ export default function LoginReducer(state = InitialState, {type = '', payload =
                 ...state,
                 isAuthenticated: payload.isAuthenticated,
                 hasLoggedOut: payload.hasLoggedOut,
+                isFetching: false,
+                err: null
+            }
+        case TYPES.LOGGED_USER_REQUEST_SUCCESS:
+            return {
+                ...state,
+                loggedUser: payload.loggedUser,
                 isFetching: false,
                 err: null
             }

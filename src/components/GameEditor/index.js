@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
 import { bindActionCreators } from 'redux'
-import {addTaskInLink, setSelectedWorkflow, edit, clear, setSelectedTask, deleteTask, saveTask, saveEdge, clearDiagram, moveTask, undo, redo, save} from './Actions'
+import {addTaskInLink, setSelectedWorkflow, edit, setSelectedTask, deleteTask, saveTask, saveEdge, clearDiagram, moveTask, undo, redo, save} from './Actions'
 
 import GameEditor from './GameEditor'
 

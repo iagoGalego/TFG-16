@@ -32,6 +32,35 @@ $toolbarHeight: 48px;
   }
 }
 
+.dontExist{
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-bottom: solid 1px rgba(0,0,0,.1);
+
+  .row{
+    width: auto;
+    position: relative;
+    top: 35%;
+    text-align: center;
+
+
+    p{
+      text-align: center;
+      color: rgba(0,0,0,.25);
+      font-style: italic;
+      padding-bottom: 15px;
+    }
+
+
+
+    button:not([disabled]){
+      background: #ffc400!important;
+    }
+
+  }
+}
+
 .mainContainer{
   height: calc(100vh - 64px);
   display: flex;

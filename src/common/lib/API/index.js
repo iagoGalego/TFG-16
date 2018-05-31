@@ -243,6 +243,24 @@ class DB{
                         ? response.json()
                         : Promise.reject(new Error(`${response.status} ${response.statusText}`))
                 })
+            },
+            getAllWithourProvider( ){
+                if(!__token){
+                    let err = new Error('You must log in first!');
+
+                    return Promise.reject(err)
+                }
+
+                return fetch(`${CONFIG.api.baseURL}/${CONFIG.api.dbAPI}/admin/${CONFIG.api.versions.db.adminAPI}/globalresourceproperties`, {
+                    headers: {
+                        'X-Auth-Token' : __token,
+                        'Accept': 'application/json;charset=utf-8'
+                    }
+                }).then( response => {
+                    return response.ok
+                        ? response.json()
+                        : Promise.reject(new Error(`${response.status} ${response.statusText}`))
+                })
             }
         },
         localCaseProperties: {
@@ -298,7 +316,7 @@ class DB{
             }
         },
         operators: {
-            getAll( provider ){
+            getAllByProvider( provider ){
                 if(!__token){
                     let err = new Error('You must log in first!');
                     
@@ -312,6 +330,24 @@ class DB{
                 provider.forEach(x => query.append('provider', x));
 
                 return fetch(`${CONFIG.api.baseURL}/${CONFIG.api.dbAPI}/admin/${CONFIG.api.versions.db.adminAPI}/operators?${query.toString()}`, {
+                    headers: {
+                        'X-Auth-Token' : __token,
+                        'Accept': 'application/json;charset=utf-8'
+                    }
+                }).then( response => {
+                    return response.ok
+                        ? response.json()
+                        : Promise.reject(new Error(`${response.status} ${response.statusText}`))
+                })
+            },
+            getAll(){
+                if(!__token){
+                    let err = new Error('You must log in first!');
+
+                    return Promise.reject(err)
+                }
+
+                return fetch(`${CONFIG.api.baseURL}/${CONFIG.api.dbAPI}/admin/${CONFIG.api.versions.db.adminAPI}/operators`, {
                     headers: {
                         'X-Auth-Token' : __token,
                         'Accept': 'application/json;charset=utf-8'
@@ -348,7 +384,7 @@ class DB{
             }
         },
         tags: {
-            getAll( provider ){
+            getAllByProvider( provider ){
                 if(!__token){
                     let err = new Error('You must log in first!');
                     
@@ -362,6 +398,24 @@ class DB{
                 provider.forEach(x => query.append('provider', x));
 
                 return fetch(`${CONFIG.api.baseURL}/${CONFIG.api.dbAPI}/admin/${CONFIG.api.versions.db.adminAPI}/tags?${query.toString()}`, {
+                    headers: {
+                        'X-Auth-Token' : __token,
+                        'Accept': 'application/json;charset=utf-8'
+                    }
+                }).then( response => {
+                    return response.ok
+                        ? response.json()
+                        : Promise.reject(new Error(`${response.status} ${response.statusText}`))
+                })
+            },
+            getAll( ){
+                if(!__token){
+                    let err = new Error('You must log in first!');
+
+                    return Promise.reject(err)
+                }
+
+                return fetch(`${CONFIG.api.baseURL}/${CONFIG.api.dbAPI}/admin/${CONFIG.api.versions.db.adminAPI}/tags`, {
                     headers: {
                         'X-Auth-Token' : __token,
                         'Accept': 'application/json;charset=utf-8'

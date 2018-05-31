@@ -90,9 +90,29 @@ const messages = defineMessages({
     }
 
     handleSave(){
-        let {fullScreenHandler} = this.props;
-        fullScreenHandler();
-        this.setState(prevState => ({...prevState, showDialog: true}))
+        let {saveHandler, } = this.props;
+
+        alert(JSON.stringify(this.props.selectedWorkflow))
+
+        let payload = {
+            uri: this.props.selectedWorkflow.uri,
+            name: this.props.selectedWorkflow.translation[0].name,
+            description: this.props.selectedWorkflow.translation[0].description,
+            longDescription: this.props.selectedWorkflow.translation[0].longDescription,
+            metadata: [],
+            modificationDate: new Date().getTime(), provider: this.props.selectedWorkflow.provider
+        };
+        if(this.state.initialDate) payload.startDate = this.props.selectedWorkflow.startDate;
+        if(this.state.endingDate) payload.expiryDate= this.props.selectedWorkflow.expiryDate;
+
+        this.props.selectedWorkflow.metadata.map(
+            (tag) => {
+                if(tag.name === "tag"){
+                    payload.metadata.push({name: tag.metadataValue, metadataValue: tag.metadataValue})
+                }
+            }
+        );
+        saveHandler(payload);
     }
 
     handleToggleDialog(value){
@@ -156,11 +176,6 @@ const messages = defineMessages({
                                        onClick = { helpHandler } />
                     </section>
                 </nav>
-                <WorkFlowDialog
-                    active={this.state.showDialog}
-                    onCancel={this.handleToggleDialog}
-                    onSave = {saveHandler}
-                />
             </nav>
         )
     }

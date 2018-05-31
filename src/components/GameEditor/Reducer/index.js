@@ -1,5 +1,5 @@
 import TYPES from '../Actions/types'
-import undoable, { excludeAction } from 'redux-undo'
+import undoable, { includeAction, excludeAction } from 'redux-undo'
 import UUID from "uuid";
 import {
     AndJoinBuilder, AutomaticChoiceBuilder, OrJoinBuilder,
@@ -24,7 +24,7 @@ const InitialState = {
                 isFinal: true,
                 isDisabled: false,
                 isRequired: true,
-                x: 1300,
+                x: 400,
                 y: 250
             }
         ],
@@ -42,19 +42,21 @@ const InitialState = {
     isClean: true,
     isFetching: false,
     err : null,
-    isLoading: true
+    isLoading: true,
+    roles: null,
+    operators: null,
+    properties: null
 };
 
 function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {type:'', payload: {}}){
     let newState, base, oldBase, id1 = UUID.v4(), id2 = UUID.v4();
-console.log(type.toString())
+    console.log(type.toString())
+    console.log(state)
     switch (type){
         case TYPES.SET_CLEAN:
-            console.log(state)
             newState = {
                 ...state,
-                isClean: payload.clean,
-                isLoading: payload.loader
+                isClean: payload.clean
             };
             newState = JSON.parse(JSON.stringify(newState));
             return newState;
@@ -74,6 +76,7 @@ console.log(type.toString())
             return {
                 ...state,
                 isFetching: false,
+                isLoading: false,
                 err: payload.err
             };
         case TYPES.SET_SELECTED_WORKFLOW:
@@ -91,9 +94,9 @@ console.log(type.toString())
                     selectedWorkflow: payload.workflow,
                 };
                 newState.graph = JSON.parse(JSON.stringify(newState.graph));
+                console.log(newState);
                 return newState
             }
-            alert("sali "+JSON.stringify(payload.workflow));
             newState = {
                 ...Object.assign({}, state),
                 selectedWorkflow: payload.workflow,
@@ -103,6 +106,7 @@ console.log(type.toString())
                 isClean: false
             };
             newState.graph = JSON.parse(JSON.stringify(newState.graph));
+            console.log(newState)
             return newState
         case TYPES.SELECTED_WORKFLOW_REQUEST_FAILURE:
             return {
@@ -111,8 +115,52 @@ console.log(type.toString())
                 isFetching: false,
                 err: payload.err
             };
+        case TYPES.SET_ROLES:
+            newState = {
+                ...Object.assign({}, state),
+                roles: payload.roles,
+            };
+            newState.graph = JSON.parse(JSON.stringify(newState.graph));
+            return newState;
+        case TYPES.SET_ROLES_FAILURE:
+            return {
+                ...state,
+                roles: payload.roles,
+                isFetching: false,
+                err: payload.err
+            };
+        case TYPES.SET_OPERATORS:
+            newState = {
+                ...Object.assign({}, state),
+                operators: payload.operators,
+                isClean: false,
+                isLoading: true
+            };
+            newState.graph = JSON.parse(JSON.stringify(newState.graph));
+            return newState;
+        case TYPES.SET_OPERATORS_FAILURE:
+            return {
+                ...state,
+                operators: payload.operators,
+                isFetching: false,
+                err: payload.err
+            };
+        case TYPES.SET_PROPERTIES:
+            newState = {
+                ...Object.assign({}, state),
+                properties: payload.properties,
+                isClean: false,
+                isLoading: true
+            };
+            return newState;
+        case TYPES.SET_PROPERTIES_FAILURE:
+            return {
+                ...state,
+                properties: payload.properties,
+                isFetching: false,
+                err: payload.err
+            };
         case TYPES.CLEAR_DIAGRAM:
-            console.log(state)
             newState = {
                 ...Object.assign({}, state),
                 graph : Object.assign({}, InitialState.graph),
@@ -126,7 +174,7 @@ console.log(type.toString())
             start.x = 100;
             start.y = 250;
             let end = newState.graph.nodes.find(({id}) => id === 'end');
-            end.x = 1300;
+            end.x = 400;
             end.y = 250;
 
             return newState;
@@ -136,18 +184,21 @@ console.log(type.toString())
                 const close = createCloseNode(payload);
 
                 if(payload.task.type === 'loop'){
+                    payload.task.fromLevel = 1;
+                    payload.task.conditions.push({condition: '', conditionValue: '', comparator: ''});
                     if(payload.link.newEdge){
                         oldBase = state.graph.links.find(({from, to}) =>from === payload.link.from && to === payload.link.to);
                         const newCounter = oldBase.counter + 1;
                         base = {from: payload.link.from, to: payload.link.to, isBase: true, counter: newCounter, fromLevel: oldBase.fromLevel, toLevel: oldBase.toLevel};
                         if(payload.link.isTransitable) base.isTransitable = true;
+                        state.graph.nodes.find(({id}) => id === payload.link.from).conditions.push({condition: '', conditionValue: '', comparator: ''})
                         newState = {
                             ...Object.assign({}, state),
                             graph : {
                                 nodes: [...state.graph.nodes,
                                     payload.task,
                                     close.task,
-                                    {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y},
+                                    {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y, fromLevel: newCounter - 1},
                                     {id: id2, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.to).x, y: payload.task.y, start: id1}
                                 ],
                                 links: [...state.graph.links.filter(({from, to}) => from !== payload.link.from || to !== payload.link.to),
@@ -164,12 +215,13 @@ console.log(type.toString())
                         }
                     } else if(payload.link.isLoop){
                         const newCounter = state.graph.links.find(({from, to}) =>from === payload.link.from && to === payload.link.to).counter;
+                        delete state.graph.nodes.find(({id}) => id === payload.link.from).fromLevel
                         newState = {
                             ...Object.assign({}, state),
                             graph : {
                                 nodes: [...state.graph.nodes, payload.task,
                                     close.task,
-                                    {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y},
+                                    {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y, fromLevel: newCounter - 1},
                                     {id: id2, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.to).x, y: payload.task.y, start: id1}
                                 ],
                                 links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
@@ -207,13 +259,14 @@ console.log(type.toString())
                         const newCounter = oldBase.counter + 1;
                         base = {from: payload.link.from, to: payload.link.to, isBase: true, counter: newCounter , fromLevel: oldBase.fromLevel, toLevel: oldBase.toLevel};
                         if(payload.link.isTransitable) base.isTransitable= true;
+                        state.graph.nodes.find(({id}) => id === payload.link.from).conditions.push({condition: '', conditionValue: '', comparator: ''})
                         newState = {
                             ...Object.assign({}, state),
                             graph : {
                                 nodes: [...state.graph.nodes,
                                     payload.task,
                                     close.task,
-                                    {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y},
+                                    {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y, fromLevel: newCounter -1},
                                     {id: id2, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.to).x, y: payload.task.y,start: id1}
                                 ],
                                 links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
@@ -229,13 +282,14 @@ console.log(type.toString())
                         }
                     } else if(payload.link.isLoop){
                         const newCounter = state.graph.links.find(({from, to}) =>from === payload.link.from && to === payload.link.to).counter;
+                        delete state.graph.nodes.find(({id}) => id === payload.link.from).fromLevel
                         newState = {
                             ...Object.assign({}, state),
                             graph : {
                                 nodes: [...state.graph.nodes,
                                     payload.task,
                                     close.task,
-                                    {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y},
+                                    {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y, fromLevel: newCounter -1},
                                     {id: id2, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.to).x, y: payload.task.y, start: id1,}
                                 ],
                                 links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
@@ -255,7 +309,7 @@ console.log(type.toString())
                                 nodes: [...state.graph.nodes,
                                     payload.task,
                                     close.task
-                            ],
+                                ],
                                 links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
                                     {from: payload.link.from, to: payload.task.id, fromLevel: payload.link.fromLevel, toLevel: 0, type: payload.link.type === "parallelStart"? "parallelStart": ''},
                                     {from: payload.task.id, to: close.task.id, isBase: true, counter: 0, fromLevel: 0, toLevel: 0},
@@ -274,12 +328,13 @@ console.log(type.toString())
                     alert("newCounter2 "+newCounter)
                     base = {from: payload.link.from, to: payload.link.to, isBase: true, counter: newCounter, fromLevel: oldBase.fromLevel, toLevel: oldBase.toLevel};
                     if(payload.link.isTransitable) base.isTransitable = true;
+                    state.graph.nodes.find(({id}) => id === payload.link.from).conditions.push({condition: '', conditionValue: '', comparator: ''})
                     newState = {
                         ...Object.assign({}, state),
                         graph : {
                             nodes: [...state.graph.nodes,
                                 payload.task,
-                                {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y},
+                                {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y, fromLevel: newCounter - 1},
                                 {id: id2, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.to).x, y: payload.task.y, start: id1}
                             ],
                             links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
@@ -294,13 +349,14 @@ console.log(type.toString())
                     }
                 } else if(payload.link.isLoop){
                     const newCounter = state.graph.links.find(({from, to}) =>from === payload.link.from && to === payload.link.to).counter;
+                    delete state.graph.nodes.find(({id}) => id === payload.link.from).fromLevel
                     alert("este new counter vale "+newCounter)
                     newState = {
                         ...Object.assign({}, state),
                         graph : {
                             nodes: [...state.graph.nodes,
                                 payload.task,
-                                {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y},
+                                {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y, fromLevel: newCounter -1},
                                 {id: id2, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.to).x,y: payload.task.y, start: id1}
                             ],
                             links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
@@ -332,15 +388,16 @@ console.log(type.toString())
             }
             newState.graph.nodes = JSON.parse(JSON.stringify(newState.graph.nodes));
             relocate(newState.graph, newState.graph.nodes.find(({id}) => (id === 'start')), newState.graph.nodes.find(({id}) => (id === 'end')), true);
-            alert("estado anterior "+JSON.stringify(state))
             return newState;
         case TYPES.SET_SELECTED_TASK:
-            console.log(state)
+            let newSelectedTask = null;
+            if(payload.task !== null)
+                newSelectedTask = state.graph.nodes.find(({id}) => id === payload.task.id);
             newState = {
                 ...Object.assign({}, state),
-                selectedTask: (payload.task !== null && state.graph.nodes.find(({id}) => id === payload.task.id)) || null,
+                selectedTask: (newSelectedTask && newSelectedTask.type !== 'invisible' && state.graph.nodes.find(({id}) => id === payload.task.id)) || null,
             };
-            return newState
+            return newState;
         case TYPES.DELETE_TASK:
             let st = Object.assign({}, state);
             let nodes, links, linkToNode, linkFromNode, linkFromEnd;
@@ -365,9 +422,45 @@ console.log(type.toString())
                 if(nodes.find(({id}) => (id === linkToNode.from)).type === 'invisible' && nodes.find(({id}) => (id === linkFromEnd.to)).type === 'invisible' ){
                     let nodeEnd = state.graph.nodes.find(({id}) => (id === state.graph.links.find(({from}) => (from === linkFromEnd.to)).to))
                     if(nodeEnd.type === 'loopEnd'){
+                        nodes.find(({id}) => id === nodeEnd.start).fromLevel = 1;
                         links.push({from: nodeEnd.start, to: nodeEnd.id, isLoop: true, reverse: true, counter: 2, fromLevel: 1, toLevel: 1})
                     } else{
-                        links.find(({from, to}) => (from === nodeEnd.start && to === nodeEnd.id)).counter--
+                        let deletedFromLevel = linkToNode.fromLevel;
+                        let startPaths = links.filter(({from}) => from === nodeEnd.start);
+                        let endPaths = links.filter(({to}) => to === nodeEnd.id);
+                        endPaths.map(
+                            (path) => {
+                                if(!path.isBase){
+                                    if(path.toLevel > deletedFromLevel){
+                                        path.toLevel--;
+                                        let n = nodes.find(({id}) => id === path.from);
+                                        n.toLevel--;
+                                        let secondPath = links.find(({to}) => to === n.id);
+                                        secondPath.toLevel--;
+                                    }
+                                }
+                            }
+                        );
+                        startPaths.map(
+                            (path) => {
+                                if(path.isBase && path.isTransitable){
+                                    if(path.fromLevel > deletedFromLevel){
+                                        path.fromLevel--;
+                                        path.toLevel--;
+                                        path.counter--;
+                                        nodes.find(({id}) => id === nodeEnd.start).fromLevel--;
+                                    }
+                                } else if(!path.isBase){
+                                    if(path.fromLevel > deletedFromLevel){
+                                        path.fromLevel--;
+                                        let n = nodes.find(({id}) => id === path.to);
+                                        n.fromLevel--;
+                                        let secondPath = links.find(({from}) => from === n.id);
+                                        secondPath.fromLevel--;
+                                    }
+                                }
+                            }
+                        );
                     }
 
                     //quita el link que saldria de nodeStart a invisible
@@ -404,9 +497,45 @@ console.log(type.toString())
                     nodes.find(({id}) => (id === linkFromEnd.to)).type === 'invisible' ){
                     let x = state.graph.nodes.find(({id}) => (id === state.graph.links.find(({from}) => (from === linkFromEnd.to)).to));
                     if(x.type === 'loopEnd'){
+                        nodes.find(({id}) => id === x.start).fromLevel = 1;
                         links.push({from: x.start, to: x.id, isLoop: true, reverse: true, counter: 2, fromLevel: 1, toLevel: 1})
                     } else{
-                        links.find(({from, to}) => (from === x.start && to === x.id)).counter--
+                        let deletedFromLevel = linkToNode.fromLevel;
+                        let startPaths = links.filter(({from}) => from === x.start);
+                        let endPaths = links.filter(({to}) => to === x.id);
+                        endPaths.map(
+                            (path) => {
+                                if(!path.isBase){
+                                    if(path.toLevel > deletedFromLevel){
+                                        path.toLevel--;
+                                        let n = nodes.find(({id}) => id === path.from);
+                                        n.toLevel--;
+                                        let secondPath = links.find(({to}) => to === n.id);
+                                        secondPath.toLevel--;
+                                    }
+                                }
+                            }
+                        );
+                        startPaths.map(
+                            (path) => {
+                                if(path.isBase && path.isTransitable){
+                                    if(path.fromLevel > deletedFromLevel){
+                                        path.fromLevel--;
+                                        path.toLevel--;
+                                        path.counter--;
+                                        nodes.find(({id}) => id === x.start).fromLevel--;
+                                    }
+                                } else if(!path.isBase){
+                                    if(path.fromLevel > deletedFromLevel){
+                                        path.fromLevel--;
+                                        let n = nodes.find(({id}) => id === path.to);
+                                        n.fromLevel--;
+                                        let secondPath = links.find(({from}) => from === n.id);
+                                        secondPath.fromLevel--;
+                                    }
+                                }
+                            }
+                        );
                     }
 
                     links = links.filter(({to}) => (to !== nodes.find(({id}) => (id === linkToNode.from)).id));
@@ -436,9 +565,45 @@ console.log(type.toString())
 
                     let x = state.graph.nodes.find(({id}) => (id === state.graph.links.find(({from}) => (from === linkFromNode.to)).to))
                     if(x.type === 'loopEnd'){
+                        nodes.find(({id}) => id === x.start).fromLevel = 1;
                         links.push({from: x.start, to: x.id, isLoop: true, reverse: true, counter: 2, fromLevel: 1, toLevel: 1})
                     } else{
-                        links.find(({from, to}) => (from === x.start && to === x.id)).counter--
+                        let deletedFromLevel = linkToNode.fromLevel;
+                        let startPaths = links.filter(({from}) => from === x.start);
+                        let endPaths = links.filter(({to}) => to === x.id);
+                        endPaths.map(
+                            (path) => {
+                                if(!path.isBase){
+                                    if(path.toLevel > deletedFromLevel){
+                                        path.toLevel--;
+                                        let n = nodes.find(({id}) => id === path.from);
+                                        n.toLevel--;
+                                        let secondPath = links.find(({to}) => to === n.id);
+                                        secondPath.toLevel--;
+                                    }
+                                }
+                            }
+                        );
+                        startPaths.map(
+                            (path) => {
+                                if(path.isBase && path.isTransitable){
+                                    if(path.fromLevel > deletedFromLevel){
+                                        path.fromLevel--;
+                                        path.toLevel--;
+                                        path.counter--;
+                                        nodes.find(({id}) => id === x.start).fromLevel--;
+                                    }
+                                } else if(!path.isBase){
+                                    if(path.fromLevel > deletedFromLevel){
+                                        path.fromLevel--;
+                                        let n = nodes.find(({id}) => id === path.to);
+                                        n.fromLevel--;
+                                        let secondPath = links.find(({from}) => from === n.id);
+                                        secondPath.fromLevel--;
+                                    }
+                                }
+                            }
+                        );
                     }
                     //quito parallelStart y parallelEnd
                     links = links.filter(({to}) => (to !== nodes.find(({id}) => (id === linkToNode.from)).id))
@@ -463,7 +628,7 @@ console.log(type.toString())
                     nodes: JSON.parse(JSON.stringify(nodes)),
                     links
                 }
-            }
+            };
             relocate(newState.graph, newState.graph.nodes.find(({id}) => (id === 'start')), newState.graph.nodes.find(({id}) => (id === 'end')), true);
             return newState;
         case TYPES.SAVE_TASK:
@@ -490,51 +655,65 @@ console.log(type.toString())
         case TYPES.SAVE_EDGE:
             let destiny = Object.assign({}, state.graph.nodes.find(({start}) => start === payload.task.id));
             let link = Object.assign({}, state.graph.links.find(({from, to}) => from === payload.task.id && to === destiny.id));
+            let links2 = state.graph.links.filter(({from, to}) => from !== link.from || to !== link.to);
+            let nodes2 = state.graph.nodes.filter(({id}) => id !== payload.task.id && id !== destiny.id);
             let newCounter = link.counter + 1;
-            alert("newCounter "+newCounter);
-            if(payload.task.isTransitable) {
+            if(payload.task.isTransitable && !state.graph.nodes.find(({id}) => id === payload.task.id).isTransitable) {
+                alert("newCounter "+newCounter);
                 link.isTransitable = true;
                 link.counter = newCounter;
                 link.fromLevel = newCounter - 1;
                 link.toLevel = newCounter - 1;
+                payload.task.fromLevel = newCounter - 1;
+                payload.task.conditions.push({condition: '', conditionValue: '', comparator: ''});
             }
-            else {
+            else if(!payload.task.isTransitable && state.graph.nodes.find(({id}) => id === payload.task.id).isTransitable) {
                 delete link.isTransitable;
-                let lastLevel = link.fromLevel;
+                let deletedFromLevel = link.fromLevel;
+                payload.task.conditions.splice(deletedFromLevel, 1);
                 link.counter--;
                 link.fromLevel = 0;
+                delete payload.task.fromLevel
                 link.toLevel = 0;
-                let invisiblesStart = state.graph.links.filter(({from, type}) => (from === payload.task.id && type === 'verticalStart'));
-                invisiblesStart.map(
-                    (i => {
-                        if(i.fromLevel > lastLevel){
-                            i.fromLevel = i.fromLevel - 1;
-                            let invisibleParallel = state.graph.links.find(({from, type}) => (from === i.to && type === 'parallelStart'));
-                            invisibleParallel.fromLevel = i.fromLevel;
+                let startPaths = links2.filter(({from}) => from === link.from);
+                let endPaths = links2.filter(({to}) => to === link.to);
+                endPaths.map(
+                    (path) => {
+                        if(!path.isBase){
+                            if(path.toLevel > deletedFromLevel){
+                                path.toLevel--;
+                                let n = nodes2.find(({id}) => id === path.from);
+                                n.toLevel--;
+                                let secondPath = links2.find(({to}) => to === n.id);
+                                secondPath.toLevel--;
+                            }
                         }
-                    })
+                    }
                 );
-                let invisiblesEnd = state.graph.links.filter(({to, type}) => (to === link.to && type === 'verticalEnd'));
-                invisiblesEnd.map(
-                    (i => {
-                        if(i.toLevel > lastLevel){
-                            i.toLevel = i.toLevel - 1;
-                            let invisibleParallel = state.graph.links.find(({to, type}) => (to === i.from && type === 'parallelEnd'));
-                            invisibleParallel.toLevel = i.toLevel;
+                startPaths.map(
+                    (path) => {
+                        if(!path.isBase){
+                            if(path.fromLevel > deletedFromLevel){
+                                path.fromLevel--;
+                                let n = nodes2.find(({id}) => id === path.to);
+                                n.fromLevel--;
+                                let secondPath = links2.find(({from}) => from === n.id);
+                                secondPath.fromLevel--;
+                            }
                         }
-                    })
-                )
+                    }
+                );
             }
             destiny.isDisabled = payload.task.isDisabled;
             let newState = {
                 ...state,
                 graph: {
                     nodes: [
-                        ...state.graph.nodes.filter(({id}) => id !== payload.task.id && id !== destiny.id),
+                        ...nodes2,
                         payload.task,
                         destiny],
                     links: [
-                        ...state.graph.links.filter(({from, to}) => from !== link.from || to !== link.to),
+                        ...links2,
                         link
                     ]
                 }
@@ -542,15 +721,14 @@ console.log(type.toString())
             newState.graph.links = JSON.parse(JSON.stringify(newState.graph.links));
             return newState;
         default:
-            return JSON.parse(JSON.stringify(state));
+            return state;
     }
 }
 
 export default undoable(GameEditorReducer, {
-    filter: excludeAction([
-        TYPES.SET_SELECTED_TASK, TYPES.UNDO, TYPES.REDO, TYPES.MOVE_TASK,
-        TYPES.SET_CLEAN, TYPES.REQUEST, TYPES.REQUEST_FAILURE, TYPES.REQUEST_SUCCESS,
-        TYPES.SELECTED_WORKFLOW_REQUEST_FAILURE, TYPES.CLEAR_HISTORY
+    filter: includeAction([
+        TYPES.SET_SELECTED_WORKFLOW, TYPES.ADD_TASK_IN_LINK, TYPES.SAVE_TASK, TYPES.SAVE_EDGE,
+        TYPES.CLEAR_DIAGRAM, TYPES.DELETE_TASK
     ]),
     undoType: TYPES.UNDO,
     redoType: TYPES.REDO,
@@ -680,10 +858,10 @@ function relocate(graph, start, end, condition){
         cont = x.cont;
         //saber cuanto ha de aumentar el final
         if(end.type === 'end'){
-            if( cont * (1200/5) >= 1200 ){
+            if( cont * (300) >= 300 ){
                 end.x = start.x + 240 * cont;
             } else{
-                end.x = 1300;
+                end.x = 400;
             }
         } else{
             if( cont > 1 ){
@@ -707,17 +885,17 @@ function relocate(graph, start, end, condition){
             } else if(node.type === 'userTask' || node.type === 'automaticTask') weight ++;
             cont ++
         }
-        if(weight > totalDistance * (5/1200) && (end.x + 200 * (weight - totalDistance * (5/1200))) >= 1300) {
-            end.x = end.x + 200 * (weight - totalDistance * (5/1200))
+        if(weight > totalDistance * (1/300) && (end.x + 200 * (weight - totalDistance * (1/300))) >= 400) {
+            end.x = end.x + 200 * (weight - totalDistance * (1/300))
         } else if(end.type === 'end')
-            end.x = 1300;
+            end.x = 400;
         totalDistance = end.x - start.x;
         initialDistance = start.x;
         distance = ( totalDistance - len ) / cont;
     }
 
 
-    if(distance < 100) distance = 100;
+    if(distance < 150) distance = 150;
     node = graph.nodes.find(({id}) => (id === graph.links.find(({from}) => (from === start.id)).to));
 
     maxHeight = start.y;

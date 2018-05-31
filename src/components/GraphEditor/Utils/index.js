@@ -126,12 +126,23 @@ function mapGraphToFormat({nodes, links}, selectedTask){
         nodes: [],
         edges: []
     };
-
-    nodes.map(({id, name, type, x, y, isTransitable, isDisabled}) => formatedGraph.nodes.push({
-        selected: selectedTask !== null && selectedTask.id === id,
-        data: {id, name, type, image: getImage(type), isDisabled: isDisabled, isTransitable: isTransitable},
-        position: { x, y }}));
-    links.map(({from, to, fromLevel, toLevel, isLoop, isBase, isTransitable, type, level}) => formatedGraph.edges.push({selectable: false, data: {source: from, target: to, fromLevel: fromLevel, toLevel: toLevel, isBase: isBase, isTransitable: isTransitable, isLoop: isLoop, type: type, level: level}}))
+    nodes.map(({id, name, type, start, x, fromLevel, y, isTransitable, isDisabled}) => {
+        if(name !== undefined && name.length >= 10)
+            name = name.substring(0,7).concat("...");
+        formatedGraph.nodes.push({
+            selected: selectedTask !== null && selectedTask.id === id,
+            data: {id, name, type, fromLevel, start, image: getImage(type), isDisabled: isDisabled, isTransitable: isTransitable},
+            position: { x, y }})
+    });
+    links.map(({from, to, fromLevel, toLevel, isLoop, isBase, isTransitable, type, level}) =>
+        formatedGraph.edges.push({
+            selectable: false,
+            data: {source: from, target: to, fromLevel: fromLevel, toLevel: toLevel,
+                isBase: isBase, isTransitable: isTransitable, isLoop: isLoop,
+                type: type, level: level
+            }
+        })
+    );
 
     return formatedGraph
 }
@@ -177,7 +188,6 @@ function getGraphStyles(){
             'height': '2px',
             'width': '2px',
             'shape': 'rectangle',
-            'visibility': 'hidden'
         })
         .selector('node[type="placeholder"].active')
         .css({
@@ -271,6 +281,13 @@ function getGraphStyles(){
         .css({
             'background-color': '#d1d1d1',
             'background-image-opacity': '0.5',
+        })
+        .selector('node[fromLevel]')
+        .css({
+            'content': 'data(fromLevel)',
+            'text-margin-y': '-13',
+            'text-margin-x': '27',
+            'font-family': 'Roboto',
         })
 }
 
@@ -370,6 +387,7 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
                             isDisabled: false,
                             isInitial: false,
                             isFinal: false,
+                            conditions: [],
                             x: (edges[i].source().position().x+edges[i].target().position().x)/2,
                             y: (edges[i].source().position().y+edges[i].target().position().y)/2
                         },
@@ -392,6 +410,8 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
         }, 0)
     }
 
+    document.removeEventListener('graph:showplaceholders', ADDTASKSTART)
+    document.removeEventListener('graph:hideplaceholders', ADDTASKEND)
     document.addEventListener('graph:showplaceholders', ADDTASKSTART);
     document.addEventListener('graph:hideplaceholders', ADDTASKEND);
 
@@ -441,7 +461,7 @@ export function buildGraph({graph, container, graphDefinition, selectedTask, sca
     else {
         graph.elements().remove();
         graph.add( mapGraphToFormat(graphDefinition, selectedTask) );
-        //graph.nodes().ungrabify()
+        graph.nodes().ungrabify()
         return graph
     }
 }

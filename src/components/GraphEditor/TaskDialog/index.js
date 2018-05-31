@@ -26,6 +26,7 @@ import styles from './styles.scss'
 import {getAllQuestionnaires} from "../../QuestionnairesList/Actions";
 import {bindActionCreators} from "redux";
 import {connect} from "react-redux";
+import {getAllProperties} from "../../GameEditor/Actions";
 
 const TooltipedAvatar = Tooltip(Avatar)
 
@@ -33,7 +34,7 @@ const formLabel = defineMessages({
     condition : {
         id : 'games.editor.taskDialog.form.inputs.labels.condition',
         description : 'Graph editor - Tasks Dialog - Form Inputs - Labels - Condition',
-        defaultMessage : 'Condition'
+        defaultMessage : 'Condition Value'
     },
     name : {
         id : 'games.editor.taskDialog.form.inputs.labels.name',
@@ -119,7 +120,8 @@ const actionLabel = defineMessages({
 
         this.state = {
             modified: false,
-            questionnaires: {},
+            questionnaires: [],
+            conditions: [],
             tagsAllowed: [],
             showDialog: false,
             showQuestionnaire: false,
@@ -134,7 +136,7 @@ const actionLabel = defineMessages({
                 isTransitable: false,
                 isRequired: true,
                 isDisabled: false,
-                condition: '',
+                conditions: [],
                 x: null,
                 y: null,
                 ...props.selectedTask
@@ -142,7 +144,8 @@ const actionLabel = defineMessages({
             ui: {
                 showError: true
             },
-            label: "▾"
+            label: "▾",
+            selectedQuestionnaire: ''
         }
     }
 
@@ -153,6 +156,14 @@ const actionLabel = defineMessages({
         toggleTaskDialog : () => {}
     };
 
+    comparators = [
+        { value: 'lt', label: '<' },
+        { value: 'gt', label: '>'},
+        { value: 'ge', label: '>='},
+        { value: 'le', label: '<='},
+        { value: 'e', label: '='},
+        { value: 'n', label: '!='}
+    ];
 
     componentWillUpdate(props, state){
         if(props.selectedTask === null && state.modified && this.isValid() ) {
@@ -162,9 +173,27 @@ const actionLabel = defineMessages({
             this.setState({modified: false});
         }
     }
-    componentWillReceiveProps(props){
-        if(props.selectedTask !== null)
 
+    componentWillMount(){
+        this.props.getAllQuestionnaires();
+        this.props.getAllProperties();
+    }
+
+    componentWillReceiveProps(props){
+        if(props.questionnaires !== null && props.questionnaires !== this.props.questionnaires){
+            const newQuestionnaires = {};
+            props.questionnaires.map(
+                (questionnaire) => {
+                    newQuestionnaires[questionnaire.uri] = questionnaire.name.stringValue
+                }
+            );
+
+            this.setState(prevState => {
+                return {
+                    ...prevState,
+                    questionnaires: newQuestionnaires
+            }});
+        } else if(props.selectedTask !== null && props.selectedTask !== this.props.selectedTask){
             this.setState({
                 task: {
                     name: '',
@@ -174,22 +203,19 @@ const actionLabel = defineMessages({
                     parameters: {},
                     rolesAllowed: [],
                     isRequired: true,
+                    conditions: [],
                     x: null,
                     y: null,
                     ...props.selectedTask
                 }
             })
-        if(props.questionnaires !== null){
-            const newQuestionnaires = {};
-            props.questionnaires.map(
-                (questionnaire) => {
-                    newQuestionnaires[questionnaire.uri] = questionnaire.name.stringValue
+        }
+        if(props.properties !== null && props.properties !== this.props.properties){
+            this.state.conditions = props.properties.map(
+                (property) => {
+                    return {value: property.uri, label: property.displayName}
                 }
             );
-            this.setState(prevState => ({
-                ...prevState,
-                questionnaires: newQuestionnaires
-            }));
         }
     }
 
@@ -211,7 +237,7 @@ const actionLabel = defineMessages({
 
         return name !== ''
             && operator !== ''
-            && Object.entries(parameters).length >= this.props.HMBData.operators
+            && Object.entries(parameters).length >= this.props.operators
                 .filter(({name}) => name === operator)[0]
                 .parameter.filter(({isMandatory}) => isMandatory).length
             && rolesAllowed.length > 0
@@ -220,8 +246,17 @@ const actionLabel = defineMessages({
     handleNameChange(value){
         this.setState(prevState => ({task: {...prevState.task, name: value}, modified: true}))
     }
-    handleConditionChange(value){
-        this.setState(prevState => ({task: {...prevState.task, condition: value}, modified: true}))
+    handleConditionChange(value, index){
+        let conditions = this.state.task.conditions;
+        conditions[index].condition = value;
+
+        this.setState(prevState => ({task: {...prevState.task, conditions: conditions}, modified: true}))
+    }
+    handleConditionValueChange(value, index){
+        let conditions = this.state.task.conditions;
+        conditions[index].conditionValue = value;
+
+        this.setState(prevState => ({task: {...prevState.task, conditions: conditions}, modified: true}))
     }
     handleToggleDialog(value){
         this.setState(prevState => ({...prevState, showDialog: !this.state.showDialog}))
@@ -230,37 +265,45 @@ const actionLabel = defineMessages({
         this.setState(prevState => ({task: {...prevState.task, description: value}, modified: true}))
     }
     handleOperatorChange(value){
-        if(value === "questionnaire")
-            this.props.getAllQuestionnaires();
-        this.setState(prevState => ({task: {...prevState.task, operator: this.props.HMBData.operators.find(({name}) => name === value)}, modified: true}))
+        this.setState(
+            prevState => ({task: {...prevState.task, operator: value}, modified: true}),
+            () => {
+                if(value === "http://citius.usc.es/hmb/questionnaires/operators/do_quest")
+                    this.props.getAllQuestionnaires();
+            }
+        )
     }
     handleRolesChange(value, rol){
-        if(value && rol.id === 'all')
+        if(value && rol === 'all')
             this.setState(prevState => ({
                 task: {
                     ...prevState.task,
-                    rolesAllowed: this.props.HMBData.roles.map(({name, displayName}) => ({
-                        id: name,
-                        name: displayName
-                    }))
+                    rolesAllowed: this.props.roles.map((rol) => rol.uri)
                 },
                 modified: true
             }))
         else if (value)
             this.setState(prevState => ({task: {...prevState.task, rolesAllowed: [...prevState.task.rolesAllowed, rol]}, modified: true}))
-        else if (rol.id === 'all')
+        else if (rol === 'all')
             this.setState(prevState => ({task: {...prevState.task, rolesAllowed: []}, modified: true}))
         else
-            this.setState(prevState => ({task: {...prevState.task, rolesAllowed: prevState.task.rolesAllowed.filter(({id}) => id !== rol.id)}, modified: true}))
+            this.setState(prevState => ({task: {...prevState.task, rolesAllowed: prevState.task.rolesAllowed.filter((r) => r !== rol)}, modified: true}))
 
     }
 
     handleParameterValueChange(parameter, value){
+        let { operators } = this.props;
+
+        let operator = operators.find(({uri}) => uri === this.state.task.operator);
+        let parameterObject = operator.parameter.find(({name}) => name === parameter);
+
         if (value !== '' && value !== null) {
             this.setState(prevState => ({
                 task: {
                     ...prevState.task,
-                    parameters: {...prevState.task.parameters, [parameter]: value}
+                    parameters: {...prevState.task.parameters, [parameter]: {
+                        value: value, parameter: parameterObject
+                    }}
                 }, modified: true, showQuestionnaire: true, selectedQuestionnaire: value
             }))
         }
@@ -319,12 +362,13 @@ const actionLabel = defineMessages({
         return (PARAMETER_NAME[id] && formatMessage(PARAMETER_NAME[id])) || id
     }
     getLocalizedRoleNameFromId(id){
-        let {intl: {formatMessage}} = this.props
+        let {intl: {formatMessage}, roles} = this.props;
 
-        let defaultRole = this.props.HMBData.roles.filter(rol => rol.name === id)[0]
-        let defaultRoleName = ( defaultRole !== undefined && defaultRole.displayName ) || id
-
-        return (ROLE_NAME[id] && formatMessage(ROLE_NAME[id])) || defaultRoleName
+        if(id === 'all'){
+            return "All"
+        } else {
+            return roles.find(({uri}) => uri === id).displayName
+        }
     }
 
     renderUserTaskDialog(){
@@ -377,12 +421,12 @@ const actionLabel = defineMessages({
                     <Dropdown
                         auto
                         onChange = { this.handleOperatorChange }
-                        source = { this.props.HMBData.operators
+                        source = { this.props.operators
                             .filter(({name}) => name !== 'start' && name !== 'finish')
-                            .map(operator => ({value: operator.name, label: this.getLocalizedOperatorNameFromId(operator.name)}))
+                            .map(operator => ({value: operator.uri, label: operator.name}))
                         }
                         label = { formatMessage(formLabel.operator) }
-                        value = { (this.state.task.operator !== null)? this.state.task.operator.name: null }
+                        value = { this.state.task.operator }
                     />
                     { this.renderFormInputsForOperatorParameters()}
                 </div>
@@ -393,7 +437,7 @@ const actionLabel = defineMessages({
     }
 
     renderRolesSelector(){
-        let { HMBData } = this.props
+        let { roles } = this.props
 
         return <section styleName = 'multiSelector roles' >
             <h1>
@@ -403,21 +447,21 @@ const actionLabel = defineMessages({
                     description = 'Graph editor - Tasks Dialog - Form Inputs - Labels - Roles'
                 />
                 {
-                    this.state.task.rolesAllowed.length < HMBData.roles.length &&
+                    this.state.task.rolesAllowed.length < roles.length &&
                     <IconMenu styleName='rolesSelector' icon='add' position='auto' menuRipple = {false}>
                         {
-                            HMBData.roles
-                                .filter(rol => !this.state.task.rolesAllowed.map(rol => rol .id).includes(rol.name))
-                                .map(({name, displayName}) =>
-                                    <MenuItem key = { name }
-                                              caption = { this.getLocalizedRoleNameFromId(name) }
-                                              onClick = { () => this.handleRolesChange(true, {id: name, name: displayName}) }/>
+                            roles
+                                .filter(rol => !this.state.task.rolesAllowed.includes(rol.uri))
+                                .map(({uri, displayName}) =>
+                                    <MenuItem key = { uri }
+                                              caption = { displayName }
+                                              onClick = { () => this.handleRolesChange(true, uri) }/>
                                 )
                         }
 
                         <MenuItem key = 'all_roles'
-                                  caption = { this.getLocalizedRoleNameFromId('all') }
-                                  onClick = { () => this.handleRolesChange(true, {id: 'all', name: this.getLocalizedRoleNameFromId('all')}) }/>
+                                  caption = { 'All' }
+                                  onClick = { () => this.handleRolesChange(true, 'all') }/>
                     </IconMenu>
                 }
             </h1>
@@ -432,16 +476,16 @@ const actionLabel = defineMessages({
                     />
                 }
                 {
-                    this.state.task.rolesAllowed.length === HMBData.roles.length
+                    this.state.task.rolesAllowed.length === roles.length
                         ?
                         <Chip
                             key = { `all-chip` }
                             deletable
-                            onDeleteClick={() => this.handleRolesChange(false, {id: 'all'})}>
+                            onDeleteClick={() => this.handleRolesChange(false, 'all')}>
                             { this.getLocalizedRoleNameFromId('all') }
                         </Chip>
                         :
-                        this.state.task.rolesAllowed.map(({id, name}) =>
+                        this.state.task.rolesAllowed.map((id) =>
                             <Chip
                                 key = { `${id}-chip` }
                                 deletable
@@ -525,11 +569,12 @@ const actionLabel = defineMessages({
 
     }
     renderFormInputsForOperatorParameters(){
-        let { HMBData } = this.props;
+        let { operators } = this.props;
 
-        let o = (this.state.task.operator)? this.state.task.operator.name : null
-        let operator = HMBData.operators.filter(({name}) => name === o)[0]
-        if (operator !== undefined && Array.isArray(operator.parameter) && operator.parameter.length > 0)
+        let o = (this.state.task.operator)? this.state.task.operator : null
+        let operator = operators.filter(({uri}) => uri === o)[0]
+
+        if (operator !== undefined && Array.isArray(operator.parameter) && operator.parameter.length > 0){
             return (
                 <section styleName = 'multiSelector tags'>
                     <h1>
@@ -542,40 +587,10 @@ const actionLabel = defineMessages({
                     </h1>
                     <section>
                         {
-                            operator.parameter.map(({ name, mType }) => {
-                                switch(mType.split('#')[1]){
-                                    case 'StringType':
-                                        return <Input key = { name }
-                                                      label = { this.getLocalizedParameterNameFromId(name) }
-                                                      value = { this.state.task.parameters[name] || '' }
-                                                      onChange = { value => this.handleParameterValueChange(name, value) } />
-                                    case 'IntegerType':
-                                        return <Input key = { name }
-                                                      type = 'number'
-                                                      step = { 1 }
-                                                      label = { this.getLocalizedParameterNameFromId(name) }
-                                                      value = { this.state.task.parameters[name] || '' }
-                                                      onChange = { value => this.handleParameterValueChange(name, value) } />
-                                    case 'FloatType':
-                                        return <Input key = { name }
-                                                      type = 'number'
-                                                      step = { 1 }
-                                                      label = { this.getLocalizedParameterNameFromId(name) }
-                                                      value = { this.state.task.parameters[name] || '' }
-                                                      onChange = { value => this.handleParameterValueChange(name, value) } />
-                                    case 'BooleanType':
-                                        return <Checkbox key = { name }
-                                                         label = { this.getLocalizedParameterNameFromId(name) }
-                                                         checked = { this.state.task.parameters[name] || '' }
-                                                         onChange = { value => this.handleParameterValueChange(name, value) } />
-                                    case 'DateType':
-                                        return <DatePicker key = { name }
-                                                           label = { this.getLocalizedParameterNameFromId(name) }
-                                                           value = { this.state.task.parameters[name] || '' }
-                                                           onChange = { value => this.handleParameterValueChange(name, value) } />
-                                    case 'Questionnaire':
-                                        return <div key={ name + "_div" }
-                                                    styleName='questionnaire'>
+                            operator.parameter.map(({ name, type, mType }) => {
+                                if(type === "Questionnaire.URI") {
+                                    return (
+                                        <div key={ name + "_div" } styleName='questionnaire'>
                                             <Autocomplete
                                                 styleName="autocomplete"
                                                 key={ name + "_autocomplete" }
@@ -584,29 +599,76 @@ const actionLabel = defineMessages({
                                                 multiple={false}
                                                 onChange={value => this.handleParameterValueChange(name, value)}
                                                 source={this.state.questionnaires}
-                                                value = { this.state.task.parameters[name] || '' }
+                                                value = { this.state.task.parameters[name]? this.state.task.parameters[name].value : '' }
                                             />
-                                            <IconButton styleName="displayQuestionnaire" icon='assignment'
-                                                        disabled={!this.state.showQuestionnaire}
-                                                        onClick={ this.handleToggleDialog }
-                                                        accent />
+                                            <IconButton
+                                                styleName="displayQuestionnaire" icon='assignment'
+                                                disabled={!this.state.showQuestionnaire}
+                                                onClick={ this.handleToggleDialog }
+                                                accent
+                                            />
                                             <QuestionnairesDetails
                                                 active={this.state.showDialog}
                                                 questionnaireUri={this.state.selectedQuestionnaire}
                                                 onCancel={this.handleToggleDialog}
                                             />
-                                        </div>;
-
-                                    default:
-                                        return <span key = { name }>
+                                        </div>
+                                    )
+                                } else if(type === "Task.URI") {
+                                    return (
+                                        <div key={ name + "_div" } styleName='questionnaire'>
+                                            <Input
+                                                styleName="autocomplete"
+                                                disabled={true}
+                                                key={ name + "_input" }
+                                                label="Task Id"
+                                                value = { this.state.task.id || '' }
+                                            />
+                                        </div>
+                                    )
+                                } else if (mType){
+                                    switch(mType.split('#')[1]){
+                                        case 'StringType':
+                                            return <Input key = { name }
+                                                          label = { this.getLocalizedParameterNameFromId(name) }
+                                                          value = { this.state.task.parameters[name] || '' }
+                                                          onChange = { value => this.handleParameterValueChange(name, value) } />
+                                        case 'IntegerType':
+                                            return <Input key = { name }
+                                                          type = 'number'
+                                                          step = { 1 }
+                                                          label = { this.getLocalizedParameterNameFromId(name) }
+                                                          value = { this.state.task.parameters[name] || '' }
+                                                          onChange = { value => this.handleParameterValueChange(name, value) } />
+                                        case 'FloatType':
+                                            return <Input key = { name }
+                                                          type = 'number'
+                                                          step = { 1 }
+                                                          label = { this.getLocalizedParameterNameFromId(name) }
+                                                          value = { this.state.task.parameters[name] || '' }
+                                                          onChange = { value => this.handleParameterValueChange(name, value) } />
+                                        case 'BooleanType':
+                                            return <Checkbox key = { name }
+                                                             label = { this.getLocalizedParameterNameFromId(name) }
+                                                             checked = { this.state.task.parameters[name] || '' }
+                                                             onChange = { value => this.handleParameterValueChange(name, value) } />
+                                        case 'DateType':
+                                            return <DatePicker key = { name }
+                                                               label = { this.getLocalizedParameterNameFromId(name) }
+                                                               value = { this.state.task.parameters[name] || '' }
+                                                               onChange = { value => this.handleParameterValueChange(name, value) } />
+                                        default:
+                                            return <span key = { name }>
                                             Parameter type [{ mType.split('#')[1].toUpperCase() }] not suported yet
                                         </span>
+                                    }
                                 }
                             })
                         }
                     </section>
                 </section>
             )
+        }
     }
 
     handleToggleTaskDialog(){
@@ -615,8 +677,37 @@ const actionLabel = defineMessages({
         else this.setState(prevState => ({label: "▾"}))
     }
 
+    handleComparatorChange(value, index){
+        let conditions = this.state.task.conditions;
+        conditions[index].comparator = value;
+
+        this.setState(prevState => ({...prevState, task: {...prevState.task, conditions: conditions}}));
+    }
+
+    renderConditionType(cond, index){
+        let { intl: {formatMessage}} = this.props;
+
+        if(this.props.properties.find(({uri}) => uri === cond.condition).type === "http://citius.usc.es/hmb/wfontology.owl#IntegerType"){
+            return <div>
+                <Dropdown
+                    source={this.comparators}
+                    onChange={(value) => this.handleComparatorChange(value, index)}
+                    value={cond.comparator}
+                />
+                <Input
+                    label = { formatMessage(formLabel.condition) }
+                    value = { cond.conditionValue }
+                    onChange = { (value) => this.handleConditionValueChange(value, index) }
+                />
+            </div>
+        } else{
+            return null
+        }
+    }
+
     renderFormInputsForTask(){
         let { selectedTask, intl: {formatMessage}} = this.props;
+
         if( selectedTask != null){
             switch(stringTypeToSymbol(selectedTask.type)){
                 case T.INITIAL_TASK:
@@ -642,33 +733,25 @@ const actionLabel = defineMessages({
                 case T.LOOP:
                     return (
                         <CardText styleName='inputs'>
-                            <Input
-                                label = { formatMessage(formLabel.condition) }
-                                value = { this.state.task.condition }
-                                onChange = { this.handleConditionChange }
-                            />
+                            <p>Path 0 Condition:</p>
+                            <div>
+                                <Dropdown
+                                    source={this.state.conditions}
+                                    onChange={(value) => this.handleConditionChange(value, 0)}
+                                    value={this.state.task.conditions[0].condition}
+                                />
+                                {
+                                    this.state.task.conditions[0].condition !== ''?
+                                        this.renderConditionType(this.state.task.conditions[0], 0)
+                                        :
+                                        null
+                                }
+
+                            </div>
                         </CardText>
                     );
                 case T.AND_SPLIT:
                 case T.AUTOMATIC_CHOICE:
-                    return (
-                        <CardText styleName = 'inputs'>
-                            <Input
-                                label = { formatMessage(formLabel.condition) }
-                                value = { this.state.task.condition }
-                                onChange = { this.handleConditionChange }
-                            />
-                            <Checkbox checked = { this.state.task.isTransitable }
-                                      label = { formatMessage(formLabel.isTransitable) }
-                                      onChange = { this.handleIsTransitableChange } />
-                            <Checkbox checked = { this.state.task.isRequired }
-                                      label = { formatMessage(formLabel.isRequired) }
-                                      onChange = { this.handleIsRequiredChange } />
-                            <Checkbox checked = { this.state.task.isDisabled }
-                                      label = { formatMessage(formLabel.isDisabled) }
-                                      onChange = { this.handleIsDisabledChange } />
-                        </CardText>
-                    );
                 case T.USER_CHOICE:
                     return (
                         <CardText styleName = 'inputs'>
@@ -681,6 +764,30 @@ const actionLabel = defineMessages({
                             <Checkbox checked = { this.state.task.isDisabled }
                                       label = { formatMessage(formLabel.isDisabled) }
                                       onChange = { this.handleIsDisabledChange } />
+                            {
+                                this.state.task.conditions.map(
+                                    (cond, index) => {
+                                        return <div>
+                                            <p>Path {index} Condition:</p>
+                                            <div>
+                                                <Dropdown
+                                                    source={this.state.conditions}
+                                                    onChange={(value) => this.handleConditionChange(value, index)}
+                                                    value={cond.condition}
+                                                />
+                                                {
+                                                    cond.condition !== ''?
+                                                        this.renderConditionType(cond, index)
+                                                        :
+                                                        null
+                                                }
+
+                                            </div>
+
+                                        </div>
+                                    }
+                                )
+                            }
                         </CardText>
                     );
                 case T.AUTOMATIC_CHOICE_END:
@@ -718,12 +825,16 @@ function mapStateToProps(state) {
     return {
         questionnaires: state.QuestionnairesState.questionnaires,
         tags: state.QuestionnairesState.tags,
+        roles: state.GameEditorState.present.roles,
+        operators: state.GameEditorState.present.operators,
+        properties: state.GameEditorState.present.properties
     }
 }
 
 function mapDispatchToProps(dispatch) {
     return {
-        getAllQuestionnaires: bindActionCreators(getAllQuestionnaires, dispatch)
+        getAllQuestionnaires: bindActionCreators(getAllQuestionnaires, dispatch),
+        getAllProperties: bindActionCreators(getAllProperties, dispatch)
     }
 }
 

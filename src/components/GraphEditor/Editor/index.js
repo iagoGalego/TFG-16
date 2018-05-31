@@ -22,12 +22,12 @@ import Translator from '../../../common/lib/model/translator'
             graphDefinition: this.props.graph,
             selectedTask: this.props.selectedTask,
             scale: this.props.scale
-        })
+        });
 
         bindGraphEvents(this.__graph, this.__newNodeContainer, this.props.selectedTask, this.props.addTask, this.props.selectTask, this.props.scale, this.props.moveTask)
     }
 
-    componentDidUpdate() {
+    componentDidUpdate(){
         this.__graph = buildGraph({
             graph: this.__graph,
             container: this.__graphContainer,
@@ -35,7 +35,12 @@ import Translator from '../../../common/lib/model/translator'
             selectedTask: this.props.selectedTask,
             scale: this.props.scale
         });
-        if(this.props.isLoading){
+    }
+
+    componentWillReceiveProps(props){
+
+
+        if(props.isLoading){
             ReactDOM.findDOMNode(this.__loaderContainer).style.display = 'block';
             ReactDOM.findDOMNode(this.__graphContainer).style.display = 'none';
         } else{

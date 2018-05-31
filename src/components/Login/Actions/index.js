@@ -16,6 +16,15 @@ function loginSuccess() {
     }
 }
 
+function getLoggedUserSuccess(loggedUser) {
+    return {
+        type: LOGIN_TYPES.LOGGED_USER_REQUEST_SUCCESS,
+        payload: {
+            loggedUser: loggedUser
+        }
+    }
+}
+
 function logoutSuccess() {
     return {
         type: LOGIN_TYPES.REQUEST_SUCCESS,
@@ -60,6 +69,20 @@ export function login(user, pass) {
     }
 }
 
+export function getLoggedUser() {
+    return dispatch => {
+        dispatch(requestAPICall());
+
+        return HMBAPI.instance
+            .DB.client.loggedUser.get()
+            .then( response => {
+                sessionStorage.setItem('__loggedUser', JSON.stringify(response.content));
+                dispatch(getLoggedUserSuccess(response.content))
+            })
+            .catch( err => dispatch(requestAPIError(err)) )
+    }
+}
+
 export function logout() {
     return dispatch => {
         dispatch(requestAPICall());
@@ -67,8 +90,9 @@ export function logout() {
         return HMBAPI.instance
             .logout()
             .then( () => {
-                sessionStorage.removeItem('__token')
-                dispatch(logoutSuccess())
+                sessionStorage.removeItem('__token');
+                sessionStorage.removeItem('__loggedUser');
+                dispatch(logoutSuccess());
             })
             .catch( err => dispatch(requestAPIError(err)) )
     }

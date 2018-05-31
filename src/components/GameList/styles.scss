@@ -124,6 +124,53 @@
   padding-right: 6px;
 }
 
+.tags{
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.chip{
+  max-width: 200px;
+}
+
+.cardText{
+  padding-top: 7px!important;
+  padding-bottom: 7px!important;
+}
+
+.designer{
+  margin-top: 20px;
+  background-color: #ffc400!important;
+  color: white!important;
+}
+
+.cardActions{
+  justify-content: space-between;
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+}
+
+.card{
+  margin-top: 5px;
+  width: 32.75%;
+  min-width: 32.75%;
+  margin-right: 10px;
+  height: 220px;
+  position: relative;
+  margin-bottom: 5px;
+  p{
+    white-space: normal;
+  }
+}
+
+.cards{
+  padding-right: 10px;
+  padding-left: 10px;
+  display: flex;
+  justify-content: left;
+}
+
 .autocomplete{
   padding: 0;
   div div::after{
@@ -166,6 +213,32 @@
     flex: 1;
     flex-basis: 49%;
   }
+}
+
+.cardTitle{
+  width: calc(100% - 75px);
+  padding-bottom: 0px!important;
+  div{
+    width: 100%;
+    h5{
+      width: 100%;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    p{
+      width: 100%;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+  }
+
+}
+
+.columns2{
+  display: flex;
+  justify-content: space-between;
 }
 
 .input{

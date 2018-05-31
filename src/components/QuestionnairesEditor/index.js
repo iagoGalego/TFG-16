@@ -23,8 +23,8 @@ import {StringType, Tag} from "../../common/lib/model/questionnairesModel";
 const messages = defineMessages({
     title : {
         id : 'questionnaires.title',
-        description : 'Questionnaires page title',
-        defaultMessage : 'Questionnaires'
+        description : 'Questionnaires Editor page title',
+        defaultMessage : 'Questionnaires Editor'
     }
 });
 
@@ -64,7 +64,7 @@ const messages = defineMessages({
 
     componentWillReceiveProps(props){
 
-        if(props.selectedQuestionnaire !== null){
+        if(props.selectedQuestionnaire !== null && props.selectedQuestionnaire !== this.props.selectedQuestionnaire){
             if(Object.keys(props.selectedQuestionnaire).length === 0 && props.selectedQuestionnaire.constructor === Object)
                 this.setState({
                     loading: false,
@@ -150,7 +150,6 @@ const messages = defineMessages({
         this.props.setAppTitle(this.props.intl.formatMessage(messages.title));
         if(this.props.selectedQuestionnaire !== null){
             this.setState({
-                loading: false,
                 questionnaire: {
                     name: {
                         stringValue: ''
