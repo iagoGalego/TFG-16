@@ -1,6 +1,3 @@
-/**
- * Created by victorjose.gallego on 4/11/16.
- */
 
 import URLSearchParams from 'url-search-params'
 import CONFIG from '../../config.json'

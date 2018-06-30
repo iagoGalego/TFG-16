@@ -22,7 +22,7 @@ function mapStateToProps(state) {
         ...state.AuthState,
         language: state.UIState.language,
         title: state.UIState.title,
-        isAuthenticated: state.AuthState.isAuthenticated,
+        isAuthenticated: state.AuthQuestionnairesState.isAuthenticated,
         hasLoggedOut: state.AuthState.hasLoggedOut
     };
 }

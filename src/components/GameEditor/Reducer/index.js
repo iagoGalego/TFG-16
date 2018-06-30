@@ -37,6 +37,7 @@ const InitialState = {
             }
         ]
     },
+    zoom: 0.8,
     selectedWorkflow: null,
     selectedTask : null,
     isClean: true,
@@ -45,21 +46,42 @@ const InitialState = {
     isLoading: true,
     roles: null,
     operators: null,
-    properties: null
+    properties: null,
+    manageTask: false,
+    manageTaskId: null,
+    modified: false
 };
 
 function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {type:'', payload: {}}){
     let newState, base, oldBase, id1 = UUID.v4(), id2 = UUID.v4();
-    console.log(type.toString())
-    console.log(state)
     switch (type){
-        case TYPES.SET_CLEAN:
-            newState = {
+        case TYPES.TOGGLE_MANAGE_TASK:
+            return {
                 ...state,
-                isClean: payload.clean
+                manageTask: !state.manageTask
             };
-            newState = JSON.parse(JSON.stringify(newState));
-            return newState;
+        case TYPES.SET_MODIFIED:
+            return {
+                ...state,
+                modified: payload.modified
+            };
+        case TYPES.SET_ZOOM:
+            return {
+                ...state,
+                zoom: payload.zoom
+            };
+        case TYPES.SET_MANAGE_TASK:
+            if(payload.manageTaskId === null && state.manageTaskId === null){
+                return {
+                    ...state,
+                    manageTaskId: undefined
+                };
+            } else{
+                return {
+                    ...state,
+                    manageTaskId: payload.manageTaskId
+                };
+            }
         case TYPES.REQUEST:
             return {
                 ...state,
@@ -94,7 +116,6 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                     selectedWorkflow: payload.workflow,
                 };
                 newState.graph = JSON.parse(JSON.stringify(newState.graph));
-                console.log(newState);
                 return newState
             }
             newState = {
@@ -106,7 +127,6 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                 isClean: false
             };
             newState.graph = JSON.parse(JSON.stringify(newState.graph));
-            console.log(newState)
             return newState
         case TYPES.SELECTED_WORKFLOW_REQUEST_FAILURE:
             return {
@@ -169,6 +189,7 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
 
             newState.graph = JSON.parse(JSON.stringify(newState.graph));
             newState.selectedTask = JSON.parse(JSON.stringify(newState.selectedTask));
+            newState.isClean = true;
 
             let start = newState.graph.nodes.find(({id}) => id === 'start');
             start.x = 100;
@@ -184,14 +205,15 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                 const close = createCloseNode(payload);
 
                 if(payload.task.type === 'loop'){
-                    payload.task.fromLevel = 1;
+                    payload.task.fromLevel = 0;
                     payload.task.conditions.push({condition: '', conditionValue: '', comparator: ''});
                     if(payload.link.newEdge){
                         oldBase = state.graph.links.find(({from, to}) =>from === payload.link.from && to === payload.link.to);
                         const newCounter = oldBase.counter + 1;
                         base = {from: payload.link.from, to: payload.link.to, isBase: true, counter: newCounter, fromLevel: oldBase.fromLevel, toLevel: oldBase.toLevel};
                         if(payload.link.isTransitable) base.isTransitable = true;
-                        state.graph.nodes.find(({id}) => id === payload.link.from).conditions.push({condition: '', conditionValue: '', comparator: ''})
+                        let checkFrom = state.graph.nodes.find(({id}) => id === payload.link.from)
+                        if(checkFrom.type === 'automaticChoice') checkFrom.conditions.push({condition: '', conditionValue: '', comparator: ''})
                         newState = {
                             ...Object.assign({}, state),
                             graph : {
@@ -203,8 +225,8 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                                 ],
                                 links: [...state.graph.links.filter(({from, to}) => from !== payload.link.from || to !== payload.link.to),
                                     base,
-                                    {from: payload.task.id, to: close.task.id, isLoop: true, counter: 2, fromLevel: 1, toLevel: 1, reverse: true},
-                                    {from: close.task.id, to: payload.task.id, type: 'return', counter: 2, fromLevel: 0, toLevel: 0, reverse: true},
+                                    {from: payload.task.id, to: close.task.id, isLoop: true, counter: 2, fromLevel: 0, toLevel: 0, reverse: true},
+                                    {from: close.task.id, to: payload.task.id, type: 'return', counter: 2, fromLevel: 1, toLevel: 1, reverse: true},
                                     {from: payload.link.from, to: id1, type: "verticalStart",  fromLevel: newCounter - 1, toLevel: 0 },
                                     {from: id1, to: payload.task.id, type: "parallelStart", fromLevel: newCounter - 1, toLevel: 0 },
                                     {from: close.task.id, to: id2, type: "parallelEnd", fromLevel: 0, toLevel: newCounter - 1 },
@@ -214,23 +236,22 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                             selectedTask: payload.task,
                         }
                     } else if(payload.link.isLoop){
-                        const newCounter = state.graph.links.find(({from, to}) =>from === payload.link.from && to === payload.link.to).counter;
-                        delete state.graph.nodes.find(({id}) => id === payload.link.from).fromLevel
+                        delete state.graph.nodes.find(({id}) => id === payload.link.from).fromLevel;
                         newState = {
                             ...Object.assign({}, state),
                             graph : {
                                 nodes: [...state.graph.nodes, payload.task,
                                     close.task,
-                                    {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y, fromLevel: newCounter - 1},
+                                    {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y, fromLevel: 0},
                                     {id: id2, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.to).x, y: payload.task.y, start: id1}
                                 ],
                                 links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
-                                    {from: payload.task.id, to: close.task.id, isLoop: true, counter: 2,  fromLevel: 1, toLevel: 1, reverse: true},
-                                    {from: close.task.id, to: payload.task.id, type: 'return', counter: 2, fromLevel: 0, toLevel: 0, reverse: true},
-                                    {from: payload.link.from, to: id1, type: "verticalStart",  fromLevel: newCounter - 1, toLevel: 0},
-                                    {from: id1, to: payload.task.id, type: "parallelStart", fromLevel: newCounter - 1, toLevel: 0},
-                                    {from: close.task.id, to: id2, type: "parallelEnd", fromLevel: 0, toLevel: newCounter -1},
-                                    {from: id2, to: payload.link.to, type: "verticalEnd", fromLevel: 0, toLevel: newCounter -1 }
+                                    {from: payload.task.id, to: close.task.id, isLoop: true, counter: 2,  fromLevel: 0, toLevel: 0, reverse: true},
+                                    {from: close.task.id, to: payload.task.id, type: 'return', counter: 2, fromLevel: 1, toLevel: 1, reverse: true},
+                                    {from: payload.link.from, to: id1, type: "verticalStart",  fromLevel: 0, toLevel: 0},
+                                    {from: id1, to: payload.task.id, type: "parallelStart", fromLevel: 0, toLevel: 0},
+                                    {from: close.task.id, to: id2, type: "parallelEnd", fromLevel: 0, toLevel: 0},
+                                    {from: id2, to: payload.link.to, type: "verticalEnd", fromLevel: 0, toLevel: 0 }
                                 ]
                             },
                             selectedTask: payload.task,
@@ -245,8 +266,8 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                                 ],
                                 links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
                                     {from: payload.link.from, to: payload.task.id, fromLevel: payload.link.fromLevel, toLevel: 0, type: payload.link.type === "parallelStart"? "parallelStart": ''},
-                                    {from: payload.task.id, to: close.task.id, isLoop: true, counter: 2, fromLevel: 1, toLevel: 1, reverse: true},
-                                    {from: close.task.id, to: payload.task.id, type: 'return', counter: 2, fromLevel: 0, toLevel: 0, reverse: true},
+                                    {from: payload.task.id, to: close.task.id, isLoop: true, counter: 2, fromLevel: 0, toLevel: 0, reverse: true},
+                                    {from: close.task.id, to: payload.task.id, type: 'return', counter: 2, fromLevel: 1, toLevel: 1, reverse: true},
                                     {from: close.task.id, to: payload.link.to, fromLevel: 0, toLevel: payload.link.toLevel, type: payload.link.type === "parallelEnd"? "parallelEnd": ''}
                                 ]
                             },
@@ -259,7 +280,8 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                         const newCounter = oldBase.counter + 1;
                         base = {from: payload.link.from, to: payload.link.to, isBase: true, counter: newCounter , fromLevel: oldBase.fromLevel, toLevel: oldBase.toLevel};
                         if(payload.link.isTransitable) base.isTransitable= true;
-                        state.graph.nodes.find(({id}) => id === payload.link.from).conditions.push({condition: '', conditionValue: '', comparator: ''})
+                        let checkFrom = state.graph.nodes.find(({id}) => id === payload.link.from)
+                        if(checkFrom.type === 'automaticChoice') checkFrom.conditions.push({condition: '', conditionValue: '', comparator: ''})
                         newState = {
                             ...Object.assign({}, state),
                             graph : {
@@ -281,7 +303,6 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                             selectedTask: payload.task,
                         }
                     } else if(payload.link.isLoop){
-                        const newCounter = state.graph.links.find(({from, to}) =>from === payload.link.from && to === payload.link.to).counter;
                         delete state.graph.nodes.find(({id}) => id === payload.link.from).fromLevel
                         newState = {
                             ...Object.assign({}, state),
@@ -289,15 +310,15 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                                 nodes: [...state.graph.nodes,
                                     payload.task,
                                     close.task,
-                                    {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y, fromLevel: newCounter -1},
+                                    {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y, fromLevel: 0},
                                     {id: id2, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.to).x, y: payload.task.y, start: id1,}
                                 ],
                                 links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
                                     {from: payload.task.id, to: close.task.id, isBase: true, counter: 0, fromLevel: 0, toLevel: 0},
-                                    {from: payload.link.from, to: id1, type: "verticalStart", fromLevel: newCounter -1, toLevel: 0 },
-                                    {from: id1, to: payload.task.id, type: "parallelStart", fromLevel: newCounter -1, toLevel: 0 },
-                                    {from: close.task.id, to: id2, type: "parallelEnd", fromLevel: 0, toLevel: newCounter -1 },
-                                    {from: id2, to: payload.link.to, type: "verticalEnd", fromLevel: 0, toLevel: newCounter -1 }
+                                    {from: payload.link.from, to: id1, type: "verticalStart", fromLevel: 0, toLevel: 0 },
+                                    {from: id1, to: payload.task.id, type: "parallelStart", fromLevel: 0, toLevel: 0 },
+                                    {from: close.task.id, to: id2, type: "parallelEnd", fromLevel: 0, toLevel: 0 },
+                                    {from: id2, to: payload.link.to, type: "verticalEnd", fromLevel: 0, toLevel: 0 }
                                 ]
                             },
                             selectedTask: payload.task,
@@ -322,13 +343,12 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                 }
             } else{
                 if(payload.link.newEdge){
-                    alert("lal")
                     oldBase = state.graph.links.find(({from, to}) =>from === payload.link.from && to === payload.link.to);
                     const newCounter = oldBase.counter + 1;
-                    alert("newCounter2 "+newCounter)
                     base = {from: payload.link.from, to: payload.link.to, isBase: true, counter: newCounter, fromLevel: oldBase.fromLevel, toLevel: oldBase.toLevel};
                     if(payload.link.isTransitable) base.isTransitable = true;
-                    state.graph.nodes.find(({id}) => id === payload.link.from).conditions.push({condition: '', conditionValue: '', comparator: ''})
+                    let checkFrom = state.graph.nodes.find(({id}) => id === payload.link.from)
+                    if(checkFrom.type === 'automaticChoice') checkFrom.conditions.push({condition: '', conditionValue: '', comparator: ''})
                     newState = {
                         ...Object.assign({}, state),
                         graph : {
@@ -348,28 +368,25 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                         selectedTask: payload.task,
                     }
                 } else if(payload.link.isLoop){
-                    const newCounter = state.graph.links.find(({from, to}) =>from === payload.link.from && to === payload.link.to).counter;
                     delete state.graph.nodes.find(({id}) => id === payload.link.from).fromLevel
-                    alert("este new counter vale "+newCounter)
                     newState = {
                         ...Object.assign({}, state),
                         graph : {
                             nodes: [...state.graph.nodes,
                                 payload.task,
-                                {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y, fromLevel: newCounter -1},
+                                {id: id1, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.from).x, y: payload.task.y, fromLevel: 0},
                                 {id: id2, type: 'invisible', x: state.graph.nodes.find(({id}) => id === payload.link.to).x,y: payload.task.y, start: id1}
                             ],
                             links: [...state.graph.links.filter(({from, to}) =>from !== payload.link.from || to !== payload.link.to),
-                                {from: payload.link.from, to: id1, type: "verticalStart", fromLevel: newCounter -1, toLevel: 0 },
-                                {from: id1, to: payload.task.id, type: "parallelStart", fromLevel: newCounter -1, toLevel: 0 },
-                                {from: payload.task.id, to: id2, type: "parallelEnd", fromLevel: 0, toLevel: newCounter -1 },
-                                {from: id2, to: payload.link.to, type: "verticalEnd", fromLevel: 0, toLevel: newCounter -1 }
+                                {from: payload.link.from, to: id1, type: "verticalStart", fromLevel: 0, toLevel: 0 },
+                                {from: id1, to: payload.task.id, type: "parallelStart", fromLevel: 0, toLevel: 0 },
+                                {from: payload.task.id, to: id2, type: "parallelEnd", fromLevel: 0, toLevel: 0 },
+                                {from: id2, to: payload.link.to, type: "verticalEnd", fromLevel: 0, toLevel: 0 }
                             ]
                         },
                         selectedTask: payload.task,
                     }
                 } else {
-                    alert(JSON.stringify(payload.task))
                     newState =  {
                         ...Object.assign({}, state),
                         graph : {
@@ -387,6 +404,7 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                 }
             }
             newState.graph.nodes = JSON.parse(JSON.stringify(newState.graph.nodes));
+            newState.isClean = payload.clean;
             relocate(newState.graph, newState.graph.nodes.find(({id}) => (id === 'start')), newState.graph.nodes.find(({id}) => (id === 'end')), true);
             return newState;
         case TYPES.SET_SELECTED_TASK:
@@ -399,16 +417,16 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
             };
             return newState;
         case TYPES.DELETE_TASK:
-            let st = Object.assign({}, state);
+            let st = JSON.parse(JSON.stringify(state));
             let nodes, links, linkToNode, linkFromNode, linkFromEnd;
 
             if(payload.task.type === 'userChoice' || payload.task.type === 'automaticChoice' || payload.task.type === 'andSplit' || payload.task.type === 'loop'){
                 //obtener el que llega al inicio y el que sale del final
-                linkToNode = state.graph.links.find(({to, type}) => (to === payload.task.id && type !== 'return'));
-                linkFromEnd  = state.graph.links.find(({from, to}) => (from === state.graph.nodes.find(({start}) => (start === payload.task.id)).id) && to !== payload.task.id);
+                linkToNode = st.graph.links.find(({to, type}) => (to === payload.task.id && type !== 'return'));
+                linkFromEnd  = st.graph.links.find(({from, to}) => (from === st.graph.nodes.find(({start}) => (start === payload.task.id)).id) && to !== payload.task.id);
 
                 //TODO revisar
-                setTimeout(recursiveDelete(st, payload.task, state.graph.nodes.find(({start}) => (start === payload.task.id)).id), 0);
+                setTimeout(recursiveDelete(st, payload.task, st.graph.nodes.find(({start}) => (start === payload.task.id)).id), 0);
 
                 //quito linkFromEnd y el nodo final
                 links = st.graph.links.filter(({from, to}) => (from !== linkFromEnd.from || to !== linkFromEnd.to));
@@ -420,12 +438,15 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
 
                 //si estaba en una estructura
                 if(nodes.find(({id}) => (id === linkToNode.from)).type === 'invisible' && nodes.find(({id}) => (id === linkFromEnd.to)).type === 'invisible' ){
-                    let nodeEnd = state.graph.nodes.find(({id}) => (id === state.graph.links.find(({from}) => (from === linkFromEnd.to)).to))
+                    let nodeEnd = st.graph.nodes.find(({id}) => (id === st.graph.links.find(({from}) => (from === linkFromEnd.to)).to))
                     if(nodeEnd.type === 'loopEnd'){
-                        nodes.find(({id}) => id === nodeEnd.start).fromLevel = 1;
+                        nodes.find(({id}) => id === nodeEnd.start).fromLevel = 0;
                         links.push({from: nodeEnd.start, to: nodeEnd.id, isLoop: true, reverse: true, counter: 2, fromLevel: 1, toLevel: 1})
                     } else{
                         let deletedFromLevel = linkToNode.fromLevel;
+                        let checkFrom = nodes.find(({id}) => id === nodeEnd.start)
+                        if(checkFrom.type === 'automaticChoice') checkFrom.conditions.splice(deletedFromLevel, 1);
+
                         let startPaths = links.filter(({from}) => from === nodeEnd.start);
                         let endPaths = links.filter(({to}) => to === nodeEnd.id);
                         endPaths.map(
@@ -447,9 +468,9 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                                     if(path.fromLevel > deletedFromLevel){
                                         path.fromLevel--;
                                         path.toLevel--;
-                                        path.counter--;
                                         nodes.find(({id}) => id === nodeEnd.start).fromLevel--;
                                     }
+                                    path.counter--;
                                 } else if(!path.isBase){
                                     if(path.fromLevel > deletedFromLevel){
                                         path.fromLevel--;
@@ -482,10 +503,10 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                 }
 
             } else if (payload.task.type === 'userChoiceEnd' || payload.task.type === 'automaticChoiceEnd' || payload.task.type === 'andSplitEnd' || payload.task.type === 'loopEnd'){
-                linkToNode = state.graph.links.find(({to, type}) => (to === payload.task.start && type !== "return"))
-                linkFromEnd  = state.graph.links.find(({from, to}) => (from === payload.task.id && to !== payload.task.start))
+                linkToNode = st.graph.links.find(({to, type}) => (to === payload.task.start && type !== "return"))
+                linkFromEnd  = st.graph.links.find(({from, to}) => (from === payload.task.id && to !== payload.task.start))
 
-                recursiveDelete(st, state.graph.nodes.find(({id}) => (id === payload.task.start)), payload.task.id)
+                recursiveDelete(st, st.graph.nodes.find(({id}) => (id === payload.task.start)), payload.task.id)
 
                 links = st.graph.links.filter(({from, to}) => (from !== linkFromEnd.from || to !== linkFromEnd.to));
                 nodes = st.graph.nodes.filter(({id}) => (id !== payload.task.id));
@@ -495,12 +516,15 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
 
                 if(nodes.find(({id}) => (id === linkToNode.from)).type === 'invisible' &&
                     nodes.find(({id}) => (id === linkFromEnd.to)).type === 'invisible' ){
-                    let x = state.graph.nodes.find(({id}) => (id === state.graph.links.find(({from}) => (from === linkFromEnd.to)).to));
+                    let x = st.graph.nodes.find(({id}) => (id === st.graph.links.find(({from}) => (from === linkFromEnd.to)).to));
                     if(x.type === 'loopEnd'){
-                        nodes.find(({id}) => id === x.start).fromLevel = 1;
+                        nodes.find(({id}) => id === x.start).fromLevel = 0;
                         links.push({from: x.start, to: x.id, isLoop: true, reverse: true, counter: 2, fromLevel: 1, toLevel: 1})
                     } else{
                         let deletedFromLevel = linkToNode.fromLevel;
+                        let checkFrom = nodes.find(({id}) => id === x.start)
+                        if(checkFrom.type === 'automaticChoice') checkFrom.conditions.splice(deletedFromLevel, 1);
+
                         let startPaths = links.filter(({from}) => from === x.start);
                         let endPaths = links.filter(({to}) => to === x.id);
                         endPaths.map(
@@ -522,9 +546,9 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                                     if(path.fromLevel > deletedFromLevel){
                                         path.fromLevel--;
                                         path.toLevel--;
-                                        path.counter--;
                                         nodes.find(({id}) => id === x.start).fromLevel--;
                                     }
+                                    path.counter--;
                                 } else if(!path.isBase){
                                     if(path.fromLevel > deletedFromLevel){
                                         path.fromLevel--;
@@ -553,22 +577,24 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                     links.push(newLink)
                 }
             } else{
-                linkToNode = state.graph.links.find(({to}) => (to === payload.task.id))
-                linkFromNode = state.graph.links.find(({from}) => (from === payload.task.id))
-                alert("seguro? "+JSON.stringify(linkToNode))
-                nodes = state.graph.nodes.filter(({id}) => id !== payload.task.id)
+                linkToNode = st.graph.links.find(({to}) => (to === payload.task.id))
+                linkFromNode = st.graph.links.find(({from}) => (from === payload.task.id))
+                nodes = st.graph.nodes.filter(({id}) => id !== payload.task.id)
                 //quito verticalStart y verticalEnd
-                links = state.graph.links.filter(({from, to}) => (from !== payload.task.id && to !== payload.task.id))
+                links = st.graph.links.filter(({from, to}) => (from !== payload.task.id && to !== payload.task.id))
 
                 if( nodes.find(({id}) => (id === linkToNode.from)).type === 'invisible' &&
                     nodes.find(({id}) => (id === linkFromNode.to)).type === 'invisible' ){
 
-                    let x = state.graph.nodes.find(({id}) => (id === state.graph.links.find(({from}) => (from === linkFromNode.to)).to))
+                    let x = st.graph.nodes.find(({id}) => (id === st.graph.links.find(({from}) => (from === linkFromNode.to)).to))
                     if(x.type === 'loopEnd'){
-                        nodes.find(({id}) => id === x.start).fromLevel = 1;
+                        nodes.find(({id}) => id === x.start).fromLevel = 0;
                         links.push({from: x.start, to: x.id, isLoop: true, reverse: true, counter: 2, fromLevel: 1, toLevel: 1})
                     } else{
                         let deletedFromLevel = linkToNode.fromLevel;
+                        let checkFrom = nodes.find(({id}) => id === x.start)
+                        if(checkFrom.type === 'automaticChoice') checkFrom.conditions.splice(deletedFromLevel, 1);
+
                         let startPaths = links.filter(({from}) => from === x.start);
                         let endPaths = links.filter(({to}) => to === x.id);
                         endPaths.map(
@@ -586,21 +612,19 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                         );
                         startPaths.map(
                             (path) => {
-                                if(path.isBase && path.isTransitable){
-                                    if(path.fromLevel > deletedFromLevel){
+                                if(path.isBase){
+                                    if(path.isTransitable && path.fromLevel > deletedFromLevel){
                                         path.fromLevel--;
                                         path.toLevel--;
-                                        path.counter--;
                                         nodes.find(({id}) => id === x.start).fromLevel--;
                                     }
-                                } else if(!path.isBase){
-                                    if(path.fromLevel > deletedFromLevel){
-                                        path.fromLevel--;
-                                        let n = nodes.find(({id}) => id === path.to);
-                                        n.fromLevel--;
-                                        let secondPath = links.find(({from}) => from === n.id);
-                                        secondPath.fromLevel--;
-                                    }
+                                    path.counter--;
+                                } else if(!path.isBase && path.fromLevel > deletedFromLevel){
+                                    path.fromLevel--;
+                                    let n = nodes.find(({id}) => id === path.to);
+                                    n.fromLevel--;
+                                    let secondPath = links.find(({from}) => from === n.id);
+                                    secondPath.fromLevel--;
                                 }
                             }
                         );
@@ -632,48 +656,39 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
             relocate(newState.graph, newState.graph.nodes.find(({id}) => (id === 'start')), newState.graph.nodes.find(({id}) => (id === 'end')), true);
             return newState;
         case TYPES.SAVE_TASK:
-            newState = {
+            return {
                 ...state,
+                manageTaskId: null,
                 graph: {
                     nodes: [...state.graph.nodes.filter(({id}) => id !== payload.task.id), payload.task],
                     links: state.graph.links
                 },
             };
-            newState = JSON.parse(JSON.stringify(newState));
-            return newState;
-        case TYPES.MOVE_TASK:
-            const moved = state.graph.nodes.find(({id}) => id === payload.task.data.id);
-            moved.x = payload.task.position.x;
-            moved.y = payload.task.position.y;
-            return {
-                ...state,
-                graph: {
-                    nodes: [...state.graph.nodes.filter(({id}) => id !== payload.task.data.id), moved],
-                    links: state.graph.links
-                }
-            };
         case TYPES.SAVE_EDGE:
             let destiny = Object.assign({}, state.graph.nodes.find(({start}) => start === payload.task.id));
             let link = Object.assign({}, state.graph.links.find(({from, to}) => from === payload.task.id && to === destiny.id));
+            let task = Object.assign({}, state.graph.nodes.find(({id}) => id === payload.task.id));
             let links2 = state.graph.links.filter(({from, to}) => from !== link.from || to !== link.to);
             let nodes2 = state.graph.nodes.filter(({id}) => id !== payload.task.id && id !== destiny.id);
             let newCounter = link.counter + 1;
-            if(payload.task.isTransitable && !state.graph.nodes.find(({id}) => id === payload.task.id).isTransitable) {
-                alert("newCounter "+newCounter);
+            payload.task = JSON.parse(JSON.stringify(payload.task));
+            if(payload.task.isTransitable && !task.isTransitable) {
                 link.isTransitable = true;
                 link.counter = newCounter;
                 link.fromLevel = newCounter - 1;
                 link.toLevel = newCounter - 1;
                 payload.task.fromLevel = newCounter - 1;
-                payload.task.conditions.push({condition: '', conditionValue: '', comparator: ''});
+                if(payload.task.type === 'automaticChoice')
+                    payload.task.conditions.push({condition: '', conditionValue: '', comparator: ''});
             }
-            else if(!payload.task.isTransitable && state.graph.nodes.find(({id}) => id === payload.task.id).isTransitable) {
+            else if(!payload.task.isTransitable && task.isTransitable) {
                 delete link.isTransitable;
                 let deletedFromLevel = link.fromLevel;
-                payload.task.conditions.splice(deletedFromLevel, 1);
+                if(payload.task.type === 'automaticChoice')
+                    payload.task.conditions.splice(deletedFromLevel, 1);
                 link.counter--;
                 link.fromLevel = 0;
-                delete payload.task.fromLevel
+                delete payload.task.fromLevel;
                 link.toLevel = 0;
                 let startPaths = links2.filter(({from}) => from === link.from);
                 let endPaths = links2.filter(({to}) => to === link.to);
@@ -704,6 +719,7 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                     }
                 );
             }
+            destiny.isRequired = payload.task.isRequired;
             destiny.isDisabled = payload.task.isDisabled;
             let newState = {
                 ...state,
@@ -719,6 +735,7 @@ function GameEditorReducer(state = InitialState, {type = '', payload = {}} = {ty
                 }
             };
             newState.graph.links = JSON.parse(JSON.stringify(newState.graph.links));
+            newState.graph.nodes = JSON.parse(JSON.stringify(newState.graph.nodes));
             return newState;
         default:
             return state;
@@ -910,6 +927,8 @@ function relocate(graph, start, end, condition){
             node.type === 'andSplit' || node.type === 'loop'){
             let invisibles = graph.links.filter(({from, type}) => (from === node.id && type === 'verticalStart'));
 
+            invisibles.sort(compare);
+
             for(let i = 0; i < invisibles.length; i++){
                 graph.nodes.find(({id}) => (id === invisibles[i].to)).x = initialDistance;
                 graph.nodes.find(({id}) => (id === invisibles[i].to)).y = localMaxHeight -85;
@@ -949,7 +968,14 @@ function relocate(graph, start, end, condition){
         if(localMaxHeight < maxHeight) maxHeight = localMaxHeight;
         node = graph.nodes.find(({id}) => (id === graph.links.find(({from, type}) => (from === node.id && type !== 'return')).to))
     }
-    //alert("fin "+initialDistance +" "+ distance)
     end.x = initialDistance + distance;
     return {x: end.x, y: maxHeight}
+}
+
+function compare(a,b) {
+    if (a.fromLevel < b.fromLevel)
+        return -1;
+    if (a.fromLevel > b.fromLevel)
+        return 1;
+    return 0;
 }

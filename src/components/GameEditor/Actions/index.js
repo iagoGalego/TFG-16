@@ -1,6 +1,3 @@
-/**
- * Created by victorjose.gallego on 2/4/16.
- */
 import TYPES from './types'
 import HMBAPI from "../../../common/lib/API";
 import {LEVELS, Logger} from "../../../common/lib/Logger";
@@ -9,10 +6,7 @@ export function addTaskInLink({task, link}){
     return [
         {
             type: TYPES.ADD_TASK_IN_LINK,
-            payload: { task, link },
-        }, {
-            type: TYPES.SET_CLEAN,
-            payload: { clean: false }
+            payload: { task, link, clean: false },
         }, {
             type: TYPES.SET_SELECTED_TASK,
             payload: { task },
@@ -24,8 +18,8 @@ export function clearDiagram(){
     return [{
         type: TYPES.CLEAR_DIAGRAM
     }, {
-        type: TYPES.SET_CLEAN,
-        payload: { clean: true }
+        type: TYPES.SET_SELECTED_TASK,
+        payload: { task: null },
     }]
 }
 
@@ -45,13 +39,6 @@ export function setSelectedTask(task){
     return {
         type: TYPES.SET_SELECTED_TASK,
         payload: { task },
-    }
-}
-
-export function moveTask(task) {
-    return {
-        type: TYPES.MOVE_TASK,
-        payload: {task}
     }
 }
 
@@ -98,9 +85,12 @@ export function redo(){
 }
 
 function requestAPICall(){
-    return {
+    return [{
         type: TYPES.REQUEST
-    }
+    },{
+        type: TYPES.SET_SELECTED_TASK,
+        payload: { task: null },
+    }, ]
 }
 
 function requestAPIError(err) {
@@ -149,13 +139,15 @@ export function edit(workflow){
 }
 
 function selectWorkflowSuccess(workflow) {
-    return [{
-        type: TYPES.SET_SELECTED_WORKFLOW,
-        payload: {
-            workflow: workflow,
-        }},{
-        type: TYPES.CLEAR_HISTORY
-    }
+    return [
+        {
+            type: TYPES.SET_SELECTED_WORKFLOW,
+            payload: {
+                workflow: workflow,
+            }
+        }, {
+            type: TYPES.CLEAR_HISTORY
+        }
     ]
 }
 
@@ -280,5 +272,39 @@ export function getAllProperties() {
             .then( properties => {
                 dispatch(getPropertiesSuccess(properties.content))
             }).catch( err => dispatch(getPropertiesError(err)) )
+    }
+}
+
+export function toggleManageTask() {
+    return {
+        type: TYPES.TOGGLE_MANAGE_TASK,
+        payload: {}
+    }
+}
+
+export function setManageTask(id) {
+    return {
+        type: TYPES.SET_MANAGE_TASK,
+        payload: {
+            manageTaskId:  id
+        }
+    }
+}
+
+export function setZoom(newZoom) {
+    return {
+        type: TYPES.SET_ZOOM,
+        payload: {
+            zoom:  newZoom
+        }
+    }
+}
+
+export function setModified(modified) {
+    return {
+        type: TYPES.SET_MODIFIED,
+        payload: {
+            modified:  modified
+        }
     }
 }

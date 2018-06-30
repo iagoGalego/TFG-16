@@ -1,6 +1,3 @@
-/**
- * Created by victorjose.gallego on 3/10/16.
- */
 import * as fs from 'fs';
 import {sync as globSync} from 'glob';
 import {sync as mkdirpSync} from 'mkdirp';

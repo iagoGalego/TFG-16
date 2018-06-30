@@ -115,6 +115,9 @@ const messages = defineMessages({
             questionnaire.name = new StringType();
             questionnaire.name.genURI();
             questionnaire.name.stringValue = this.state.name;
+            questionnaire.user = new StringType();
+            questionnaire.user.genURI();
+            questionnaire.user.stringValue = this.props.user;
             questionnaire.questions = [];
             questionnaire.tags = [];
             this.state.tags.map(

@@ -224,7 +224,6 @@ function mapStateToProps(state) {
 function mapDispatchToProps(dispatch) {
     return {
         setAppTitle: bindActionCreators(setTitle, dispatch),
-        getQuestionnaire: bindActionCreators(setSelectedQuestionnaire, dispatch),
         saveQuestion: bindActionCreators(saveQuestion, dispatch),
         updateQuestion: bindActionCreators(updateQuestion, dispatch),
         updateQuestionnaire: bindActionCreators(updateQuestionnaire, dispatch),

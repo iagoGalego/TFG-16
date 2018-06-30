@@ -1,7 +1,3 @@
-/**
- * Created by victorjose.gallego on 2/4/16.
- */
-
 import CONFIG from '../../../common/config.json'
 import TYPES from '../Actions/types'
 

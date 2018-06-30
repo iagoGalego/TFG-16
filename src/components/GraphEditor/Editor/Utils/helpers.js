@@ -1,6 +1,3 @@
-/**
- * Created by victorjose.gallego on 9/14/16.
- */
 import { TaskBuilder } from './builders'
 import joint from 'jointjs'
 

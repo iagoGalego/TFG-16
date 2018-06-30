@@ -12,6 +12,7 @@ import NotFound from '../../components/NotFound'
 import { Switch } from 'react-router'
 import { Route, Redirect} from "react-router-dom";
 import {login, logout, setError} from "../../components/Login/Actions";
+import {logoutQuestionnaires} from "../../components/Questionnaires/Actions";
 
 class LayoutWrapper extends Component {
     constructor() {
@@ -40,7 +41,7 @@ function mapStateToProps(state) {
         ...state.AuthState,
         language: state.UIState.language,
         title: state.UIState.title,
-        isAuthenticated: state.AuthState.isAuthenticated,
+        isAuthenticated: state.AuthQuestionnairesState.isAuthenticated,
         hasLoggedOut: state.AuthState.hasLoggedOut,
         menuOpened: state.UIState.isMenuOpened,
         settingsPanelOpened:state.UIState.isSettingsPanelOpened
@@ -51,6 +52,7 @@ function mapDispatchToProps(dispatch) {
     return {
         login: bindActionCreators(login, dispatch),
         logout: bindActionCreators(logout, dispatch),
+        logoutQuestionnaires: bindActionCreators(logoutQuestionnaires, dispatch),
         setError: bindActionCreators(setError, dispatch),
         changeLanguage: bindActionCreators(setAppLanguage, dispatch),
         setAppTitle: bindActionCreators(setTitle, dispatch),

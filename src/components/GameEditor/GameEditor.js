@@ -22,7 +22,7 @@ import Translator from "../../common/lib/model/translator";
 import HMBAPI from "../../common/lib/API";
 import PropTypes from "prop-types";
 import TYPES from './Actions/types'
-import {addTaskInLink, edit, getOperators, getRoles, save, setSelectedWorkflow} from "./Actions";
+import {getOperators, getRoles, setManageTask, setModified, setZoom} from "./Actions";
 
 const messages = defineMessages({
     title : {
@@ -43,7 +43,9 @@ const messages = defineMessages({
             showHelp: false,
             fullScreen: false,
             loading: true,
-            dontExist: false
+            dontExist: false,
+            operatorsLoaded: false,
+            rolesLoaded: false
         };
         this.__full = null
     }
@@ -60,9 +62,18 @@ const messages = defineMessages({
     }
 
     componentWillReceiveProps(props) {
-        if (props.roles !== null && props.operators !== null &&
-            (props.roles !== this.props.roles || props.operators !== this.props.operators)) {
-            if(props.isLoading){
+        if (props.roles !== null && props.roles !== this.props.roles) {
+            this.setState(previousState => ({...previousState, rolesLoaded: true}));
+            if(this.state.operatorsLoaded && this.props.isLoading){
+                if(this.props.location.pathname.split( '/' )[3] === 'editor'){
+                    this.props.setSelectedWorkflow(null);
+                } else{
+                    this.props.setSelectedWorkflow(this.props.location.pathname.split( '/' )[3]);
+                }
+            }
+        } else if(props.operators !== null && props.operators !== this.props.operators){
+            this.setState(previousState => ({...previousState, operatorsLoaded: true}));
+            if(this.state.rolesLoaded && this.props.isLoading){
                 if(this.props.location.pathname.split( '/' )[3] === 'editor'){
                     this.props.setSelectedWorkflow(null);
                 } else{
@@ -80,6 +91,7 @@ const messages = defineMessages({
     }
 
     componentDidMount() {
+        this.setState(previousState => ({...previousState, rolesLoaded: false, operatorsLoaded: false}));
         this.props.getRoles();
         this.props.getOperators();
 
@@ -110,106 +122,110 @@ const messages = defineMessages({
         this.setState(previousState => ({...previousState, windowWidth: window.innerWidth}));
     }
     handleSave(payload){
-        let { language } = this.props;
+        let { language, modified } = this.props;
 
-        let workflow = {
-            executionId: 0,
-            executionStatus: 0,
-            isSubWorkflow: false,
-            name: "",
-            description: "",
-            startDate: null,
-            expiryDate: null,
-            metadata: [],
-            modificationDate: null,
-            provider: "",
-            translation: [],
-            element: [],
-            sequenceFlow: [],
-            trigger: null,
-            versionNumber: 0,
-            isDesignFinished: false,
-            isValidated: false,
-            designer: ""
-        };
-        alert(JSON.stringify(payload.metadata))
-        let metadata = payload.metadata.map(
-            (m) => {
-                let md = new Metadata();
-                md.name = "tag";
-                md.metadataValue = m.metadataValue;
-                return md;
-            }
-        );
-
-        let translation = new WorkflowTranslation();
-        translation.description = payload.description;
-        translation.name = payload.name;
-        translation.longDescription = payload.longDescription;
-        translation.languageCode = language;
-        translation.imageUrl = null;
-        let newWorkFlow = {
-            ...workflow,
-            uri: payload.uri,
-            translation: translation,
-            startDate: payload.startDate,
-            expiryDate: payload.expiryDate,
-            metadata: metadata,
-            modificationDate: payload.modificationDate,
-            provider: payload.provider,
-            designer: this.props.loggedUser
-        };
-
-        let newGraph = { ...this.props.graph};
-        newGraph.nodes.map(
-            (node) => {
-                if(!node.operator) node.operator = null;
-                else {
-                    node.operator = this.props.operators.find(({uri}) => uri === node.operator);
-                    let param = new ParameterValue();
-                    param.namedParameterValue = node.parameters;
-                    param.genURI();
-                    param.namedParameter = null;
-                    node.parameterValue = [param]
-                }
-            }
-        );
-
-        if(newWorkFlow.uri === ''){
-            this.props.save(Translator.toOpenetFormat({workflow: newWorkFlow, graph: newGraph})).then(
-                (response) => {
-                    if(response.type === TYPES.REQUEST_FAILURE)
-                        alert("FAIL");
-                    else if(response.type === TYPES.REQUEST_SUCCESS)
-                        this.context.router.history.push("/app/games");
-
+        if(!modified){
+            let workflow = {
+                executionId: 0,
+                executionStatus: 0,
+                isSubWorkflow: false,
+                name: "",
+                description: "",
+                startDate: null,
+                expiryDate: null,
+                metadata: [],
+                modificationDate: null,
+                provider: "",
+                translation: [],
+                element: [],
+                sequenceFlow: [],
+                trigger: null,
+                versionNumber: 0,
+                isDesignFinished: false,
+                isValidated: false,
+                designer: ""
+            };
+            let metadata = payload.metadata.map(
+                (m) => {
+                    let md = new Metadata();
+                    md.name = "tag";
+                    md.metadataValue = m.metadataValue;
+                    return md;
                 }
             );
+
+            let translation = new WorkflowTranslation();
+            translation.description = payload.description;
+            translation.name = payload.name;
+            translation.longDescription = payload.longDescription;
+            translation.languageCode = language;
+            translation.imageUrl = null;
+            let newWorkFlow = {
+                ...workflow,
+                uri: payload.uri,
+                translation: translation,
+                startDate: payload.startDate,
+                expiryDate: payload.expiryDate,
+                metadata: metadata,
+                modificationDate: payload.modificationDate,
+                provider: payload.provider,
+                designer: this.props.loggedUser
+            };
+
+            let newGraph = { ...this.props.graph};
+            newGraph.nodes.map(
+                (node) => {
+                    if(!node.operator) node.operator = null;
+                    else {
+                        node.operator = this.props.operators.find(({uri}) => uri === node.operator);
+                        let param = new ParameterValue();
+                        param.namedParameterValue = node.parameters;
+                        param.genURI();
+                        param.namedParameter = null;
+                        node.parameterValue = [param]
+                    }
+                }
+            );
+
+            if(newWorkFlow.uri === ''){
+                this.props.save(Translator.toOpenetFormat({workflow: newWorkFlow, graph: newGraph})).then(
+                    (response) => {
+                        if(response.type === TYPES.REQUEST_FAILURE)
+                            alert("FAIL");
+                        else if(response.type === TYPES.REQUEST_SUCCESS)
+                            this.context.router.history.push("/app/games");
+
+                    }
+                );
+            } else {
+                this.props.edit(Translator.toOpenetFormat({workflow: newWorkFlow, graph: newGraph})).then(
+                    (response) => {
+                        if(response.type === TYPES.REQUEST_FAILURE)
+                            alert("FAIL");
+                        else if(response.type === TYPES.REQUEST_SUCCESS)
+                            this.context.router.history.push("/app/games");
+
+                    }
+                );
+            }
+
         } else {
-            this.props.edit(Translator.toOpenetFormat({workflow: newWorkFlow, graph: newGraph})).then(
-                (response) => {
-                    if(response.type === TYPES.REQUEST_FAILURE)
-                        alert("FAIL");
-                    else if(response.type === TYPES.REQUEST_SUCCESS)
-                        this.context.router.history.push("/app/games");
-
-                }
-            );
+            alert("You must to save first the current task")
         }
 
     }
     handleZoom(action){
         switch (action){
             case 'in':
-                this.setState(previousState => ({...previousState, scale: previousState.scale + 0.1}));
+                //this.setState(previousState => ({...previousState, scale: previousState.scale + 0.075}));
                 document.dispatchEvent(new CustomEvent('graph:zoomin'));
                 break;
             case 'out':
-                this.setState(previousState => ({...previousState, scale: previousState.scale - 0.1}));
+                //this.setState(previousState => ({...previousState, scale: previousState.scale - 0.075}));
                 document.dispatchEvent(new CustomEvent('graph:zoomout'));
                 break;
             case 'reset':
-                this.setState(previousState => ({...previousState, scale: 0.8}));
+                //this.setState(previousState => ({...previousState, scale: 0.8}));
                 document.dispatchEvent(new CustomEvent('graph:reset'));
                 break;
             case 'fit':
@@ -255,11 +271,18 @@ const messages = defineMessages({
     }
 
     handleTaskCreation(evt, type){
-        document.dispatchEvent(new CustomEvent('graph:showplaceholders', {detail: {type, x: evt.nativeEvent.pageX, y: evt.nativeEvent.pageY}}))
+        if(this.props.modified){
+            alert("You must to save first the current task")
+        } else {
+            document.dispatchEvent(new CustomEvent('graph:showplaceholders', {detail: {type, x: evt.nativeEvent.pageX, y: evt.nativeEvent.pageY}}))
+        }
     }
 
     handleClear(){
-        if(!this.props.isClean){
+        if(this.props.modified){
+            alert("You must to save first the current task")
+        } else if(!this.props.isClean){
+            document.dispatchEvent(new CustomEvent('graph:deleteEvents', {}))
             this.props.clear();
         }
     }
@@ -268,7 +291,28 @@ const messages = defineMessages({
         this.setState(previousState => ({...previousState, showHelp: true}))
     }
 
+    handleDelete(task){
+        document.dispatchEvent(new CustomEvent('graph:deleteEvents', {}));
+        this.props.deleteTask(task);
+    }
+
+    handleSaveTask(task){
+        document.dispatchEvent(new CustomEvent('graph:deleteEvents', {}));
+        this.props.saveTask(task);
+    }
+
+    handleSaveEdge(task){
+        document.dispatchEvent(new CustomEvent('graph:deleteEvents', {}));
+        this.props.saveEdge(task);
+    }
+
+    handleAddTask(task){
+        document.dispatchEvent(new CustomEvent('graph:deleteEvents', {}))
+        this.props.addTask(task)
+    }
+
     handleHistory(action){
+        document.dispatchEvent(new CustomEvent('graph:deleteEvents', {}));
         switch (action) {
             case 'undo':
                 this.props.undo();
@@ -358,11 +402,14 @@ const messages = defineMessages({
                         <Editor styleName = 'editor'
                                 graph = { this.props.graph }
                                 selectedTask = { this.props.selectedTask }
-                                scale = { this.state.scale }
-                                addTask = { this.props.addTask }
+                                scale = { this.props.zoom}
+                                addTask = { this.handleAddTask }
                                 selectTask = { this.props.selectTask }
-                                moveTask = { this.props.moveTask }
                                 isLoading = {this.props.isLoading}
+                                manageTask = {this.props.manageTask}
+                                setManageTask = {this.props.setManageTask}
+                                manageTaskId = {this.props.manageTaskId}
+                                setZoom = {this.props.setZoom}
                         />
 
                         <TaskDialog styleName = 'taskDialog'
@@ -370,9 +417,12 @@ const messages = defineMessages({
                                     toggleTaskDialog = { this.toggleTaskDialog }
                                     language = { this.props.language }
                                     selectedTask = { this.props.selectedTask }
-                                    deleteTask = { this.props.deleteTask }
-                                    saveTask = { this.props.saveTask }
-                                    saveEdge = { this.props.saveEdge }
+                                    deleteTask = { this.handleDelete }
+                                    saveTask = { this.handleSaveTask }
+                                    saveEdge = { this.handleSaveEdge }
+                                    selectTask = { this.props.selectTask }
+                                    modified={this.props.modified}
+                                    setModified={this.props.setModified}
                         />
                     </div>
                 )
@@ -386,7 +436,11 @@ function mapStateToProps(state) {
         roles: state.GameEditorState.present.roles,
         operators: state.GameEditorState.present.operators,
         loggedUser: state.AuthState.loggedUser,
-        selectedWorkflow: state.GameEditorState.present.selectedWorkflow
+        selectedWorkflow: state.GameEditorState.present.selectedWorkflow,
+        manageTask: state.GameEditorState.present.manageTask,
+        manageTaskId: state.GameEditorState.present.manageTaskId,
+        zoom: state.GameEditorState.present.zoom,
+        modified: state.GameEditorState.present.modified
     }
 }
 
@@ -394,7 +448,10 @@ function mapDispatchToProps(dispatch) {
     return {
         getRoles: bindActionCreators(getRoles, dispatch),
         getOperators: bindActionCreators(getOperators, dispatch),
-        setAppTitle: bindActionCreators(setTitle, dispatch)
+        setAppTitle: bindActionCreators(setTitle, dispatch),
+        setManageTask: bindActionCreators(setManageTask, dispatch),
+        setZoom: bindActionCreators(setZoom, dispatch),
+        setModified: bindActionCreators(setModified, dispatch)
     }
 }
 

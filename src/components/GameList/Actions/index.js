@@ -1,6 +1,3 @@
-/**
- * Created by victorjose.gallego on 2/4/16.
- */
 import TYPES from './types'
 import HMBAPI from '../../../common/lib/QuestionnairesAPI'
 import HMBAPI2 from '../../../common/lib/API'
@@ -102,7 +99,6 @@ function getTagsError(err) {
 export function setSelectedQuestionnaire(uri) {
     return dispatch => {
         dispatch(requestAPICall());
-alert("byurisearch")
         return HMBAPI.instance
             .getQuestionnaireByUri(uri)
             .then( questionnaire => {
@@ -200,7 +196,7 @@ export function getAllGames(page, pagesize) {
         return HMBAPI2.instance
             .DB.admin.workflows.getPaginatedWithoutQuery({ page: page, pagesize: pagesize } )
             .then( games => {
-                dispatch(getGamesSuccess(games.content.result))
+                dispatch(getGamesSuccess(games.content.result, pagesize))
             }).catch( err => dispatch(getGamesError(err)) )
     }
 }
@@ -283,7 +279,7 @@ export function getTagsByName(name) {
     }
 }
 
-export function deleteGame(game) {
+export function deleteGame(game, pagesize) {
     return dispatch => {
         dispatch(requestAPICall());
 
@@ -291,9 +287,9 @@ export function deleteGame(game) {
             .DB.admin.workflows.delete(game)
             .then( () => {
                 HMBAPI2.instance
-                    .DB.admin.workflows.getPaginatedWithoutQuery({page: 0, pagesize: 50})
+                    .DB.admin.workflows.getPaginatedWithoutQuery({page: 0, pagesize: pagesize})
                     .then( games => {
-                        dispatch(getGamesSuccess(games.content.result))
+                        dispatch(getGamesSuccess(games.content.result, pagesize))
                     }).catch( err => dispatch(getGamesError(err)) )
             } )
 

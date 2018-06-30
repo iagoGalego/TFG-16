@@ -92,8 +92,6 @@ const messages = defineMessages({
     handleSave(){
         let {saveHandler, } = this.props;
 
-        alert(JSON.stringify(this.props.selectedWorkflow))
-
         let payload = {
             uri: this.props.selectedWorkflow.uri,
             name: this.props.selectedWorkflow.translation[0].name,

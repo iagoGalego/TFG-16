@@ -1,7 +1,3 @@
-/**
- * Created by victorjose.gallego on 4/13/16.
- */
-
 import PropTypes from 'prop-types';
 import React, { Component } from 'react'
 import ReactDOM from 'react-dom'
@@ -55,7 +51,11 @@ import MainMenu from '../MainMenu'
         }
     }
     handleLogoutButtonClick(){
-        this.props.logout()
+        this.props.logout().then(
+            () => {
+                this.props.logoutQuestionnaires()
+            }
+        )
     }
     handleToggleSettings(){
         this.props.changeLanguage(this.lang);

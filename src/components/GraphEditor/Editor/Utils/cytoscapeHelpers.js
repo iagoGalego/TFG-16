@@ -1,6 +1,3 @@
-/**
- * Created by victorjose.gallego on 9/14/16.
- */
 import FirstTaskIcon from '../../Icons/img/First.svg'
 import LastTaskIcon from '../../Icons/img/Last.svg'
 import AutomaticChoiceIcon from '../../Icons/img/AC.svg'

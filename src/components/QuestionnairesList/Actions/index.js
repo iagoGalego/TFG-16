@@ -1,6 +1,3 @@
-/**
- * Created by victorjose.gallego on 2/4/16.
- */
 import TYPES from './types'
 import HMBAPI from '../../../common/lib/QuestionnairesAPI'
 import HMBAPI2 from '../../../common/lib/API'
@@ -81,12 +78,12 @@ export function setSelectedQuestionnaire(uri) {
     }
 }
 
-export function saveQuestion(question, questionnaire) {
+export function saveQuestion(data, questionnaire) {
     return dispatch => {
         dispatch(requestAPICall());
 
         return HMBAPI.instance
-            .saveQuestion(question, questionnaire)
+            .saveQuestion(data, questionnaire)
             .then( () => {
                 HMBAPI.instance
                     .getQuestionnaireByUri(questionnaire)
@@ -97,12 +94,12 @@ export function saveQuestion(question, questionnaire) {
     }
 }
 
-export function updateQuestion(question, questionnaire) {
+export function updateQuestion(data, question, questionnaire) {
     return dispatch => {
         dispatch(requestAPICall());
 
         return HMBAPI.instance
-            .updateQuestion(question, questionnaire)
+            .updateQuestion(data, question, questionnaire)
             .then( () => {
                 HMBAPI.instance
                     .getQuestionnaireByUri(questionnaire)

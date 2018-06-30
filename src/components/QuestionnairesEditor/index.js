@@ -25,6 +25,16 @@ const messages = defineMessages({
         id : 'questionnaires.title',
         description : 'Questionnaires Editor page title',
         defaultMessage : 'Questionnaires Editor'
+    },
+    created: {
+        id: 'questionnaires.input.isCreated',
+        description : 'Message to show when a tag is already created',
+        defaultMessage: 'This tag is already created'
+    },
+    mandatory: {
+        id: 'questionnaires.input.isMandatory',
+        description : 'Message to show when a mandatory input is not fulfilled',
+        defaultMessage: 'This input is mandatory'
     }
 });
 
@@ -45,8 +55,9 @@ const messages = defineMessages({
             loading: true,
             totalTags: [],
             tag: '',
-            showTagMandatory: false,
             showTagCreated: false,
+            showTagMandatory: false,
+            showNameMandatory: false,
             questionnaire: {
                 name: {
                     stringValue: ''
@@ -162,25 +173,25 @@ const messages = defineMessages({
         }
     }
 
-    handleSave(question){
+    handleSave(data){
         this.setState(prevState => ({...prevState, loading: true}), () => {
             this.forceUpdate();
-            this.props.saveQuestion(question, this.props.selectedQuestionnaire.uri);
+            this.props.saveQuestion(data, this.props.selectedQuestionnaire.uri);
             this.setState(prevState => ({...prevState, selectedQuestion: null, activeDialog: !this.state.activeDialog}));
         })
 
     }
 
-    handleUpdate(question){
+    handleUpdate(data, question){
         this.setState(prevState => ({...prevState, loading: true}), () => {
             this.forceUpdate();
-            this.props.updateQuestion(question, this.props.selectedQuestionnaire.uri);
+            this.props.updateQuestion(data, question, this.props.selectedQuestionnaire.uri);
             this.setState(prevState => ({...prevState, selectedQuestion: null, activeDialog: !this.state.activeDialog}));
         })
     }
 
     changeName(value){
-        this.setState(prevState => ({...prevState, modified: true,
+        this.setState(prevState => ({...prevState, modified: true, showNameMandatory: false,
             questionnaire: {...prevState.questionnaire, name: {...prevState.questionnaire.name, stringValue: value}}
         }));
     }
@@ -192,8 +203,18 @@ const messages = defineMessages({
     }
 
     handleUpdateQuestionnaire(){
-        this.props.updateQuestionnaire(this.state.questionnaire)
-        this.setState(prevState => ({...prevState, modified: false}))
+        if(this.state.questionnaire.name.stringValue.length === 0)
+            this.setState((previousState) => {
+                return {
+                    ...previousState,
+                    showNameMandatory: true
+                }
+            });
+        else{
+            this.props.updateQuestionnaire(this.state.questionnaire);
+            this.setState(prevState => ({...prevState, modified: false}))
+        }
+
     }
 
     renderList(){
@@ -213,6 +234,7 @@ const messages = defineMessages({
                     this.state.questionnaire.questions.map(
                         (question) => {
                             return <ListItem
+                                styleName = 'listItem'
                                 key={question.uri}
                                 caption= {question.statement.stringValue}
                                 ripple={false}
@@ -230,24 +252,42 @@ const messages = defineMessages({
             return {
                 ...previousState,
                 tag: value,
-                showTagMandatory: false,
-                showTagCreated: false
+                showTagCreated: false,
+                showTagMandatory: false
             }
         });
     }
 
     addTag(value){
-        let t = new Tag();
-        t.genURI();
-        t.value = new StringType();
-        t.value.stringValue = this.state.tag;
-        this.setState(prevState => ({...prevState, modified: true, tag: '',
-            questionnaire: {...prevState.questionnaire, tags: [...prevState.questionnaire.tags, t]}
-        }));
+        if(this.state.tag.length === 0)
+            this.setState((previousState) => {
+                return {
+                    ...previousState,
+                    showTagMandatory: true
+                }
+            });
+        else{
+            if(this.state.questionnaire.tags.find(tag => tag.value.stringValue === this.state.tag) === undefined){
+                let t = new Tag();
+                t.genURI();
+                t.value = new StringType();
+                t.value.stringValue = this.state.tag;
+                this.setState(prevState => ({...prevState, modified: true, tag: '',
+                    questionnaire: {...prevState.questionnaire, tags: [...prevState.questionnaire.tags, t]}
+                }));
+            } else {
+                this.setState((previousState) => {
+                    return {
+                        ...previousState,
+                        showTagCreated: true
+                    }
+                });
+            }
+        }
     }
 
     render() {
-        let { selectedQuestionnaire } = this.props;
+        let { selectedQuestionnaire, intl: {formatMessage} } = this.props;
 
         if (this.state.dontExist){
             return  <div styleName="dontExist">
@@ -287,6 +327,7 @@ const messages = defineMessages({
                             <div styleName="columns">
                                 <Input styleName = 'input' type='text' label='Field'
                                        value={this.state.questionnaire.name.stringValue}
+                                       error = { this.state.showNameMandatory && formatMessage(messages.mandatory) || ''}
                                        onChange={ this.changeName }
                                 />
                                 <div styleName="columns tagInput">
@@ -309,17 +350,22 @@ const messages = defineMessages({
                             <div styleName="columns2">
                                 <div styleName="chips">
                                     {
-                                        this.state.questionnaire.tags.map(
-                                            (tag) => {
-                                                return <Chip
-                                                    styleName = "chip"
-                                                    key = { `${tag.uri}-chip` }
-                                                    deletable={true}
-                                                    onDeleteClick = { () => this.handleDeleteTag(false, tag.uri) }>
-                                                    { tag.value.stringValue }
-                                                </Chip>
-                                            }
-                                        )
+                                        this.state.questionnaire.tags.length !== 0 ?
+                                            this.state.questionnaire.tags.map(
+                                                (tag) => {
+                                                    return <Chip
+                                                        styleName = "chip"
+                                                        key = { `${tag.uri}-chip` }
+                                                        deletable={true}
+                                                        onDeleteClick = { () => this.handleDeleteTag(false, tag.uri) }>
+                                                        { tag.value.stringValue }
+                                                    </Chip>
+                                                }
+                                            )
+                                            :
+                                            <p styleName="emptyTags">
+                                                This questionnaire doesn't have tags
+                                            </p>
                                     }
                                 </div>
                                 <div styleName="buttonBotton">
@@ -337,13 +383,15 @@ const messages = defineMessages({
                         </div>
                     </section>
                     { this.renderList() }
-                    <Button
-                        styleName='fullWidth'
-                        label='Add Question'
-                        onClick = {this.handleToggleDialog}
-                        raised
-                        accent
-                    />
+                    <div>
+                        <Button
+                            styleName='fullWidth'
+                            label='Add Question'
+                            onClick = {this.handleToggleDialog}
+                            raised
+                            accent
+                        />
+                    </div>
                     <QuestionDialog
                         active={this.state.activeDialog}
                         question={ this.state.selectedQuestion }
@@ -366,7 +414,6 @@ function mapStateToProps(state) {
 function mapDispatchToProps(dispatch) {
     return {
         setAppTitle: bindActionCreators(setTitle, dispatch),
-        getQuestionnaire: bindActionCreators(setSelectedQuestionnaire, dispatch),
         saveQuestion: bindActionCreators(saveQuestion, dispatch),
         updateQuestion: bindActionCreators(updateQuestion, dispatch),
         updateQuestionnaire: bindActionCreators(updateQuestionnaire, dispatch),

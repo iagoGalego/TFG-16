@@ -15,7 +15,8 @@ export default function GamesListReducer(state = InitialState, {type = '', paylo
         case TYPES.REQUEST:
             return {
                 ...state,
-                isFetching: true
+                isFetching: true,
+                loader: false
             };
         case TYPES.REQUEST_SUCCESS:
             if(payload.games.length === 0 || payload.games.length < payload.pagesize) loader = false;
@@ -23,7 +24,7 @@ export default function GamesListReducer(state = InitialState, {type = '', paylo
                 ...state,
                 games: payload.games,
                 isFetching: false,
-                loadeR: loader,
+                loader: loader,
                 err: null
             };
         case TYPES.ADD_REQUEST_SUCCESS:

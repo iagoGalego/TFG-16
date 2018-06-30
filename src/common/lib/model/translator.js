@@ -1,13 +1,10 @@
-/**
- * Created by victorjose.gallego on 6/3/16.
- */
-
 import {
     TaskBuilder, WorkflowBuilder, SequenceFlowBuilder, AutomaticChoiceBuilder,
     ParameterValueBuilder, UserChoiceBuilder, TASK_TYPE, OrJoinBuilder, AndJoinBuilder
 } from './builders'
 import HMBAPI from "../../../common/lib/API";
 import {
+    ChoicePathCondition,
     Metadata, OrJoin, ParameterValue, StringType, TaskTranslation, UserChoice, Workflow,
     WorkflowTranslation
 } from "./index";
@@ -27,7 +24,6 @@ export default class Translator{
                 expiryDate,
                 metadata,
                 modificationDate,
-                provider,
                 element,
                 sequenceFlow,
                 trigger,
@@ -45,7 +41,7 @@ export default class Translator{
         let workflow = new WorkflowBuilder()
             .setIsValidated(isValidated)
             .setIsDesignFinished(isDesignFinished)
-            .setProvider(provider)
+            .setProvider("default")
             .setDesigner(designer)
             .setExecutionId(executionId)
             .setExecutionStatus(executionStatus)
@@ -59,29 +55,35 @@ export default class Translator{
             .setTranslation([translation]);
 
         if(uri !== '') workflow.setUri(uri);
-        let from, to;
+        let from, to, fromLevel, toLevel;
+
         links.filter( link => link.type !== 'verticalStart' && link.type !== 'verticalEnd' )
             .filter( link => !(link.isBase === true && link.isTransitable !== true) )
             .forEach( link => {
                 from = link.from;
                 to = link.to;
+                fromLevel = link.fromLevel;
+                toLevel = link.toLevel;
+
                 if(link.type === 'parallelStart'){
                     from = links.find( l => l.to === link.from && link.type !== 'verticalStart' ).from;
                     if(nodes.find(n => n.id === from).type === "loop"){
                         from = nodes.find(n => n.start === from).id
+                        fromLevel = 1;
                     }
                 } else if (link.type === 'parallelEnd'){
                     to = links.find( l => l.from === link.to && link.type !== 'verticalEnd' ).to;
                     if(nodes.find(n => n.id === to).type === "loopEnd"){
                         to = nodes.find(n => n.id === to).start
+                        toLevel = 1;
                     }
                 }
                 //TODO revisable
                 if(link.reverse){
                     workflow.addFusion(
                         new SequenceFlowBuilder()
-                            .to(from, link.fromLevel)
-                            .from(to, link.toLevel)
+                            .to(from, 1 - link.toLevel)
+                            .from(to, 1 - link.fromLevel)
                             .lastVersionNumber(versionNumber)
                             .versionNumber(versionNumber)
                             .isDisabled(link.isDisabled)
@@ -89,8 +91,8 @@ export default class Translator{
                 }else{
                     workflow.addFusion(
                         new SequenceFlowBuilder()
-                            .from(from, link.fromLevel)
-                            .to(to, link.toLevel)
+                            .from(from, fromLevel)
+                            .to(to, toLevel)
                             .lastVersionNumber(versionNumber)
                             .versionNumber(versionNumber)
                             .isDisabled(link.isDisabled)
@@ -133,18 +135,29 @@ export default class Translator{
                             .setVersionNumber(versionNumber)
                             .setUser([designer]);
 
-                        if(node.parameters["Questionnaire"]){
-                            let parameterValues = [];
-                            let parameterValue = new ParameterValue();
-                            parameterValues.push(parameterValue);
-                            parameterValue.namedParameter = node.parameters["Questionnaire"].parameter;
-                            parameterValue.namedParameterValue = new StringType();
-                            parameterValue.namedParameterValue.stringValue = node.parameters["Questionnaire"].value;
-                            task.setParameters(parameterValues)
+                        if(node.operator){
+                            if(node.operator.uri === "http://citius.usc.es/hmb/questionnaires/operators/do_quest" &&
+                                node.parameters["Questionnaire"]){
+                                let parameterValues = [];
+                                let parameterValue = new ParameterValue();
+                                parameterValues.push(parameterValue);
+                                parameterValue.namedParameter = node.parameters["Questionnaire"].parameter;
+                                parameterValue.namedParameterValue = new StringType();
+                                parameterValue.namedParameterValue.stringValue = node.parameters["Questionnaire"].value;
+                                task.setParameters(parameterValues)
+                            } else if(node.operator.uri === "http://citius.usc.es/hmb/questionnaires/operators/manage_task" &&
+                                node.parameters["Task ID"]){
+                                let parameterValues = [];
+                                let parameterValue = new ParameterValue();
+                                parameterValues.push(parameterValue);
+                                parameterValue.namedParameter = node.parameters["Task ID"].parameter;
+                                parameterValue.namedParameterValue = new StringType();
+                                parameterValue.namedParameterValue.stringValue = node.parameters["Task ID"].value;
+                                task.setParameters(parameterValues)
+                            }
                         }
-                        task.setNumberOfPaths();
 
-                        //alert(node.initialDate +" e "+ Object.prototype.toString.call(node.initialDate) === '[object Date]'+ " e "+node.startDateIsRelative)
+                        task.setNumberOfPaths();
 
                         if(node.initialDate){
                             node.startDateIsRelative?
@@ -164,7 +177,6 @@ export default class Translator{
                     case "loopEnd":
                         let loopStart = nodes.find(({id}) => id === node.start);
                         let loopEndBase = links.find(({from, to}) => from === node.id && to === loopStart.id);
-                        alert("numberofpaths "+loopEndBase.counter)
 
                         let loopEndChoice = {
                             numberOfPaths: loopEndBase.counter,
@@ -184,9 +196,19 @@ export default class Translator{
                             isRequired: false,
                             user: [],
                             uri: node.id,
-                            pathCondition: [],
                             translation: [translationTask]
                         };
+                        loopEndChoice.pathCondition= loopStart.conditions.map(
+                            (condition, index) =>{
+                                let c = new ChoicePathCondition();
+                                c.genURI();
+                                c.pathIndex = index;
+                                c.condition = condition.condition;
+                                if(condition.comparator !== null && condition.conditionValue !== null)
+                                    c.condition += condition.comparator+condition.conditionValue
+                                return c
+                            }
+                        );
                         loopEndChoice["@class"] = "es.usc.citius.hmb.model.AutomaticChoice";
                         workflow.addTask(loopEndChoice);
                         break;
@@ -215,7 +237,17 @@ export default class Translator{
                             uri: node.id,
                         };
                         if(node.type === 'automaticChoice'){
-                            automaticChoice.pathCondition= [];
+                            automaticChoice.pathCondition= node.conditions.map(
+                                (condition, index) =>{
+                                    let c = new ChoicePathCondition();
+                                    c.genURI();
+                                    c.pathIndex = index;
+                                    c.condition = condition.condition
+                                    if(condition.comparator !== null && condition.conditionValue !== null)
+                                        c.condition += condition.comparator+condition.conditionValue
+                                    return c
+                                }
+                            );
                             automaticChoice["@class"] = "es.usc.citius.hmb.model.AutomaticChoice";
                         } else {
                             automaticChoice["@class"] = "es.usc.citius.hmb.model.Split";
@@ -259,7 +291,6 @@ export default class Translator{
                     case "loop":
                         let loopEnd = nodes.find(({start}) => start === node.id);
                         let loopBase = links.find(({from, to}) => to === node.id && from === loopEnd.id);
-                        alert("numberofpaths "+loopBase.counter)
                         let loopChoice = {
                             numberOfPaths: loopBase.counter,
                             expiryDate: null,
@@ -361,8 +392,6 @@ export default class Translator{
     }
 
     static toEditorFormat( { workflow: { elements, sequenceFlow } } ){
-        alert("function call")
-
         let from, to, links = [], ele = [];
         sequenceFlow.forEach( link => {
             from = elements.find(({uri}) => uri === link.sourceTask);
@@ -377,12 +406,13 @@ export default class Translator{
             };
             if(from.pairedTask === to.uri && from.uri === to.pairedTask) {
                 if(from["@class"] === "es.usc.citius.hmb.model.OrJoin" && to["@class"] === "es.usc.citius.hmb.model.AutomaticChoice"){
-                    alert("loop case")
                     to.type = "loopEnd";
                     from.type = "loop";
                     l.reverse = true;
                     l.from = to.uri;
                     l.to = from.uri;
+                    l.fromLevel = 1;
+                    l.toLevel = 1;
                     l.type = 'return';
                     l.counter = 2;
                     links.push(l)
@@ -398,8 +428,6 @@ export default class Translator{
                 }
             } else if(Number(from.metadata.find(m => m.name === "y").metadataValue) > Number(to.metadata.find(m => m.name === "y").metadataValue)
             ){
-                //const newCounter = state.graph.links.find(({from, to}) =>from === payload.link.from && to === payload.link.to).counter + 1;
-                alert("guau")
                 let id = UUID.v4();
                 ele.push({
                     id: id, type: 'invisible', fromLevel: link.sourceIndex, x: Number(from.metadata.find(m => m.name === "x").metadataValue), y: Number(to.metadata.find(m => m.name === "y").metadataValue)
@@ -412,9 +440,6 @@ export default class Translator{
                 });
             } else if(Number(from.metadata.find(m => m.name === "y").metadataValue) < Number(to.metadata.find(m => m.name === "y").metadataValue)
             ){
-                //const newCounter = state.graph.links.find(({from, to}) =>from === payload.link.from && to === payload.link.to).counter + 1;
-                alert("lal")
-                alert(JSON.stringify(link))
                 let id2 = UUID.v4();
                 ele.push({
                     id: id2, type: 'invisible', x: Number(to.metadata.find(m => m.name === "x").metadataValue), y: Number(from.metadata.find(m => m.name === "y").metadataValue)
@@ -438,7 +463,6 @@ export default class Translator{
                 node.type !== "loopEnd"){
                 let pairedLink = sequenceFlow.find(({sourceTask, targetTask}) => sourceTask === node.uri && targetTask === node.pairedTask);
                 if (pairedLink === undefined){
-                    alert("voy poner el que no existia")
                     links.push({
                         from: node.uri,
                         fromLevel: 0,
@@ -447,12 +471,13 @@ export default class Translator{
                         isBase: true,
                         counter: node.numberOfPaths
                     })
+                } else {
+                    node.fromLevel = pairedLink.sourceIndex
                 }
             }
 
 
             type = '';
-            alert("pre: "+JSON.stringify(node));
             val = "userTask";
             switch (node["@class"]){
                 case "es.usc.citius.hmb.model.AutomaticTask":
@@ -479,7 +504,6 @@ export default class Translator{
                     if(node.expiryDate) task.endingDate = new Date(node.expiryDate.time);
                     if(node.operator) task.operator = node.operator.uri;
                     else task.operator = '';
-                    alert(JSON.stringify(node.parameterValue))
                     if(node.parameterValue) {
                         node.parameterValue.map(
                             (parameterValue) => {
@@ -490,8 +514,6 @@ export default class Translator{
                             }
                         );
                     }
-
-                    alert("post: "+JSON.stringify(task));
 
                     ele.push(task);
                     break;
@@ -535,12 +557,26 @@ export default class Translator{
                         y: Number(node.metadata.find(m => m.name === "y").metadataValue)
                     };
 
+                    automaticChoice.conditions = node.pathCondition.map((condition) => {});
+
+                    node.pathCondition.map(
+                        (condition) =>{
+                            let c = condition.condition.split(" ");
+                            let res = {condition: c[0], comparator: null, conditionValue: null};
+                            if(c.length === 3){
+                                res.comparator = " "+c[1]+" ";
+                                res.conditionValue = c[2]
+                            }
+                            automaticChoice.conditions[condition.pathIndex] =  res;
+                        }
+                    );
+
                     if(node.type === "loopEnd") {
-                        alert("loopEnd")
                         automaticChoice.type = "loopEnd";
                         automaticChoice.start = node.pairedTask;
                     }
                     if(node.isTransitable) automaticChoice.isTransitable = true;
+                    if(node.hasOwnProperty("fromLevel")) automaticChoice.fromLevel = node.fromLevel;
                     ele.push(automaticChoice);
                     break;
                 case "es.usc.citius.hmb.model.UserChoice":
@@ -562,6 +598,8 @@ export default class Translator{
                         y: Number(node.metadata.find(m => m.name === "y").metadataValue)
                     };
                     if(node.isTransitable) userChoice.isTransitable = true;
+                    if(node.hasOwnProperty("fromLevel")) userChoice.fromLevel = node.fromLevel;
+
                     ele.push(userChoice);
                     break;
                 case "es.usc.citius.hmb.model.OrJoin":
@@ -591,11 +629,27 @@ export default class Translator{
                     };
 
                     if(node.type === "loop"){
-                        alert("loop");
+                        let cond = elements.find(e => e.uri === node.pairedTask).pathCondition;
+
+                        orChoice.conditions = cond.map((condition) => {});
+
+                        cond.map(
+                            (condition) =>{
+                                let c = condition.condition.split(" ");
+                                let res = {condition: c[0], comparator: null, conditionValue: null};
+                                if(c.length === 3){
+                                    res.comparator = " "+c[1]+" ";
+                                    res.conditionValue = c[2]
+                                }
+                                orChoice.conditions[condition.pathIndex] =  res;
+                            }
+                        );
+
+
                         orChoice.isRequired= node.isRequired;
-                            orChoice.isDisabled= node.isDisabled;
-                            orChoice.isInitial= node.isInitial;
-                            orChoice.isFinal= node.isFinal;
+                        orChoice.isDisabled= node.isDisabled;
+                        orChoice.isInitial= node.isInitial;
+                        orChoice.isFinal= node.isFinal;
                         orChoice.type = "loop";
                         delete orChoice.start;
                     }
@@ -648,21 +702,9 @@ export default class Translator{
         ele.forEach(
             node => {
                 if(node.type === "userChoice" || node.type === "automaticChoice" ||node.type === "andSplit"){
-                    if(links.find(({from, isBase}) => from === node.id && isBase).fromLevel > 0)
-                        node.fromLevel = links.find(({from, isBase}) => from === node.id && isBase).fromLevel;
-                    node.conditions = [];
-                    links.filter(({from}) => from === node.id).map(
-                        () => {
-                            node.conditions.push({condition: '', comparator: '', conditionValue: ''})
-                        }
-                    );
-                    alert("jiji" +JSON.stringify(node))
                     let endNode = ele.find(e => e.start === node.id);
-                    alert("jiji2 "+JSON.stringify(endNode))
                     let invisiblesFrom = links.filter(({from, type}) => (from === node.id && type === 'verticalStart'));
-                    alert("jiji3 "+JSON.stringify(invisiblesFrom))
                     let invisiblesTo = links.filter(({to, type}) => (to === endNode.id && type === 'verticalEnd'));
-                    alert("jiji4 "+JSON.stringify(invisiblesTo))
                     invisiblesFrom.forEach(
                         invisible => {
                             let invisibleEnd = ele.find(({id}) => id === invisiblesTo.find(e1 => e1.toLevel === invisible.fromLevel).from)
@@ -670,34 +712,31 @@ export default class Translator{
                         }
                     )
                 }else if (node.type === "loopEnd"){
-                    alert("ultimo loopEnd")
                     let save_x
                     let verticalEnd = links.find(l => l.from === node.id && l.type === "verticalStart");
-                    ele.find(e => e.id === node.start).conditions = [{condition: '', comparator: '', conditionValue: ''}];
                     if(verticalEnd){
-                        alert("lol")
                         let invisibleEnd = ele.find(e => e.id === verticalEnd.to)
                         save_x = invisibleEnd.x
                         let parallelEnd = links.find(l => l.from === invisibleEnd.id && l.type === "parallelStart");
                         let loopStart = ele.find(e => e.id === node.start);
                         let verticalStart = links.find(l => l.to === loopStart.id && l.type === "verticalEnd");
                         let invisibleStart = ele.find(e => e.id === verticalStart.from)
+                        invisibleEnd.fromLevel = 0;
                         invisibleEnd.x = invisibleStart.x
                         invisibleStart.x = save_x
                         let parallelStart = links.find(l => l.to === invisibleStart.id && l.type === "parallelEnd");
                         invisibleStart.start =invisibleEnd.id;
-                        verticalEnd.fromLevel = 1;
+                        verticalEnd.fromLevel = 0;
                         verticalEnd.toLevel = 0;
-                        parallelEnd.fromLevel = 1;
+                        parallelEnd.fromLevel = 0;
                         parallelEnd.toLevel = 0;
                         verticalStart.fromLevel = 0;
-                        verticalStart.toLevel = 1;
+                        verticalStart.toLevel = 0;
                         parallelStart.fromLevel = 0;
-                        parallelStart.toLevel = 1;
+                        parallelStart.toLevel = 0;
                         verticalStart.to = node.id;
                         verticalEnd.from = loopStart.id;
                     } else {
-                        alert("bien")
                         let isLoop = links.find(l => l.to === node.start && l.from === node.id && type !== "return");
                         delete isLoop.isBase;
                         delete isLoop.isTransitable;
@@ -706,12 +745,13 @@ export default class Translator{
                         let to = isLoop.to;
                         isLoop.to = isLoop.from;
                         isLoop.from = to;
+                        isLoop.fromLevel = 0;
+                        isLoop.toLevel = 0;
+                        ele.find(({id}) => id === node.start).fromLevel = 0
                     }
                 }
             }
         );
-
-        alert("Y quedo asi "+JSON.stringify({nodes: ele, links: links}));
 
         return {nodes: ele, links: links}
     }

@@ -1,6 +1,3 @@
-/**
- * Created by victorjose.gallego on 10/6/16.
- */
 import { defineMessages } from 'react-intl'
 
 export default defineMessages({

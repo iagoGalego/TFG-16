@@ -3,6 +3,7 @@ import URLSearchParams from "url-search-params";
 
 let __instance = null;
 let __token = null;
+let __user = null;
 
 export class QuestionnairesAPIClient {
     constructor(){
@@ -17,9 +18,11 @@ export class QuestionnairesAPIClient {
         return new QuestionnairesAPIClient()
     }
 
-    static init(token){
+    static init(token, user){
         if(token && !__token)
             __token = token
+        if(user && !__user)
+            __user = user
     }
 
     login(user){
@@ -42,6 +45,7 @@ export class QuestionnairesAPIClient {
                 ? response.text()
                 : Promise.reject(new Error(`${response.status} ${response.statusText}`))
         }).then( token => {
+            __user = user.uri;
             __token = token;
             return token
         })
@@ -98,7 +102,7 @@ export class QuestionnairesAPIClient {
 
 
     updateQuestionnaire(questionnaire){
-        return fetch(`${CONFIG.questionnairesApi.baseURL}/questionnaires/${questionnaire.uri}`, {
+        return fetch(`${CONFIG.questionnairesApi.baseURL}/questionnaires/${questionnaire.uri}?user=${__user}`, {
             method: 'PUT',
             headers: {
                 'X-Auth-Token' : __token,
@@ -114,16 +118,16 @@ export class QuestionnairesAPIClient {
         })
     }
 
-    saveQuestion(question, questionnaire){
+    saveQuestion(data, questionnaire){
         return fetch(`${CONFIG.questionnairesApi.baseURL}/questions?questionnaire=${questionnaire}`, {
             method: 'POST',
             headers: {
                 'X-Auth-Token' : __token,
                 'Accept': 'application/json;charset=utf-8',
-                'Content-Type': 'application/json;charset=utf-8',
+                'processData': false,
             },
             mode: 'cors',
-            body: JSON.stringify(question)
+            body: data
         }).then( response => {
             return response.ok
                 ? response
@@ -131,16 +135,16 @@ export class QuestionnairesAPIClient {
         })
     }
 
-    updateQuestion(question, questionnaire){
-        return fetch(`${CONFIG.questionnairesApi.baseURL}/questions/${question.uri}?questionnaire=${questionnaire}`, {
+    updateQuestion(data, question, questionnaire){
+        return fetch(`${CONFIG.questionnairesApi.baseURL}/questions/${question}?questionnaire=${questionnaire}`, {
             method: 'PUT',
             headers: {
                 'X-Auth-Token' : __token,
                 'Accept': 'application/json;charset=utf-8',
-                'Content-Type': 'application/json;charset=utf-8',
+                'processData': false,
             },
             mode: 'cors',
-            body: JSON.stringify(question)
+            body: data
         }).then( response => {
             return response.ok
                 ? response
@@ -166,7 +170,7 @@ export class QuestionnairesAPIClient {
 
     getAllQuestionnaires(){
 
-        return fetch(`${CONFIG.questionnairesApi.baseURL}/questionnaires`, {
+        return fetch(`${CONFIG.questionnairesApi.baseURL}/questionnaires?user=${__user}`, {
             method: 'GET',
             headers: {
                 'X-Auth-Token' : __token,
@@ -200,7 +204,7 @@ export class QuestionnairesAPIClient {
 
     getQuestionnaireByUri(uri){
 
-        return fetch(`${CONFIG.questionnairesApi.baseURL}/questionnaires/${uri}`, {
+        return fetch(`${CONFIG.questionnairesApi.baseURL}/questionnaires/${uri}?user=${__user}`, {
             method: 'GET',
             headers: {
                 'X-Auth-Token' : __token,
@@ -216,7 +220,7 @@ export class QuestionnairesAPIClient {
     }
 
     getQuestionnairesByName(name, tags){
-        return fetch(`${CONFIG.questionnairesApi.baseURL}/questionnaires?name=${name}&tags=${tags}`, {
+        return fetch(`${CONFIG.questionnairesApi.baseURL}/questionnaires?name=${name}&tags=${tags}&user=${__user}`, {
             method: 'GET',
             headers: {
                 'X-Auth-Token' : __token,
@@ -232,7 +236,7 @@ export class QuestionnairesAPIClient {
     }
 
     getQuestionnairesByNameOrTag(value){
-        return fetch(`${CONFIG.questionnairesApi.baseURL}/questionnaires?value=${value}`, {
+        return fetch(`${CONFIG.questionnairesApi.baseURL}/questionnaires?value=${value}&user=${__user}`, {
             method: 'GET',
             headers: {
                 'X-Auth-Token' : __token,
@@ -264,7 +268,7 @@ export class QuestionnairesAPIClient {
     }
 
     deleteQuestionnaire(questionnaire){
-        return fetch(`${CONFIG.questionnairesApi.baseURL}/questionnaires/${questionnaire}`, {
+        return fetch(`${CONFIG.questionnairesApi.baseURL}/questionnaires/${questionnaire}?user=${__user}`, {
             method: 'DELETE',
             headers: {
                 'X-Auth-Token' : __token,

@@ -14,9 +14,10 @@ import Autocomplete from 'react-toolbox/lib/autocomplete';
 import { autobind } from 'core-decorators'
 import {Button, IconButton} from 'react-toolbox/lib/button';
 import { Route } from "react-router-dom";
-import QuestionnaireDialog from '../QuestionnaireDialog'
+import Tooltip from 'react-toolbox/lib/tooltip';
 import ProgressBar from 'react-toolbox/lib/progress_bar';
-import WorkFlowDialog from '../WorkFlowDialog'
+import WorkFlowDialog from '../WorkFlowDialog';
+import Link from 'react-toolbox/lib/link';
 
 
 import {
@@ -40,10 +41,10 @@ const messages = defineMessages({
         description : 'Message to show when a mandatory input is not fulfilled',
         defaultMessage: 'This input is mandatory'
     },
-    created: {
-        id: 'questionnaires.input.isCreated',
-        description : 'Message to show when a tag is already created',
-        defaultMessage: 'This tag is already created'
+    selected: {
+        id: 'questionnaires.input.isSelected',
+        description : 'Message to show when a tag is already selected',
+        defaultMessage: 'This tag is already selected'
     }
 });
 
@@ -55,6 +56,7 @@ const messages = defineMessages({
 
         this.state = {
             designer: '',
+            designers: {},
             page: 0,
             pagesize: 9,
             designersAllowed: [],
@@ -66,21 +68,33 @@ const messages = defineMessages({
             loading: true,
             games: [],
             showMetadataMandatory: false,
-            showMetadataCreated: false,
+            showMetadataSelected: false,
             showDialog: false,
-            selectedWorkflow: null
+            selectedWorkflow: null,
+            typing: false,
+            typingTimeOut: 0
         }
     }
 
     componentWillReceiveProps(props){
-        if(props.games !== null){
+        if(props.games !== null && this.props.games !== props.games){
             if(props.games.length === 0){
-                let page = this.state.page;
-                page -= 1;
-                this.setState({
-                    loading: false,
-                    page: page
-                })
+                if(this.state.page === 0){
+                    this.setState({
+                        loading: false,
+                        page: 0,
+                        games: []
+                    })
+                } else {
+                    let page = this.state.page;
+                    page -= 1;
+                    this.setState({
+                        loading: false,
+                        page: page,
+                        games: []
+                    })
+                }
+
             } else {
                 this.setState({
                     loading: false,
@@ -88,6 +102,15 @@ const messages = defineMessages({
                 })
             }
 
+        }
+        if(props.designers !== null && props.designers !== this.props.designers){
+            let designers = {};
+            props.designers.map(
+                ({uri, displayName}) => {
+                    designers[uri] = displayName
+                });
+            designers["all"] = "All";
+            this.setState(prevState => ({...prevState, designers: designers}))
         }
     }
 
@@ -106,7 +129,7 @@ const messages = defineMessages({
     handleDelete(value){
         this.setState(prevState => ({...prevState, loading: true}), () =>{
             this.forceUpdate();
-            this.props.deleteGame(value);
+            this.props.deleteGame(value, this.state.pagesize);
         });
     }
 
@@ -116,7 +139,7 @@ const messages = defineMessages({
                 this.searchGames(value, this.state.metadata, this.state.provider);
             });
         } else {
-            this.setState(prevState => ({...prevState, designer: '', page: 0}), () => {
+            this.setState(prevState => ({...prevState, designer: value, page: 0}), () => {
                 this.searchGames('', this.state.metadata, this.state.provider);
             });
         }
@@ -124,8 +147,16 @@ const messages = defineMessages({
     }
 
     providerChange(value) {
-        this.setState((previousState) => {return {...previousState, provider: value, page: 0}}, () => {
-            this.searchGames(this.state.designer, this.state.metadata, value);
+        if (this.state.typingTimeout)
+            clearTimeout(this.state.typingTimeout);
+
+        this.setState({
+            provider: value,
+            page: 0,
+            typing: false,
+            typingTimeout: setTimeout(() => {
+                this.searchGames(this.state.designer, this.state.metadata, value);
+            }, 500)
         });
     }
 
@@ -135,7 +166,7 @@ const messages = defineMessages({
                 ...previousState,
                 metadataTag: value,
                 showMetadataMandatory: false,
-                showMetadataCreated: false
+                showMetadataSelected: false
             }
         });
     }
@@ -153,7 +184,6 @@ const messages = defineMessages({
             expiryDate: null,
             metadata: [],
             modificationDate: null,
-            provider: "",
             translation: [],
             element: [],
             sequenceFlow: [],
@@ -166,6 +196,7 @@ const messages = defineMessages({
         let metadata = payload.metadata.map(
             (m) => {
                 let md = new Metadata();
+                md.genURI();
                 md.name = "tag";
                 md.metadataValue = m.metadataValue;
                 return md;
@@ -186,7 +217,6 @@ const messages = defineMessages({
             expiryDate: payload.expiryDate,
             metadata: metadata,
             modificationDate: payload.modificationDate,
-            provider: payload.provider,
             designer: this.props.loggedUser
         };
 
@@ -241,7 +271,7 @@ const messages = defineMessages({
                     else if(response.type === TYPES.REQUEST_SUCCESS){
                         this.props.getAllDesigners();
                         this.props.getAllGames(0, this.state.pagesize);
-                        this.setState(prevState => ({...prevState, loading: true, showDialog: false, page: 0}));
+                        this.setState(prevState => ({...prevState, loading: true, selectedWorkflow: null, showDialog: false, page: 0}));
                     }
                 }
             );
@@ -253,7 +283,7 @@ const messages = defineMessages({
                     else if(response.type === TYPES.REQUEST_SUCCESS){
                         this.props.getAllDesigners();
                         this.props.getAllGames(0, this.state.pagesize);
-                        this.setState(prevState => ({...prevState, loading: true, showDialog: false, page: 0}));
+                        this.setState(prevState => ({...prevState, loading: true, selectedWorkflow: null, showDialog: false, page: 0}));
                     }
                 }
             );
@@ -263,7 +293,6 @@ const messages = defineMessages({
 
     addMetadataTag() {
         if(this.state.metadataTag.length === 0){
-            alert("case1")
             this.setState((previousState) => {
                 return {
                     ...previousState,
@@ -278,11 +307,10 @@ const messages = defineMessages({
                     this.searchGames(this.state.designer, newMetadata, this.state.provider);
                 });
             } else {
-                alert("case2")
                 this.setState((previousState) => {
                     return {
                         ...previousState,
-                        showMetadataCreated: true
+                        showMetadataSelected: true
                     }
                 });
             }
@@ -290,44 +318,13 @@ const messages = defineMessages({
 
     }
 
-    renderMetadataAndActions(game){
-        let response = [];
-        for(let i = 0; i < game.metadata.length; i++){
-            if(game.metadata[i].name === 'tag'){
-                response.push(
-                    <Chip
-                        key = { `${game.metadata[i].metadataValue}-chip` }>
-                        { game.metadata[i].metadataValue }
-                    </Chip>
-                )
-            }
-        }
-        response.push(
-            <Route
-                key = { `${game.uri}-route` }
-                render={({ history}) => (
-                <IconButton
-                    icon="edit"
-                    key = { `${game.uri}-edit` }
-                    onClick={ () => {
-                        this.setState(prevState => ({...prevState, loading: true}));
-                        history.push(`/app/games/${game.uri}/editor`);
-                    }}
-                />
-            )}/>
-        );
-        response.push(
-            <IconButton
-                icon="delete"
-                key = { `${game.uri}-delete` }
-                onClick={() => this.handleDelete(game.uri)}
-            />);
-        return response
-    }
 
     isBottom() {
         const element = ReactDOM.findDOMNode(this.__gameList);
-        return element.scrollHeight - element.scrollTop === element.clientHeight;
+        if(element){
+            return element.scrollHeight - element.scrollTop === element.clientHeight;
+
+        } else return false
     }
 
     trackScrolling = () => {
@@ -338,11 +335,45 @@ const messages = defineMessages({
             this.setState(prevState => ({...prevState, page: page}), () =>{
                 this.forceUpdate();
                 this.props.addGamesByQuery(page, this.state.pagesize, this.state.designer, this.state.metadata, this.state.provider);
-                this.setState(prevState => ({...prevState}))
             });
             document.removeEventListener('scroll', this.trackScrolling);
         }
     };
+
+    renderMetadata(metadata, uri){
+        let res, counter = 15, overFloat = 0, tooltip = '';
+        const TooltipChip = Tooltip(Chip);
+
+        res = metadata.map(
+            (tag) => {
+                if(tag.name === 'tag'){
+                    if (counter - tag.metadataValue.length >= 0){
+                        counter -= tag.metadataValue.length;
+                        return <Chip styleName="chip"
+                                     key = { `${tag.metadataValue}-chip` }>
+                            { tag.metadataValue }
+                        </Chip>
+                    } else {
+                        overFloat++;
+                        if(tooltip === '')
+                            tooltip += tag.metadataValue
+                        else
+                            tooltip += ", " + tag.metadataValue
+                    }
+                }
+            });
+        if(overFloat > 0){
+            //res.push(<span tooltip={tooltip}>+{overFloat}</span>)
+            res.push(
+                <TooltipChip styleName="chip"
+                             key = { `${uri}-tooltipChip` }
+                             tooltip={tooltip} >
+                    +{overFloat}
+                </TooltipChip>
+            )
+        }
+        return res;
+    }
 
     renderList(){
         if(this.state.games.length === 0){
@@ -353,37 +384,30 @@ const messages = defineMessages({
             let elements = [];
             for(let i = 0; i < this.state.games.length; i += 3){
                 let subelements = this.state.games.slice(i, i + 3);
-                elements.push(<div styleName="cards">
+                elements.push(<div styleName="cards" key = { `${this.state.games[i]}-cards` }>
                     {
                         subelements.map(
                             (game) => {
-                                return <Card styleName="card" key= {game.uri} >
-                                    <div styleName="columns2">
+                                return <Card styleName="card" key= { `${game.uri}-card` } >
+                                    <div styleName="columns2" key={ `${game.uri}-columns2` }>
                                         <CardTitle styleName="cardTitle"
+                                                   key = { `${game.uri}-tittle` }
                                                    title= {game.translation[0].name}
-                                                   subtitle= {game.provider}
+                                                   subtitle= {this.state.designers[game.designer] }
                                         />
                                         <div styleName="tags">
-                                            <Chip styleName="designer" key = { `${game.designer}-chip` }>
-                                                { game.designer }
+                                            <Chip styleName="provider" key = { `${game.uri}-provider` }>
+                                                { game.provider }
                                             </Chip>
                                         </div>
                                     </div>
-                                    <CardText styleName="cardText">{game.translation[0].description}</CardText>
+                                    <CardText styleName="cardText" key = { `${game.uri}-text` }>
+                                        {game.translation[0].description}
+                                        </CardText>
                                     {
                                         game.metadata.length !== 0 ?
-                                            <div styleName="tags">
-                                                {
-                                                    game.metadata.map(
-                                                        (tag) => {
-                                                            if(tag.name === 'tag'){
-                                                                return <Chip styleName="chip"
-                                                                    key = { `${tag.metadataValue}-chip` }>
-                                                                    { tag.metadataValue }
-                                                                </Chip>
-                                                            }
-                                                        })
-                                                }
+                                            <div styleName="tags" key = { `${game.uri}-designer` }>
+                                                { this.renderMetadata(game.metadata, game.uri) }
                                             </div>
                                             :
                                             null
@@ -447,11 +471,16 @@ const messages = defineMessages({
 
     getAutocompleteSource(){
         if(this.props.designers !== null){
-            return this.props.designers.map(
+            let designers = {};
+            this.props.designers.map(
                 ({uri, displayName}) => {
-                    return [uri, displayName]
-                }).concat([["all", "All"]])
-        } else return []
+                    designers[uri] = displayName
+                });
+            designers["all"] = "All";
+            this.setState(prevState => ({...prevState, designers: designers}))
+        } else {
+            this.setState(prevState => ({...prevState, designers: {}}))
+        }
     }
 
     handleMetadataTagChange(selectedTag){
@@ -470,6 +499,13 @@ const messages = defineMessages({
             this.props.getGamesByQuery(this.state.page, this.state.pagesize, designer, metadataQuery, provider);
             this.setState(prevState => ({...prevState}))
         })
+    }
+
+    handleQueryChange(value){
+        if(value.length === 0){
+            this.setState(prevState => ({...prevState, designer: ''}))
+        }
+
     }
 
     render() {
@@ -503,9 +539,8 @@ const messages = defineMessages({
                                     label="Choose Designer"
                                     suggestionMatch='anywhere'
                                     selectedPosition='below'
-                                    source={this.getAutocompleteSource()}
+                                    source={this.state.designers}
                                     onQueryChange={this.handleQueryChange}
-                                    onFocus={(value) => this.handleAutocompleteFocus(value)}
                                     value={this.state.designer}
                                 />
                             </div>
@@ -514,7 +549,7 @@ const messages = defineMessages({
                                     type='text'
                                     label='Metadata tag'
                                     value={this.state.metadataTag}
-                                    error = { this.state.showMetadataMandatory && formatMessage(messages.mandatory) || this.state.showMetadataCreated && formatMessage(messages.created) || ''}
+                                    error = { this.state.showMetadataMandatory && formatMessage(messages.mandatory) || this.state.showMetadataSelected && formatMessage(messages.selected) || ''}
                                     onChange = { this.metadataTagChange }
                                 />
                                 <Button
@@ -528,9 +563,9 @@ const messages = defineMessages({
                     </div>
                     <section styleName="chips">
                         {
-                            this.state.metadata.map((id) =>
+                            this.state.metadata.map((id, index) =>
                                 <Chip
-                                    key = { `${id}-chip` }
+                                    key = { `${index}-chip` }
                                     deletable
                                     onDeleteClick={() => this.handleMetadataTagChange({id})}>
                                     { id }

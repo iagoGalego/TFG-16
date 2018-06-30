@@ -1,7 +1,3 @@
-/**
- * Created by victorjose.gallego on 6/21/16.
- */
-
 import { cloneElement } from 'react'
 import omit from 'object.omit'
 

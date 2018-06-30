@@ -1,6 +1,3 @@
-/**
- * Created by victorjose.gallego on 7/21/16.
- */
 import { Dialog } from 'react-toolbox/lib/dialog'
 import { Dropdown } from 'react-toolbox/lib/dropdown'
 import { injectIntl, defineMessages } from 'react-intl'

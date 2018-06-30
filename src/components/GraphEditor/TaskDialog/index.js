@@ -8,7 +8,6 @@ import {Button, IconButton} from 'react-toolbox/lib/button';
 import Checkbox from 'react-toolbox/lib/checkbox'
 import Dropdown from 'react-toolbox/lib/dropdown'
 import DatePicker from 'react-toolbox/lib/date_picker'
-import Avatar from 'react-toolbox/lib/avatar'
 import Tooltip from 'react-toolbox/lib/tooltip'
 import { IconMenu, MenuItem } from 'react-toolbox/lib/menu'
 import Chip from 'react-toolbox/lib/chip'
@@ -26,9 +25,9 @@ import styles from './styles.scss'
 import {getAllQuestionnaires} from "../../QuestionnairesList/Actions";
 import {bindActionCreators} from "redux";
 import {connect} from "react-redux";
-import {getAllProperties} from "../../GameEditor/Actions";
+import {getAllProperties, toggleManageTask, setManageTask} from "../../GameEditor/Actions";
 
-const TooltipedAvatar = Tooltip(Avatar)
+const TooltipButton = Tooltip(IconButton)
 
 const formLabel = defineMessages({
     condition : {
@@ -119,7 +118,6 @@ const actionLabel = defineMessages({
         super(props);
 
         this.state = {
-            modified: false,
             questionnaires: [],
             conditions: [],
             tagsAllowed: [],
@@ -145,7 +143,8 @@ const actionLabel = defineMessages({
                 showError: true
             },
             label: "▾",
-            selectedQuestionnaire: ''
+            selectedQuestionnaire: '',
+            showError: true
         }
     }
 
@@ -157,20 +156,29 @@ const actionLabel = defineMessages({
     };
 
     comparators = [
-        { value: 'lt', label: '<' },
-        { value: 'gt', label: '>'},
-        { value: 'ge', label: '>='},
-        { value: 'le', label: '<='},
-        { value: 'e', label: '='},
-        { value: 'n', label: '!='}
+        { value: ' < ', label: '<' },
+        { value: ' > ', label: '>'},
+        { value: ' >= ', label: '>='},
+        { value: ' <= ', label: '<='},
+        { value: ' = ', label: '='},
+        { value: ' != ', label: '!='}
     ];
 
     componentWillUpdate(props, state){
-        if(props.selectedTask === null && state.modified && this.isValid() ) {
-            if (confirm('Do you want to save?')) {
-                this.props.saveTask(this.state.task)
+        if(props.selectedTask !== this.props.selectedTask && props.modified && this.isValid() ) {
+            let oldTask = this.state.task
+            if (confirm('Do you want to save the current task?')) {
+                this.setState(prevState => ({
+                    ...prevState,
+                    showError: false
+                }), () => {
+                    if(this.props.manageTask)
+                        this.props.toggleManageTask()
+                    this.props.saveTask(oldTask)
+                    if(props.selectedTask !== null) this.props.selectTask(props.selectedTask)
+                });
             }
-            this.setState({modified: false});
+            this.props.setModified(false)
         }
     }
 
@@ -203,14 +211,38 @@ const actionLabel = defineMessages({
                     parameters: {},
                     rolesAllowed: [],
                     isRequired: true,
+                    initialDate: null,
+                    endingDate: null,
                     conditions: [],
                     x: null,
                     y: null,
                     ...props.selectedTask
                 }
             })
+        } else if(props.manageTaskId && props.manageTaskId !== this.props.manageTaskId){
+            let operator = this.props.operators.find(({uri}) => uri === this.state.task.operator);
+            let parameterObject = operator.parameter.find(({name}) => name === "Task ID");
+
+            this.setState(prevState => ({
+                task: {
+                    ...prevState.task,
+                    parameters: {...prevState.task.parameters, ["Task ID"]: {
+                            value: props.manageTaskId, parameter: parameterObject
+                        }}
+                }, showError: false
+            }))
+            this.props.setModified(true)
+            this.props.toggleManageTask()
+            this.props.setManageTask(null)
+        } else if(!props.manageTaskId && props.manageTaskId !== this.props.manageTaskId && this.state.showError){
+            alert("Wrong selection! Please select an userTask or an automaticTask")
+        } else if(!props.manageTaskId && props.manageTaskId !== this.props.manageTaskId && !this.state.showError) {
+            this.setState(prevState => ({
+                    ...prevState,
+                    showError: true
+            }))
         }
-        if(props.properties !== null && props.properties !== this.props.properties){
+    if(props.properties !== null && props.properties !== this.props.properties){
             this.state.conditions = props.properties.map(
                 (property) => {
                     return {value: property.uri, label: property.displayName}
@@ -244,50 +276,74 @@ const actionLabel = defineMessages({
     }
 
     handleNameChange(value){
-        this.setState(prevState => ({task: {...prevState.task, name: value}, modified: true}))
+        this.setState(prevState => ({task: {...prevState.task, name: value}}))
+        this.props.setModified(true)
     }
     handleConditionChange(value, index){
-        let conditions = this.state.task.conditions;
-        conditions[index].condition = value;
-
-        this.setState(prevState => ({task: {...prevState.task, conditions: conditions}, modified: true}))
+        let newCondition = {};
+        newCondition.condition = value;
+        if(this.props.properties.find(({uri}) => uri === value).type === "http://citius.usc.es/hmb/wfontology.owl#IntegerType"){
+            newCondition.comparator = this.state.task.conditions[index].comparator;
+            newCondition.conditionValue = this.state.task.conditions[index].conditionValue;
+        } else {
+            newCondition.comparator = null;
+            newCondition.conditionValue = null;
+        }
+        this.setState(prevState => ({task: {...prevState.task, conditions: [...prevState.task.conditions.map((x, i) => {if(i === index)x = newCondition; return x})]}}))
+        this.props.setModified(true)
     }
     handleConditionValueChange(value, index){
-        let conditions = this.state.task.conditions;
-        conditions[index].conditionValue = value;
-
-        this.setState(prevState => ({task: {...prevState.task, conditions: conditions}, modified: true}))
+        let newCondition = {};
+        newCondition.condition = this.state.task.conditions[index].condition;
+        newCondition.comparator = this.state.task.conditions[index].comparator;
+        newCondition.conditionValue = value;
+        this.setState(prevState => ({task: {...prevState.task, conditions: [...prevState.task.conditions.map((x, i) => {if(i === index)x = newCondition; return x})]}}))
+        this.props.setModified(true)
     }
     handleToggleDialog(value){
         this.setState(prevState => ({...prevState, showDialog: !this.state.showDialog}))
+        this.props.setModified(true)
     }
     handleDescriptionChange(value){
-        this.setState(prevState => ({task: {...prevState.task, description: value}, modified: true}))
+        this.setState(prevState => ({task: {...prevState.task, description: value}}))
+        this.props.setModified(true)
     }
     handleOperatorChange(value){
         this.setState(
-            prevState => ({task: {...prevState.task, operator: value}, modified: true}),
+            prevState => ({task: {...prevState.task, operator: value}}),
             () => {
+                if(this.props.manageTask)
+                    this.props.toggleManageTask()
+                this.props.setModified(true)
                 if(value === "http://citius.usc.es/hmb/questionnaires/operators/do_quest")
                     this.props.getAllQuestionnaires();
             }
         )
     }
     handleRolesChange(value, rol){
-        if(value && rol === 'all')
+        if(value && rol === 'all'){
             this.setState(prevState => ({
                 task: {
                     ...prevState.task,
-                    rolesAllowed: this.props.roles.map((rol) => rol.uri)
-                },
-                modified: true
+                    rolesAllowed: this.props.roles
+                        .filter(rol => rol.displayName !== '' && rol.displayName)
+                        .map((rol) => rol.uri)
+                }
             }))
-        else if (value)
-            this.setState(prevState => ({task: {...prevState.task, rolesAllowed: [...prevState.task.rolesAllowed, rol]}, modified: true}))
-        else if (rol === 'all')
-            this.setState(prevState => ({task: {...prevState.task, rolesAllowed: []}, modified: true}))
-        else
-            this.setState(prevState => ({task: {...prevState.task, rolesAllowed: prevState.task.rolesAllowed.filter((r) => r !== rol)}, modified: true}))
+            this.props.setModified(true)
+        }
+        else if (value){
+            this.setState(prevState => ({task: {...prevState.task, rolesAllowed: [...prevState.task.rolesAllowed, rol]}}))
+            this.props.setModified(true)
+        }
+        else if (rol === 'all'){
+            this.setState(prevState => ({task: {...prevState.task, rolesAllowed: []}}))
+            this.props.setModified(true)
+        }
+        else{
+            this.setState(prevState => ({task: {...prevState.task, rolesAllowed: prevState.task.rolesAllowed.filter((r) => r !== rol)}}))
+            this.props.setModified(true)
+        }
 
     }
 
@@ -296,44 +352,67 @@ const actionLabel = defineMessages({
 
         let operator = operators.find(({uri}) => uri === this.state.task.operator);
         let parameterObject = operator.parameter.find(({name}) => name === parameter);
+        let showQuestionnaire = false;
+        if(parameter === "Questionnaire") showQuestionnaire = true
 
         if (value !== '' && value !== null) {
+
             this.setState(prevState => ({
                 task: {
                     ...prevState.task,
                     parameters: {...prevState.task.parameters, [parameter]: {
                         value: value, parameter: parameterObject
                     }}
-                }, modified: true, showQuestionnaire: true, selectedQuestionnaire: value
+                }, showQuestionnaire: showQuestionnaire, selectedQuestionnaire: value
             }))
+            this.props.setModified(true)
         }
         else {
             let parameters = delete {...this.state.parameters}[parameter];
-            this.setState(prevState => ({task: {...prevState.task, parameters}, modified: true, showQuestionnaire: false}))
+            this.setState(prevState => ({task: {...prevState.task, parameters}, showQuestionnaire: !showQuestionnaire}))
+            this.props.setModified(true)
         }
     }
     handleInitialDateChange(value){
-        this.setState(prevState => ({task: {...prevState.task, initialDate: value}, modified: true}))
+        this.setState(prevState => ({task: {...prevState.task, initialDate: value}}))
+        this.props.setModified(true)
     }
     handleEndingDateChange(value){
-        this.setState(prevState => ({task: {...prevState.task, endingDate: value}, modified: true}))
+        this.setState(prevState => ({task: {...prevState.task, endingDate: value}}))
+        this.props.setModified(true)
     }
     handleIsTransitableChange(value){
-        this.setState(prevState => ({task: {...prevState.task, isTransitable: value}, modified: true}))
+        this.setState(prevState => ({task: {...prevState.task, isTransitable: value}}))
+        this.props.setModified(true)
     }
     handleIsRequiredChange(value){
-        this.setState(prevState => ({task: {...prevState.task, isRequired: value}, modified: true}))
+        this.setState(prevState => ({task: {...prevState.task, isRequired: value}}))
+        this.props.setModified(true)
     }
     handleIsDisabledChange(value){
-        this.setState(prevState => ({task: {...prevState.task, isDisabled: value}, modified: true}))
+        this.setState(prevState => ({task: {...prevState.task, isDisabled: value}}))
+        this.props.setModified(true)
+    }
+
+    toggleManageTask(){
+        this.props.setModified(true)
+        this.props.toggleManageTask()
     }
 
     handleSaveTaskClick(){
-        this.setState({modified: false});
-        this.props.saveTask(this.state.task)
+        this.setState(prevState => ({
+            ...prevState,
+            showError: false
+        }), () => {
+            this.props.setModified(false)
+            if(this.props.manageTask)
+                this.props.toggleManageTask()
+            this.props.saveTask(this.state.task)
+        });
+
     }
     handleSaveEdgeClick(){
-        this.setState({modified: false});
+        this.props.setModified(false)
         this.props.saveEdge(this.state.task)
     }
     handleDeleteTaskClick(){
@@ -345,9 +424,9 @@ const actionLabel = defineMessages({
                 operator: '',
                 parameters: {},
                 rolesAllowed: [],
-            },
-            modified: false,
+            }
         });
+        this.props.setModified(false)
         this.props.deleteTask(this.props.selectedTask)
     }
 
@@ -423,7 +502,7 @@ const actionLabel = defineMessages({
                         onChange = { this.handleOperatorChange }
                         source = { this.props.operators
                             .filter(({name}) => name !== 'start' && name !== 'finish')
-                            .map(operator => ({value: operator.uri, label: operator.name}))
+                            .map(operator => ({value: operator.uri, label: operator.description}))
                         }
                         label = { formatMessage(formLabel.operator) }
                         value = { this.state.task.operator }
@@ -451,7 +530,9 @@ const actionLabel = defineMessages({
                     <IconMenu styleName='rolesSelector' icon='add' position='auto' menuRipple = {false}>
                         {
                             roles
-                                .filter(rol => !this.state.task.rolesAllowed.includes(rol.uri))
+                                .filter(rol => !this.state.task.rolesAllowed.includes(rol.uri) &&
+                                    rol.displayName !== '' && rol.displayName
+                                )
                                 .map(({uri, displayName}) =>
                                     <MenuItem key = { uri }
                                               caption = { displayName }
@@ -519,7 +600,7 @@ const actionLabel = defineMessages({
                                 styleName = 'fullWidth'
                                 label = { formatMessage(actionLabel.save) }
                                 onClick = { this.handleSaveEdgeClick }
-                                disabled = { !(this.isValid() && this.state.modified) }
+                                disabled = { !(this.isValid() && this.props.modified) }
                                 raised
                                 accent
                             />
@@ -539,7 +620,7 @@ const actionLabel = defineMessages({
                                 styleName = 'fullWidth'
                                 label = { formatMessage(actionLabel.save) }
                                 onClick = { this.handleSaveTaskClick }
-                                disabled = { !(this.isValid() && this.state.modified) }
+                                disabled = { !(this.isValid() && this.props.modified) }
                                 raised
                                 accent
                             />
@@ -568,6 +649,45 @@ const actionLabel = defineMessages({
         }
 
     }
+
+    handleQueryChange(value, name){
+        let { operators } = this.props;
+
+        let operator = operators.find(({uri}) => uri === this.state.task.operator);
+        let parameterObject = operator.parameter.find(({name}) => name === name);
+
+        if(value.length === 0){
+            this.props.setModified(true)
+            this.setState(prevState => ({
+                ...prevState,
+                showQuestionnaire: false,
+                modified: true,
+                task: {
+                    ...prevState.task,
+                    parameters: {
+                        ...prevState.task.parameters, [name]: {
+                            value: '', parameter: parameterObject
+                        }
+                    }
+                }
+            }))
+        }
+
+    }
+
+    deleteManageTask(){
+        this.setState(prevState => ({
+            ...prevState,
+            showError: false
+        }), () => {
+            if(this.props.manageTask)
+                this.props.toggleManageTask()
+            this.handleParameterValueChange(name, '');
+            this.props.setManageTask(null)
+        });
+
+    }
+
     renderFormInputsForOperatorParameters(){
         let { operators } = this.props;
 
@@ -597,6 +717,7 @@ const actionLabel = defineMessages({
                                                 label="Choose a questionnaire"
                                                 suggestionMatch='anywhere'
                                                 multiple={false}
+                                                onQueryChange={value => this.handleQueryChange(value,  name)}
                                                 onChange={value => this.handleParameterValueChange(name, value)}
                                                 source={this.state.questionnaires}
                                                 value = { this.state.task.parameters[name]? this.state.task.parameters[name].value : '' }
@@ -609,6 +730,7 @@ const actionLabel = defineMessages({
                                             />
                                             <QuestionnairesDetails
                                                 active={this.state.showDialog}
+                                                user={this.props.loggedUser.uri}
                                                 questionnaireUri={this.state.selectedQuestionnaire}
                                                 onCancel={this.handleToggleDialog}
                                             />
@@ -622,7 +744,19 @@ const actionLabel = defineMessages({
                                                 disabled={true}
                                                 key={ name + "_input" }
                                                 label="Task Id"
-                                                value = { this.state.task.id || '' }
+                                                value = { this.state.task.parameters[name]? this.state.task.parameters[name].value : '' }
+                                            />
+                                            <TooltipButton
+                                                styleName="manageIcon" icon='touch_app'
+                                                tooltip='Click on the task you want to manage'
+                                                disabled={this.props.manageTask}
+                                                onClick={ this.toggleManageTask }
+                                                accent
+                                            />
+                                            <IconButton
+                                                styleName="manageIcon" icon='cancel'
+                                                onClick={ this.deleteManageTask }
+                                                accent
                                             />
                                         </div>
                                     )
@@ -678,10 +812,12 @@ const actionLabel = defineMessages({
     }
 
     handleComparatorChange(value, index){
-        let conditions = this.state.task.conditions;
-        conditions[index].comparator = value;
-
-        this.setState(prevState => ({...prevState, task: {...prevState.task, conditions: conditions}}));
+        let newCondition = {};
+        newCondition.condition = this.state.task.conditions[index].condition;
+        newCondition.comparator = value;
+        newCondition.conditionValue = this.state.task.conditions[index].conditionValue;
+        this.setState(prevState => ({task: {...prevState.task, conditions: [...prevState.task.conditions.map((x, i) => {if(i === index)x = newCondition; return x})]}}))
+        this.props.setModified(true)
     }
 
     renderConditionType(cond, index){
@@ -751,8 +887,21 @@ const actionLabel = defineMessages({
                         </CardText>
                     );
                 case T.AND_SPLIT:
-                case T.AUTOMATIC_CHOICE:
                 case T.USER_CHOICE:
+                    return (
+                        <CardText styleName = 'inputs'>
+                            <Checkbox checked = { this.state.task.isTransitable }
+                                      label = { formatMessage(formLabel.isTransitable) }
+                                      onChange = { this.handleIsTransitableChange } />
+                            <Checkbox checked = { this.state.task.isRequired }
+                                      label = { formatMessage(formLabel.isRequired) }
+                                      onChange = { this.handleIsRequiredChange } />
+                            <Checkbox checked = { this.state.task.isDisabled }
+                                      label = { formatMessage(formLabel.isDisabled) }
+                                      onChange = { this.handleIsDisabledChange } />
+                        </CardText>
+                    );
+                case T.AUTOMATIC_CHOICE:
                     return (
                         <CardText styleName = 'inputs'>
                             <Checkbox checked = { this.state.task.isTransitable }
@@ -767,10 +916,11 @@ const actionLabel = defineMessages({
                             {
                                 this.state.task.conditions.map(
                                     (cond, index) => {
-                                        return <div>
-                                            <p>Path {index} Condition:</p>
-                                            <div>
+                                        return <div key={`${index}_div1`}>
+                                            <p key={`${index}_p`}>Path {index} Condition:</p>
+                                            <div key={`${index}_div2`}>
                                                 <Dropdown
+                                                    key={`${index}_dropdown`}
                                                     source={this.state.conditions}
                                                     onChange={(value) => this.handleConditionChange(value, index)}
                                                     value={cond.condition}
@@ -826,15 +976,20 @@ function mapStateToProps(state) {
         questionnaires: state.QuestionnairesState.questionnaires,
         tags: state.QuestionnairesState.tags,
         roles: state.GameEditorState.present.roles,
+        manageTask: state.GameEditorState.present.manageTask,
         operators: state.GameEditorState.present.operators,
-        properties: state.GameEditorState.present.properties
+        properties: state.GameEditorState.present.properties,
+        manageTaskId: state.GameEditorState.present.manageTaskId,
+        loggedUser: state.AuthState.loggedUser
     }
 }
 
 function mapDispatchToProps(dispatch) {
     return {
         getAllQuestionnaires: bindActionCreators(getAllQuestionnaires, dispatch),
-        getAllProperties: bindActionCreators(getAllProperties, dispatch)
+        getAllProperties: bindActionCreators(getAllProperties, dispatch),
+        toggleManageTask: bindActionCreators(toggleManageTask, dispatch),
+        setManageTask: bindActionCreators(setManageTask, dispatch),
     }
 }
 

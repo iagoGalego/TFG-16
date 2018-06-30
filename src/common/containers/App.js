@@ -20,8 +20,8 @@ class App extends Component {
         if(!!sessionStorage.getItem('__token')){
             HMBAPI.init(sessionStorage.getItem('__token'))
         }
-        if(!!sessionStorage.getItem('__questionnairesToken')){
-            QuestionnairesAPI.init(sessionStorage.getItem('__questionnairesToken'))
+        if(!!sessionStorage.getItem('__questionnairesToken') && !!sessionStorage.getItem('__loggedUser')){
+            QuestionnairesAPI.init(sessionStorage.getItem('__questionnairesToken'), JSON.parse(sessionStorage.getItem('__loggedUser')).uri)
         }
     }
 

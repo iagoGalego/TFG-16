@@ -1,6 +1,3 @@
-/**
- * Created by victorjose.gallego on 6/3/16.
- */
 import {
     Task,
     AutomaticTask,

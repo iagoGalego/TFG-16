@@ -30,9 +30,7 @@
     color: rgba(0,0,0,.25);
     font-style: italic;
   }
-  span{
-    color: rgba(0,0,0,.25)!important;
-  }
+
   label {
     div{
       border-color: rgba(0,0,0,.25)!important;
@@ -174,6 +172,19 @@
 .displayQuestionnaire{
   top: 30px;
   left: 5px;
+}
+
+.displayQuestionnaire:not([disabled]){
+  color: black!important;
+}
+
+.manageIcon{
+  top: 18px;
+  left: 5px;
+}
+
+.manageIcon:not([disabled]){
+  color: black!important;
 }
 
 .autocomplete{

@@ -40,12 +40,12 @@ function requestAPIError(err) {
     }
 }
 
-export function loginQuestionnaires(user, pass) {
+export function loginQuestionnaires(user, pass, uri) {
     return dispatch => {
         dispatch(requestAPICall());
 
         return HMBAPI.instance
-            .login({user, pass})
+            .login({user, pass, uri})
             .then( token => {
                 sessionStorage.setItem('__questionnairesToken', token);
                 dispatch(loginSuccess(token))
@@ -59,14 +59,8 @@ export function loginQuestionnaires(user, pass) {
 export function logoutQuestionnaires() {
     return dispatch => {
         dispatch(requestAPICall());
-
-        return HMBAPI.instance
-            .logout()
-            .then( () => {
-                sessionStorage.removeItem('__questionnairesToken')
-                dispatch(logoutSuccess())
-            })
-            .catch( err => dispatch(requestAPIError(err)) )
+        sessionStorage.removeItem('__questionnairesToken')
+        dispatch(logoutSuccess())
     }
 }
 

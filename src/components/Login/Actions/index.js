@@ -1,7 +1,3 @@
-/**
- * Created by victorjose.gallego on 2/4/16.
- */
-
 import LOGIN_TYPES from './types'
 import HMBAPI from '../../../common/lib/API'
 import { Logger, LEVELS } from '../../../common/lib/Logger'

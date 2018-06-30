@@ -103,11 +103,9 @@ const formLabel = defineMessages({
             modified: false,
             name: '',
             description: '',
-            provider: '',
             tag: '',
             tags: [],
             showNameMandatory: false,
-            showProviderMandatory: false,
             showInitialTimeMandatory: false,
             showEndingTimeMandatory: false,
             showEndingTimeIncorrect: false,
@@ -117,7 +115,7 @@ const formLabel = defineMessages({
             endingDate: null,
             initialTimeString: '',
             endingTimeString: '',
-            loading: true
+            loading: false
         }
     }
 
@@ -126,7 +124,7 @@ const formLabel = defineMessages({
     }
 
     componentWillReceiveProps(props) {
-        if(props.workflowUri !== null && props.workflowUri !== this.props.workflowUri){
+        if(props.workflowUri !== null && !this.state.loading ){
             this.props.setSelectedWorkflow(props.workflowUri);
             this.setState(prevState => ({
                 ...prevState,
@@ -138,11 +136,9 @@ const formLabel = defineMessages({
                 uri: '',
                 name: '',
                 description: '',
-                provider: '',
                 tag: '',
                 tags: [],
                 showNameMandatory: false,
-                showProviderMandatory: false,
                 showDescriptionMandatory: false,
                 showInitialDateMandatory: false,
                 showEndingDateMandatory: false,
@@ -156,7 +152,6 @@ const formLabel = defineMessages({
                 loading: false
             }))
         } else if (props.selectedWorkflow !== null) {
-            alert(JSON.stringify(props.selectedWorkflow))
             let tags = props.selectedWorkflow.metadata.filter(m => m.name === 'tag');
 
             let initialDate = null, endingDate = null, initialTimeString = '', endingTimeString = '';
@@ -175,11 +170,9 @@ const formLabel = defineMessages({
                 modified: false,
                 name: props.selectedWorkflow.translation[0].name,
                 description: props.selectedWorkflow.translation[0].longDescription,
-                provider: props.selectedWorkflow.provider,
                 tag: '',
                 tags: tags.map(m => m.metadataValue),
                 showNameMandatory: false,
-                showProviderMandatory: false,
                 showTagMandatory: false,
                 showTagCreated: false,
                 showInitialTimeMandatory: false,
@@ -224,16 +217,6 @@ const formLabel = defineMessages({
         });
     }
 
-    providerChange(value) {
-        this.setState((previousState) => {
-            return {
-                ...previousState,
-                provider: value,
-                modified: true,
-                showProviderMandatory: false
-            }
-        });
-    }
 
     addTag() {
         if(this.state.tag.length === 0)
@@ -285,7 +268,6 @@ const formLabel = defineMessages({
         }))
     }
     handleInitialTimeChange(value){
-        alert(value)
         let t = this.state.initialDate;
         if(value !== '') {
             let res = value.split(":");
@@ -350,13 +332,6 @@ const formLabel = defineMessages({
                     showEndingTimeIncorrect: true
                 }
             });
-        else if(this.state.provider.length === 0)
-            this.setState((previousState) => {
-                return {
-                    ...previousState,
-                    showProviderMandatory: true
-                }
-            });
         else{
             let description;
             if(this.state.description.length <= 80){
@@ -369,7 +344,7 @@ const formLabel = defineMessages({
                 uri: this.state.uri,
                 name: this.state.name, description: description, longDescription: this.state.description,
                 metadata: [],
-                modificationDate: new Date().getTime(), provider: this.state.provider
+                modificationDate: new Date().getTime()
             };
             if(this.state.initialDate) payload.startDate = this.state.initialDate.getTime();
             if(this.state.endingDate) payload.expiryDate= this.state.endingDate.getTime();
@@ -447,12 +422,6 @@ const formLabel = defineMessages({
                                            value={this.state.endingTimeString}/>
 
                                 </section>
-                                <Input type='text'
-                                       label='Provider Name'
-                                       value={this.state.provider}
-                                       error = { this.state.showProviderMandatory && formatMessage(messages.mandatory) || ''}
-                                       onChange = { this.providerChange }
-                                />
                                 <section className = { styles['multiSelector'] } >
                                     <h1>
                                         <FormattedMessage
@@ -516,12 +485,10 @@ function mapStateToProps(state) {
 function mapDispatchToProps(dispatch) {
     return {
         setAppTitle: bindActionCreators(setTitle, dispatch),
-        getQuestionnaire: bindActionCreators(setSelectedQuestionnaire, dispatch),
         saveQuestion: bindActionCreators(saveQuestion, dispatch),
         updateQuestion: bindActionCreators(updateQuestion, dispatch),
         updateQuestionnaire: bindActionCreators(updateQuestionnaire, dispatch),
         deleteQuestion: bindActionCreators(deleteQuestion, dispatch),
-        selectQuestionnaire: bindActionCreators(setSelectedQuestionnaire, dispatch),
         setSelectedWorkflow: bindActionCreators(setSelectedWorkflow, dispatch),
     }
 }

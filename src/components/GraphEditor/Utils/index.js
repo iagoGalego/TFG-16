@@ -1,6 +1,3 @@
-/**
- * Created by victorjose.gallego on 9/14/16.
- */
 import UUID from 'uuid'
 
 import FirstTaskIcon from '../../GraphEditor/Icons/img/First.svg'
@@ -160,6 +157,11 @@ function getGraphStyles(){
             'font-size': '12px',
             'background-color': '#000',
         })
+        .selector('node:selected')
+        .css({
+            'overlay-opacity': '0.5',
+            'overlay-color': '#cce6ff'
+        })
         .selector('node[type="start"], node[type="end"]')
         .css({
             'shape': 'ellipse',
@@ -291,8 +293,22 @@ function getGraphStyles(){
         })
 }
 
-export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, selectTask, scale, moveTask){
+export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, selectTask, manageTask, setManageTask, setZoom, scale, fit){
 
+    function DELETEEVENTS(evt){
+        document.removeEventListener('mousemove', onmousemove, true)
+        document.removeEventListener('mouseup', onmouseup, true)
+        document.removeEventListener('graph:showplaceholders', ADDTASKSTART);
+        document.removeEventListener('graph:hideplaceholders', ADDTASKEND);
+        document.removeEventListener('graph:deleteEvents', DELETEEVENTS);
+
+        graph.removeListener('select', 'node', SELECT);
+        graph.removeListener('tap', TAP);
+        graph.removeListener('zoom', ZOOM);
+        graph.removeListener('render', RENDER);
+
+
+    }
     function ADDTASKSTART(evt){
         try {
             graph.collection('edge').filter('[type!="return"]').filter('[type!="verticalStart"]').filter('[type!="verticalEnd"]').addClass('placeholder')
@@ -304,6 +320,13 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
         newNodeContainer.style['z-index'] = 1000;
         newNodeContainer.style['opacity'] = 0.3;
         newNodeContainer.style['top'] = `${evt.detail.y - 20}px`;
+        if(evt.detail.type ===  T.USER_TASK || evt.detail.type ===  T.AUTOMATIC_TASK){
+            newNodeContainer.style['width'] = `70px`;
+            newNodeContainer.style['height'] = `45px`;
+        } else {
+            newNodeContainer.style['width'] = `55px`;
+            newNodeContainer.style['height'] = `55px`;
+        }
         newNodeContainer.style['left'] = `${evt.detail.x - 20}px`;
         newNodeContainer.style['pointer-events'] = 'none';
 
@@ -333,7 +356,7 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
         //SetTimeout 0 to prevent locking the interface
         setTimeout( () => {
             const {type, x, y} = evt.detail
-            const labelSize = 36*graph.zoom() //Font size * scale
+            const labelSize = 36*graph.zoom()
             const labelMargin = 16
 
             try {
@@ -371,6 +394,8 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
 
                 //Check if drop in label position
                 if( (xx1 < x) && (x < xx2) && (yy1 < y) && (y < yy2)){
+                    document.removeEventListener('graph:showplaceholders', ADDTASKSTART)
+                    document.removeEventListener('graph:hideplaceholders', ADDTASKEND)
 
                     const newTask = {
                         task: {
@@ -410,29 +435,60 @@ export function bindGraphEvents(graph, newNodeContainer, selectedTask, addTask, 
         }, 0)
     }
 
-    document.removeEventListener('graph:showplaceholders', ADDTASKSTART)
-    document.removeEventListener('graph:hideplaceholders', ADDTASKEND)
     document.addEventListener('graph:showplaceholders', ADDTASKSTART);
     document.addEventListener('graph:hideplaceholders', ADDTASKEND);
-
-    document.addEventListener('graph:zoomin', () => {graph.zoom( graph.zoom() + 0.1 )});
-    document.addEventListener('graph:zoomout', () => {graph.zoom( graph.zoom() - 0.1 )});
-    document.addEventListener('graph:reset', () => {graph.zoom( 0.8 )});
+    document.addEventListener('graph:deleteEvents', DELETEEVENTS);
 
 
-    graph.on('select', 'node', evt => {
-        if(selectedTask === null ||  (selectedTask !== null && selectedTask.id !== evt.target.id()))
-            selectTask({id: evt.target.id()})
+    document.addEventListener('graph:zoomin', () => {graph.zoom( scale * 1.1 )});
+    document.addEventListener('graph:zoomout', () => {graph.zoom( scale * 0.9 )});
+    document.addEventListener('graph:reset', () => {
+        graph.fit(100);
+        if( graph.zoom() > 1){
+            graph.fit(300)
+        }
     });
 
-    graph.on('tap', evt => {
-        if(evt.target.isNode === undefined || (evt.target.isNode !== undefined && !evt.target.isNode()))
-            selectTask(null)
-    });
+    function SELECT(evt){
+        if(selectedTask === null ||  (selectedTask !== null && selectedTask.id !== evt.target.id())) {
+            if (!manageTask) {
+                selectTask({id: evt.target.id()})
+            } else {
+                if(evt.target.data().type === 'userTask' || evt.target.data().type === 'automaticTask'){
+                    setManageTask(evt.target.id())
+                }
+                else{
+                    setManageTask(null)
+                }
+            }
+        }
+    }
 
-    graph.on('mouseup', 'node',  evt => {
-        moveTask(evt.target.json())
-    })
+    function TAP(evt){
+        if(evt.target.isNode === undefined || (evt.target.isNode !== undefined && !evt.target.isNode())) {
+            if (!manageTask) selectTask(null)
+            else setManageTask(null)
+        }
+    }
+
+    function ZOOM(evt){
+        setZoom(graph.zoom())
+    }
+
+    function RENDER(evt) {
+        if(fit){
+            graph.fit(100);
+            if( graph.zoom() > 1){
+                graph.fit(300)
+            }
+        }
+    }
+
+    graph.on('select', 'node', SELECT);
+    graph.on('tap', TAP);
+    graph.on('zoom', ZOOM);
+    graph.on('render', RENDER);
+
 
 }
 export function buildGraph({graph, container, graphDefinition, selectedTask, scale}){
@@ -445,23 +501,16 @@ export function buildGraph({graph, container, graphDefinition, selectedTask, sca
         return cytoscape({
             container: container,
             boxSelectionEnabled: false,
-            autoungrabify: false,
+            autoungrabify: true,
             zoom: scale,
             style: getGraphStyles(),
             elements: mapGraphToFormat(graphDefinition, selectedTask),
-            layout: {
-                name: 'concentric',
-                fit: false,
-                directed: false,
-                padding: 50,
-            },
             wheelSensitivity: 0.1
         });
     }
     else {
         graph.elements().remove();
         graph.add( mapGraphToFormat(graphDefinition, selectedTask) );
-        graph.nodes().ungrabify()
         return graph
     }
 }

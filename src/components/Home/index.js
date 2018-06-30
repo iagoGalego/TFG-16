@@ -28,12 +28,12 @@ class Home extends Component {
     render() {
         return(
             <div styleName = 'home'>
-                <img src='http://www.phdcomics.com/comics/archive/phd091916s.gif' />
+                <img src='https://cdn-images-1.medium.com/max/800/1*VeM-5lsAtrrJ4jXH96h5kg.png' />
                 <hgroup>
                     <h1>Welcome!</h1>
-                    <h4>This is a React+Redux+ReactRouter app template</h4>
+                    <h4>This is a React+Redux+ReactRouter app</h4>
                 </hgroup>
-                <span><b>Created by </b><i><a href='mailto:victorj.gallego+react.template@gmail.com'>Víctor José Gallego Fontenla</a></i></span>
+                <span><b>Created by </b><i><a href='mailto:iago.galego.ferreiro@gmail.com'>Iago Galego Ferreiro</a></i></span>
             </div>
         )
     }

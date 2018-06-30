@@ -82,6 +82,30 @@
   width: 40px;
 }
 
+.blank{
+  padding-top: 30px;
+}
+
+.sentence{
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.sentenceInput{
+  width: 95%;
+}
+
+.sentenceButton{
+  margin-top: auto;
+  margin-bottom: auto;
+  color: #ffc400!important;
+}
+
+.preview{
+  font-size: 15px!important;
+}
+
 .buttonDelete{
   position: relative;
   top: 19px;
@@ -115,3 +139,22 @@
   }
 }
 
+.multimedia{
+  text-align: center;
+  input:not([disabled]){
+    background: #ffc400!important;
+  }
+  label{
+    background: #ffc400!important;
+  }
+  p{
+    position: relative;
+    right: 5px;
+    top: 5px;
+    color: red;
+  }
+  div{
+    display: flex;
+    justify-content: center;
+  }
+}

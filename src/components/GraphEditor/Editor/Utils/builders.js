@@ -1,6 +1,3 @@
-/**
- * Created by victorjose.gallego on 6/6/16.
- */
 import HMBElements from './../HMBElements'
 import { TASK_TYPE } from '../../../../common/lib/model/builders';
 

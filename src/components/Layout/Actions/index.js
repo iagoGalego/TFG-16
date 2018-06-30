@@ -1,6 +1,3 @@
-/**
- * Created by victorjose.gallego on 2/4/16.
- */
 import UI_ACTION_TYPES from './types'
 
 export function toggleMenu(){

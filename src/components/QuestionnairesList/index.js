@@ -65,20 +65,6 @@ const messages = defineMessages({
         this.props.setAppTitle(this.props.intl.formatMessage(messages.title))
     }
 
-    changeTag(value) {
-
-        if (this.state.typingTimeout)
-            clearTimeout(this.state.typingTimeout);
-
-        this.setState({
-            tag: value,
-            typing: false,
-            typingTimeout: setTimeout(() => {
-                this.props.getTagsByName(value)
-            }, 500)
-        });
-    }
-
     handleToggleDialog() {
         this.setState(prevState => ({...prevState, activeDialog: !this.state.activeDialog}));
     };
@@ -123,13 +109,16 @@ const messages = defineMessages({
     }
 
     nameChange(value) {
-        this.setState((previousState) => {
-            return {
-                ...previousState,
-                name: value,
-            }
+        if (this.state.typingTimeout)
+            clearTimeout(this.state.typingTimeout);
+
+        this.setState({
+            name: value,
+            typing: false,
+            typingTimeout: setTimeout(() => {
+                this.searchQuestionnaires(value, this.state.tagsAllowed);
+            }, 500)
         });
-        this.searchQuestionnaires(value, this.state.tagsAllowed);
     }
 
     renderTagsAndActions(questionnaire){
@@ -184,6 +173,7 @@ const messages = defineMessages({
                     this.state.questionnaires.map(
                         (questionnaire) => {
                             return <ListItem
+                                styleName = 'listItem'
                                 key={questionnaire.uri}
                                 caption= {questionnaire.name.stringValue}
                                 ripple={false}
@@ -240,8 +230,6 @@ const messages = defineMessages({
                                     suggestionMatch='anywhere'
                                     selectedPosition='below'
                                     source={this.getAutocompleteSource()}
-                                    onQueryChange={this.changeTag}
-                                    onFocus={(value) => this.handleAutocompleteFocus(value)}
                                     value={this.state.tagsAllowed}
                                 />
                             </div>
@@ -268,6 +256,7 @@ const messages = defineMessages({
 
                 <QuestionnaireDialog
                     active={this.state.activeDialog}
+                    user={this.props.loggedUser.uri}
                     onCancel = { this.handleToggleDialog }
                     onSave = { this.handleSave }
                 />
@@ -280,13 +269,13 @@ function mapStateToProps(state) {
     return {
         questionnaires: state.QuestionnairesState.questionnaires,
         tags: state.QuestionnairesState.tags,
+        loggedUser: state.AuthState.loggedUser
     }
 }
 
 function mapDispatchToProps(dispatch) {
     return {
         saveQuestionnaire: bindActionCreators(saveQuestionnaire, dispatch),
-        selectQuestionnaire: bindActionCreators(setSelectedQuestionnaire, dispatch),
         getQuestionnairesByName: bindActionCreators(getQuestionnairesByName, dispatch),
         getAllQuestionnaires: bindActionCreators(getAllQuestionnaires, dispatch),
         setAppTitle: bindActionCreators(setTitle, dispatch),

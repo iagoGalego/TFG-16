@@ -221,6 +221,7 @@ export { InsertVariousTextsQuestion }
 class FillInTheBlanksQuestionType extends AnswerType {
 	static RDFS_CLASS = 'http://citius.usc.es/hmb/citius.owl#FillInTheBlanksQuestionType';
 	sentence = undefined
+    solutions = undefined
 
 	constructor(options = {}) {
 		super(options);
@@ -229,33 +230,12 @@ class FillInTheBlanksQuestionType extends AnswerType {
 }
 export { FillInTheBlanksQuestionType }
 
-class SimpleFillInTheBlanksQuestion extends FillInTheBlanksQuestionType {
-	static RDFS_CLASS = 'http://citius.usc.es/hmb/citius.owl#SimpleFillInTheBlanksQuestion';
-	solution = undefined
-
-	constructor(options = {}) {
-		super(options);
-		this['@class'] = "es.usc.citius.hmb.games.SimpleFillInTheBlanksQuestion";
-	}
-}
-export { SimpleFillInTheBlanksQuestion }
-
-class MultipleFillInTheBlanksQuestion extends FillInTheBlanksQuestionType {
-	static RDFS_CLASS = 'http://citius.usc.es/hmb/citius.owl#MultipleFillInTheBlanksQuestion';
-	solutions = undefined
-
-	constructor(options = {}) {
-		super(options);
-		this['@class'] = "es.usc.citius.hmb.games.MultipleFillInTheBlanksQuestion";
-	}
-}
-export { MultipleFillInTheBlanksQuestion }
-
 class Questionnaire extends Sort {
 	static RDFS_CLASS = 'http://citius.usc.es/hmb/citius.owl#Questionnaire';
 	name = undefined
 	questions = undefined
 	tags = undefined
+	user = undefined
 
 	constructor(options = {}) {
 		super(options);
@@ -373,28 +353,3 @@ class TrueFalseQuestionAnswer extends Answer {
 	}
 }
 export { TrueFalseQuestionAnswer }
-
-class Evaluation extends Sort {
-	static RDFS_CLASS = 'http://citius.usc.es/hmb/citius.owl#Evaluation';
-	question = undefined
-	answer = undefined
-	value = undefined
-
-	constructor(options = {}) {
-		super(options);
-		this['@class'] = "es.usc.citius.hmb.games.Evaluation";
-	}
-}
-export { Evaluation }
-
-class QuestionnaireEvaluation extends Evaluation {
-	static RDFS_CLASS = 'http://citius.usc.es/hmb/citius.owl#QuestionnaireEvaluation';
-	questionEvaluations = undefined
-
-	constructor(options = {}) {
-		super(options);
-		this['@class'] = "es.usc.citius.hmb.games.QuestionnaireEvaluation";
-	}
-}
-export { QuestionnaireEvaluation }
-

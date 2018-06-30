@@ -113,8 +113,9 @@ const messages = defineMessages({
             login(this.state.user, this.state.pass).then(
                 (response) => {
                     if (response === undefined) {
-                        getLoggedUser();
-                        loginQuestionnaires(this.state.user, this.state.pass);
+                        getLoggedUser().then(() => {
+                            loginQuestionnaires(this.state.user, this.state.pass, JSON.parse(sessionStorage.getItem('__loggedUser')).uri);
+                        });
                     }
                 });
         }
@@ -238,7 +239,7 @@ const messages = defineMessages({
                     </div>
                 </Card>
 
-                <p styleName = 'copyright'>Made by Victor Jose Gallego Fontenla. <FontIcon>copyright</FontIcon> CiTIUS 2016.</p>
+                <p styleName = 'copyright'>Made by Iago Galego Ferreiro. <FontIcon>copyright</FontIcon> TFG 2018.</p>
             </div>
         )
     }

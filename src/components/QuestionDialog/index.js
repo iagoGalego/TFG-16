@@ -1,6 +1,3 @@
-/**
- * Created by victorjose.gallego on 7/21/16.
- */
 import { Dialog } from 'react-toolbox/lib/dialog'
 import CSSModules from 'react-css-modules'
 import CONFIG from '../../common/config.json'
@@ -8,7 +5,7 @@ import CONFIG from '../../common/config.json'
 import Chip from 'react-toolbox/lib/chip'
 import styles from './styles.scss'
 import Input from 'react-toolbox/lib/input';
-import {Button} from 'react-toolbox/lib/button';
+import {Button, IconButton, BrowseButton} from 'react-toolbox/lib/button';
 import React, {Component} from 'react'
 import Checkbox from 'react-toolbox/lib/checkbox';
 import { FormattedMessage, injectIntl, defineMessages } from 'react-intl'
@@ -17,12 +14,15 @@ import {
     Question, Tag, StringType, QuestionType, VideoQuestionType,
     PictureQuestionType, TrueFalseQuestionType, ChooseOneOptionQuestion, ChooseVariousOptionsQuestion,
     Option, TextSolution, QuestionWithRating,
-    InsertOneTextQuestion, InsertVariousTextsQuestion, SimpleFillInTheBlanksQuestion,
-    MultipleFillInTheBlanksQuestion
+    InsertOneTextQuestion, InsertVariousTextsQuestion, FillInTheBlanksQuestionType
 } from "../../common/lib/model/questionnairesModel";
 import { RadioGroup, RadioButton } from 'react-toolbox/lib/radio';
 import Dropdown from 'react-toolbox/lib/dropdown';
 import {BooleanType, IntegerType} from "../../common/lib/model";
+import Tooltip from "react-toolbox/lib/tooltip/index";
+import ReactDOM from "react-dom";
+
+const TooltipButton = Tooltip(IconButton)
 
 const cardinality = [
     { value: 'simple', label: 'Simple' },
@@ -66,6 +66,21 @@ const messages = defineMessages({
         description : 'Message to show when a mandatory input is not fulfilled',
         defaultMessage: 'This input is mandatory'
     },
+    maxSize:{
+        id: 'questionnaires.input.maxSize',
+        description : 'Message to show when the file is bigger than 10MB',
+        defaultMessage: 'File size limit exceeded (10 MB)'
+    },
+    videoFormat:{
+        id: 'questionnaires.input.videoFormat',
+        description : 'Message to show when the video isnt an mp4',
+        defaultMessage: 'The video has to be a mp4'
+    },
+    imageFormat:{
+        id: 'questionnaires.input.imageFormat',
+        description : 'Message to show when the file is not an image',
+        defaultMessage: 'The current file isnt an image'
+    },
     misformed: {
         id: 'questionnaires.input.misformed',
         description : 'Message to show when the sentence input is misformed',
@@ -108,15 +123,22 @@ const messages = defineMessages({
             uri: '',
             statement: '',
             sentence: '',
+            sentencePreview: '',
             tag: '',
             tags: [],
+            video: null,
+            picture: null,
             videoURL: '',
             pictureURL: '',
             showStatementMandatory: false,
             showSentenceMandatory: false,
             showSentenceMisformed: false,
-            showVideoMandatory: false,
+            showVideoMandatory : false,
+            showVideoFormatError: false,
+            showVideoSizeError: false,
             showPictureMandatory: false,
+            showPictureFormatError: false,
+            showPictureSizeError: false,
             showScoreMandatory: false,
             showTagMandatory: false,
             showTagCreated: false,
@@ -127,11 +149,7 @@ const messages = defineMessages({
                 numberMandatory: false,
                 numberIncorrect: false,
             }],
-            showFillInResponseError: [{
-                textMandatory: false,
-                numberMandatory: false,
-                numberIncorrect: false,
-            }],
+            showFillInResponseError: {},
             showOptionResponseError: [{
                 textMandatory: false,
                 numberMandatory: false,
@@ -150,10 +168,7 @@ const messages = defineMessages({
                 text: '',
                 score: 0
             }],
-            fillInResponse: [{
-                text: '',
-                score: 0
-            }],
+            fillInResponse: {},
             optionResponse: [{
                 text: '',
                 score: 0,
@@ -170,8 +185,8 @@ const messages = defineMessages({
     componentWillReceiveProps(props) {
         if (props.question !== null){
             let cardinality, answerType, options=[], trueFalseResponse= {value: 'true', score: 0};
-            let textErrors = [], optionErrors = [], fillInResponses=[], fillInErrors = [];
-            let textResponses= [], selectedOption = 0, sentence;
+            let textErrors = [], optionErrors = [], fillInResponses={}, fillInErrors = {};
+            let textResponses= [], selectedOption = 0, sentence, sentencePreview;
             if(props.question.answerType["@class"] === "es.usc.citius.hmb.games.ChooseOneOptionQuestion"){
                 cardinality = 'simple';
                 answerType = 'optionAnswer';
@@ -190,12 +205,9 @@ const messages = defineMessages({
                     score: 0
                 });
                 textErrors.push({textMandatory: false, numberMandatory: false, numberIncorrect: false});
-                fillInResponses.push({
-                    text: '',
-                    score: 0
-                });
-                fillInErrors.push({textMandatory: false, numberMandatory: false, numberIncorrect: false});
+                fillInErrors = {};
                 sentence='';
+                sentencePreview = '';
             } else if(props.question.answerType["@class"] === "es.usc.citius.hmb.games.ChooseVariousOptionsQuestion"){
                 cardinality = 'multiple';
                 answerType = 'optionAnswer';
@@ -214,12 +226,9 @@ const messages = defineMessages({
                     score: 0
                 });
                 textErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
-                fillInResponses.push({
-                    text: '',
-                    score: 0
-                });
-                fillInErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
+                fillInErrors = {};
                 sentence='';
+                sentencePreview = '';
             } else if(props.question.answerType["@class"] === "es.usc.citius.hmb.games.TrueFalseQuestionType"){
                 cardinality = 'simple';
                 answerType = 'trueFalseAnswer';
@@ -239,12 +248,9 @@ const messages = defineMessages({
                     textMandatory: false, numberMandatory: false, numberIncorrect: false,
                     numberPositive: false, numberNegative: false
                 });
-                fillInResponses.push({
-                    text: '',
-                    score: 0
-                });
-                fillInErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
+                fillInErrors = {};
                 sentence='';
+                sentencePreview = '';
             } else if(props.question.answerType["@class"] === "es.usc.citius.hmb.games.InsertOneTextQuestion"){
                 cardinality = 'simple';
                 answerType = 'textAnswer';
@@ -262,11 +268,9 @@ const messages = defineMessages({
                     textMandatory: false, numberMandatory: false, numberIncorrect: false,
                     numberPositive: false, numberNegative: false
                 });
-                fillInResponses.push({
-                    text: '',
-                    score: 0
-                });
-                fillInErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
+                fillInErrors = {};
+                sentence='';
+                sentencePreview = '';
             } else if(props.question.answerType["@class"] === "es.usc.citius.hmb.games.InsertVariousTextsQuestion"){
                 cardinality = 'multiple';
                 answerType = 'textAnswer';
@@ -288,49 +292,26 @@ const messages = defineMessages({
                     textMandatory: false, numberMandatory: false, numberIncorrect: false,
                     numberPositive: false, numberNegative: false
                 });
-                fillInResponses.push({
-                    text: '',
-                    score: 0
-                });
-                fillInErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
+                fillInErrors = {};
                 sentence='';
-
-            } else if(props.question.answerType["@class"] === "es.usc.citius.hmb.games.SimpleFillInTheBlanksQuestion"){
-                cardinality = 'simple';
-                answerType = 'fillInTheBlanksAnswer';
-                sentence = props.question.answerType.sentence.stringValue;
-                fillInErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
-                fillInResponses.push({
-                    text: props.question.answerType.solution.solution.stringValue,
-                    score: props.question.answerType.solution.score.integerValue
-                });
-                options.push({
-                    text: '',
-                    score: 0,
-                    selected: false
-                });
-                optionErrors.push({
-                    textMandatory: false, numberMandatory: false, numberIncorrect: false,
-                    numberPositive: false, numberNegative: false
-                });
-                textResponses.push({
-                    text: '',
-                    score: 0
-                });
-                textErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
-            } else if(props.question.answerType["@class"] === "es.usc.citius.hmb.games.MultipleFillInTheBlanksQuestion"){
+                sentencePreview = '';
+            } else if(props.question.answerType["@class"] === "es.usc.citius.hmb.games.FillInTheBlanksQuestionType"){
                 cardinality = 'multiple';
                 answerType = 'fillInTheBlanksAnswer';
                 sentence=props.question.answerType.sentence.stringValue;
+                sentencePreview=props.question.answerType.sentence.stringValue.replace(/\[Blank\d\d\]/g, "____");
                 props.question.answerType.solutions.map(
-                    (solution) => {
-                        fillInErrors.push({textMandatory: false, numberMandatory: false,numberIncorrect: false});
-                        fillInResponses.push({
+                    (solution, index) => {
+                        let i = index;
+                        if (i < 10) i = "0"+i;
+                        fillInErrors["[Blank"+i+"]"] = {textMandatory: false, numberMandatory: false,numberIncorrect: false};
+                        fillInResponses["[Blank"+i+"]"] = {
                             text: solution.solution.stringValue,
                             score: solution.score.integerValue
-                        });
+                        };
                     }
                 );
+
                 options.push({
                     text: '',
                     score: 0,
@@ -351,18 +332,27 @@ const messages = defineMessages({
                 uri: props.question.uri,
                 statement: props.question.statement.stringValue,
                 sentence: sentence,
+                sentencePreview: sentencePreview,
                 tag: '',
                 tags: props.question.tags.map((tag) => {return tag.value.stringValue}),
                 videoURL: props.question.questionType["@class"] === 'es.usc.citius.hmb.games.VideoQuestionType'?
                     props.question.questionType.videoURL.stringValue : '',
                 pictureURL: props.question.questionType["@class"] === 'es.usc.citius.hmb.games.PictureQuestionType'?
                     props.question.questionType.imageURL.stringValue : '',
+                video: null,
+                picture: null,
                 showStatementMandatory: false,
                 showSentenceMandatory: false,
                 showSentenceMisformed: false,
                 showScoreMandatory: false,
                 showTagMandatory: false,
                 showTagCreated: false,
+                showVideoMandatory : false,
+                showVideoFormatError: false,
+                showVideoSizeError: false,
+                showPictureMandatory: false,
+                showPictureFormatError: false,
+                showPictureSizeError: false,
                 showTrueFalseScoreMandatory: false,
                 showTrueFalseScoreIncorrect: false,
                 showTextResponseError: textErrors,
@@ -388,20 +378,26 @@ const messages = defineMessages({
                 sentence: '',
                 tag: '',
                 tags: [],
+                video: null,
+                picture: null,
                 videoURL: '',
                 pictureURL: '',
                 showStatementMandatory: false,
                 showSentenceMandatory: false,
                 showSentenceMisformed: false,
-                showVideoMandatory: false,
+                showVideoMandatory : false,
+                showVideoFormatError: false,
+                showVideoSizeError: false,
                 showPictureMandatory: false,
+                showPictureFormatError: false,
+                showPictureSizeError: false,
                 showTagMandatory: false,
                 showTagCreated: false,
                 showScoreMandatory: false,
                 showTrueFalseScoreMandatory: false,
                 showTrueFalseScoreIncorrect: false,
                 showTextResponseError: [{textMandatory: false, numberMandatory: false,numberIncorrect: false}],
-                showFillInResponseError: [{textMandatory: false, numberMandatory: false,numberIncorrect: false}],
+                showFillInResponseError: {},
                 showOptionResponseError: [{
                     textMandatory: false,
                     numberMandatory: false,
@@ -420,11 +416,7 @@ const messages = defineMessages({
                     text: '',
                     score: 0
                 }],
-                fillInResponse: [{
-                    text: '',
-                    score: 0,
-                    selected: false
-                }],
+                fillInResponse: {},
                 optionResponse: [{
                     text: '',
                     score: 0,
@@ -500,35 +492,36 @@ const messages = defineMessages({
     }
 
     sentenceChange(value) {
-        let prevCount = (this.state.sentence.match(/\[Blank\]/g) || []).length;
-        let count = (value.match(/\[Blank\]/g) || []).length;
-        let newFillInResponse = [...this.state.fillInResponse];
-        let newShowFillInResponseError = [...this.state.showFillInResponseError];
+        let blanks = (value.match(/\[Blank\d\d\]/g) || []);
+        var preview = value.replace(/\[Blank\d\d\]/g, "____");
+        let newFillInResponse = {};
+        let newShowFillInResponseError = {};
 
-        if(count - prevCount > 0 && count !== 1){
-            for(let i = 0; i < count - prevCount; i++){
-                newFillInResponse.push({
-                    text: '',
-                    score: 0
-                });
-                newShowFillInResponseError.push({textMandatory: false, numberMandatory: false,numberIncorrect: false})
+        blanks.map(
+            (blank) => {
+                if(this.state.fillInResponse[blank]){
+                    newFillInResponse[blank] = this.state.fillInResponse[blank]
+                    newShowFillInResponseError[blank] = this.state.showFillInResponseError[blank]
+                } else {
+                    newFillInResponse[blank] = {
+                        text: '',
+                        score: 0
+                    }
+                    newShowFillInResponseError[blank] = {
+                        textMandatory: false,
+                        numberMandatory: false,
+                        numberIncorrect: false
+                    };
+
+                }
             }
-        } else if(count - prevCount < 0 && count === 0){
-            for(let i = 0; i < prevCount - count - 1; i++){
-                newFillInResponse.pop();
-                newShowFillInResponseError.pop();
-            }
-        } else if(count - prevCount < 0 && count !== 0){
-            for(let i = 0; i < prevCount - count; i++){
-                newFillInResponse.pop();
-                newShowFillInResponseError.pop();
-            }
-        }
+        )
 
         this.setState((previousState) => {
             return {
                 ...previousState,
                 sentence: value,
+                sentencePreview: preview,
                 fillInResponse: newFillInResponse,
                 showFillInResponseError: newShowFillInResponseError,
                 showSentenceMandatory: false,
@@ -560,21 +553,19 @@ const messages = defineMessages({
         return false;
     }
     anyFillInvalid(){
-        for(let i = 0; i < this.state.fillInResponse.length; i++){
-            if(this.state.fillInResponse[i].text.length === 0 ||
-                this.state.fillInResponse[i].score.length === 0 ||
-                this.state.fillInResponse[i].score[this.state.fillInResponse[i].score.length - 1] === '.') return true
+        let keys = Object.keys(this.state.fillInResponse);
+        for(let i = 0; i < keys.length; i++){
+            if(this.state.fillInResponse[keys[i]].text.length === 0 ||
+                this.state.fillInResponse[keys[i]].score.length === 0 ||
+                this.state.fillInResponse[keys[i]].score[this.state.fillInResponse[keys[i]].score.length - 1] === '.')
+                return true
         }
         return false;
     }
 
     sentenceInvalid(){
-        let count = (this.state.sentence.match(/\[Blank\]/g) || []).length;
-        if(this.state.cardinality === 'simple'){
-            return count !== 1
-        } else if(this.state.cardinality === 'multiple'){
-            return count !== this.state.fillInResponse.length
-        }
+        let count = (this.state.sentence.match(/\[Blank\d\d\]/g) || []).length;
+        return count !== Object.keys(this.state.fillInResponse).length || count === 0
     }
 
     isAnyOptionSelected(){
@@ -587,7 +578,7 @@ const messages = defineMessages({
     handleSave(){
         let { onSave, onUpdate } = this.props;
 
-        let question, options = { uri: this.state.uri };
+        let question, file = null, options = { uri: this.state.uri };
         if(this.state.statement.length === 0)
             this.setState((previousState) => {
                 return {
@@ -595,20 +586,26 @@ const messages = defineMessages({
                     showStatementMandatory: true
                 }
             });
-        else if(this.state.questionType === 'es.usc.citius.hmb.games.VideoQuestionType' && this.state.videoURL.length === 0)
+        else if(this.state.questionType === 'es.usc.citius.hmb.games.VideoQuestionType' && this.state.videoURL === ''){
             this.setState((previousState) => {
                 return {
                     ...previousState,
-                    showVideoMandatory: true
+                    showVideoMandatory: true,
+                    showVideoFormatError : false,
+                    showVideoSizeError: false,
                 }
-            });
-        else if(this.state.questionType === 'es.usc.citius.hmb.games.PictureQuestionType' && this.state.pictureURL.length === 0)
+            });}
+        else if(this.state.questionType === 'es.usc.citius.hmb.games.PictureQuestionType' && this.state.pictureURL === ''){
             this.setState((previousState) => {
                 return {
                     ...previousState,
-                    showPictureMandatory: true
+                    showPictureMandatory: true,
+                    showPictureFormatError: false,
+                    showPictureSizeError: false,
                 }
             });
+        }
+
         else if(this.state.answerType === 'fillInTheBlanksAnswer' && this.state.sentence.length === 0)
             this.setState((previousState) => {
                 return {
@@ -700,18 +697,20 @@ const messages = defineMessages({
                 }
             });
         } else if(this.state.answerType === 'fillInTheBlanksAnswer' && this.anyFillInvalid()){
-            const newFillInErrors = this.state.fillInResponse.map((fillInResponse, sidx) => {
-                if (fillInResponse.text.length === 0) {
-                    return {textMandatory: true, numberMandatory: this.state.showFillInResponseError[sidx].numberMandatory,
-                        numberIncorrect: this.state.showFillInResponseError[sidx].numberIncorrect};
-                } else if(fillInResponse.score.length === 0){
-                    return {textMandatory: this.state.showFillInResponseError[sidx].textMandatory,
-                        numberMandatory: true, numberIncorrect: this.state.showFillInResponseError[sidx].numberIncorrect};
-                } else if(fillInResponse.score[fillInResponse.score.length -1] === '.'){
-                    return {textMandatory: this.state.showFillInResponseError[sidx].textMandatory,
-                        numberMandatory: this.state.showFillInResponseError[sidx].numberMandatory,numberIncorrect: true};
+            let newFillInErrors = {};
+            Object.keys(this.state.fillInResponse).map((fillInResponse) => {
+                if (this.state.fillInResponse[fillInResponse].text.length === 0) {
+                    newFillInErrors[fillInResponse] = {textMandatory: true, numberMandatory: this.state.showFillInResponseError[fillInResponse].numberMandatory,
+                        numberIncorrect: this.state.showFillInResponseError[fillInResponse].numberIncorrect};
+                } else if(this.state.fillInResponse[fillInResponse].score.length === 0){
+                    newFillInErrors[fillInResponse] = {textMandatory: this.state.showFillInResponseError[fillInResponse].textMandatory,
+                        numberMandatory: true, numberIncorrect: this.state.showFillInResponseError[fillInResponse].numberIncorrect};
+                } else if(this.state.fillInResponse[fillInResponse].score[this.state.fillInResponse[fillInResponse].score.length -1] === '.'){
+                    newFillInErrors[fillInResponse] = {textMandatory: this.state.showFillInResponseError[fillInResponse].textMandatory,
+                        numberMandatory: this.state.showFillInResponseError[fillInResponse].numberMandatory,numberIncorrect: true};
+                } else{
+                    newFillInErrors[fillInResponse] = this.state.showFillInResponseError[fillInResponse];
                 }
-                return this.state.showFillInResponseError[sidx];
             });
 
             this.setState((previousState) => {
@@ -787,12 +786,14 @@ const messages = defineMessages({
                 question.questionType = new VideoQuestionType();
                 question.questionType.genURI();
                 question.questionType.videoURL = new StringType();
-                question.questionType.videoURL.stringValue = this.state.videoURL
+                file = this.state.video
+                //question.questionType.videoURL.stringValue = this.state.videoURL
             } else if(this.state.questionType === 'es.usc.citius.hmb.games.PictureQuestionType'){
                 question.questionType = new PictureQuestionType();
                 question.questionType.genURI();
                 question.questionType.imageURL = new StringType();
-                question.questionType.imageURL.stringValue = this.state.pictureURL
+                file = this.state.picture
+                //question.questionType.imageURL.stringValue = this.state.pictureURL
             }
 
             if(this.state.answerType === 'optionAnswer' && this.state.cardinality === 'simple'){
@@ -861,41 +862,26 @@ const messages = defineMessages({
                     question.answerType.solutions.push(solution)
                 }
 
-            } else if(this.state.answerType === 'fillInTheBlanksAnswer' && this.state.cardinality === 'simple'){
-                question.answerType = new SimpleFillInTheBlanksQuestion();
-                question.answerType.genURI();
-                question.answerType.sentence = new StringType();
-                question.answerType.sentence.genURI();
-                question.answerType.sentence.stringValue = this.state.sentence;
-                question.answerType.solution = new TextSolution();
-                question.answerType.solution.genURI();
-                question.answerType.solution.solution = new StringType();
-                question.answerType.solution.solution.genURI();
-                question.answerType.solution.solution.stringValue = this.state.fillInResponse[0].text;
-                question.answerType.solution.score = new IntegerType();
-                question.answerType.solution.score.genURI();
-                question.answerType.solution.score.integerValue = this.state.fillInResponse[0].score;
-
-            } else if(this.state.answerType === 'fillInTheBlanksAnswer' && this.state.cardinality === 'multiple'){
-                question.answerType = new MultipleFillInTheBlanksQuestion();
+            } else if(this.state.answerType === 'fillInTheBlanksAnswer'){
+                question.answerType = new FillInTheBlanksQuestionType();
                 question.answerType.genURI();
                 question.answerType.sentence = new StringType();
                 question.answerType.sentence.genURI();
                 question.answerType.sentence.stringValue = this.state.sentence;
                 question.answerType.solutions = [];
-                for(let i = 0; i < this.state.fillInResponse.length; i++ ){
-                    let solution = new TextSolution();
-                    solution.solution = new StringType();
-                    solution.score = new IntegerType();
-                    solution.genURI();
-                    solution.solution.genURI();
-                    solution.solution.stringValue = this.state.fillInResponse[i].text;
-                    solution.score.genURI();
-                    solution.score.integerValue = this.state.fillInResponse[i].score;
-
-                    question.answerType.solutions.push(solution)
-                }
-
+                Object.keys(this.state.fillInResponse).map(
+                    (blank) => {
+                        let solution = new TextSolution();
+                        solution.solution = new StringType();
+                        solution.score = new IntegerType();
+                        solution.genURI();
+                        solution.solution.genURI();
+                        solution.solution.stringValue = this.state.fillInResponse[blank].text;
+                        solution.score.genURI();
+                        solution.score.integerValue = this.state.fillInResponse[blank].score;
+                        question.answerType.solutions.push(solution)
+                    }
+                )
             } else if(this.state.answerType === 'trueFalseAnswer'){
                 question.answerType = new TrueFalseQuestionType();
                 question.answerType.genURI();
@@ -907,9 +893,16 @@ const messages = defineMessages({
                 question.answerType.score.integerValue = this.state.trueFalseResponse.score;
 
             }
-            alert(JSON.stringify(question));
-            if(this.state.isNew) onSave(question);
-            else onUpdate(question)
+
+            let form = document.createElement('form');
+            form.enctype = "multipart/form-data";
+            let fd = new FormData(form);
+            fd.append('question', JSON.stringify(question));
+            if(file !== null)
+                fd.append('file', file);
+
+            if(this.state.isNew) onSave(fd);
+            else onUpdate(fd, question.uri)
         }
     }
 
@@ -936,12 +929,57 @@ const messages = defineMessages({
 
     }
 
-    videoURLChange(value){
-        this.setState(prevState => ({...prevState, videoURL: value, showVideoMandatory: false}))
+    videoChange(e){
+        const file = e.target.files[0];
+        if(!file.type.includes("video/mp4")){
+            this.setState(prevState => ({...prevState,
+                showVideoFormatError: true,
+                showVideoSizeError: false,
+                showVideoMandatory: false
+            }))
+        } else if(file.size > 10000000){
+            this.setState(prevState => ({...prevState,
+                showVideoFormatError: false,
+                showVideoSizeError: true,
+                showVideoMandatory: false
+            }))
+        } else{
+            this.setState(prevState => ({...prevState, video: file,
+                videoURL: URL.createObjectURL(file),
+                showVideoFormatError: false,
+                showVideoSizeError: false,
+                showVideoMandatory: false
+            }), () =>{
+                let $source = ReactDOM.findDOMNode(this.__video);
+                $source.src = this.state.videoURL;
+                $source.parentNode.load();
+            })
+        }
+
     }
 
-    pictureURLChange(value){
-        this.setState(prevState => ({...prevState, pictureURL: value, showPictureMandatory: false}))
+    pictureChange(e){
+        const file = e.target.files[0];
+        if(!file.type.includes("image/")){
+            this.setState(prevState => ({...prevState,
+                showPictureFormatError: true,
+                showPictureSizeError: false,
+                showPictureMandatory: false
+            }))
+        } else if(file.size > 10000000){
+            this.setState(prevState => ({...prevState,
+                showPictureFormatError: false,
+                showPictureSizeError: true,
+                showPictureMandatory: false
+            }))
+        } else{
+            this.setState(prevState => ({...prevState, picture: file,
+                pictureURL: URL.createObjectURL(file),
+                showPictureMandatory: false}), () => {
+                let $source = ReactDOM.findDOMNode(this.__picture);
+                $source.src = this.state.pictureURL;
+            })
+        }
     }
 
     renderQuestionType(){
@@ -949,19 +987,45 @@ const messages = defineMessages({
 
         switch(this.state.questionType){
             case 'es.usc.citius.hmb.games.VideoQuestionType':
-                return <Input type='text'
-                              label='Video URL'
-                              value={this.state.videoURL}
-                              error = { this.state.showVideoMandatory && formatMessage(messages.mandatory) || ''}
-                              onChange = { this.videoURLChange }
-                />;
+                return (<div styleName="multimedia">
+                    <video width="320" height="240" controls>
+                        <source src={this.state.videoURL} type="video/mp4" ref = { element => this.__video = element }/>
+                    </video>
+                    <div>
+                        <p>{
+                            this.state.showVideoMandatory && formatMessage(messages.mandatory) ||
+                            this.state.showVideoFormatError && formatMessage(messages.videoFormat) ||
+                            this.state.showVideoSizeError && formatMessage(messages.maxSize) ||
+                            this.state.videoURL === '' && "No video selected" || ''
+                        }</p>
+                        <BrowseButton
+                            icon="file_upload"
+                            label="Upload"
+                            onChange={this.videoChange}
+                            raised
+                            accent
+                        />
+                    </div>
+                </div>);
             case 'es.usc.citius.hmb.games.PictureQuestionType':
-                return <Input type='text'
-                              label='Picture URL'
-                              value={this.state.pictureURL}
-                              error = { this.state.showPictureMandatory && formatMessage(messages.mandatory) || ''}
-                              onChange = { this.pictureURLChange }
-                />;
+                return (<div styleName="multimedia">
+                    <img height="240" src={this.state.pictureURL} ref = { element => this.__picture = element }/>
+                    <div>
+                        <p>{
+                            this.state.showPictureMandatory && formatMessage(messages.mandatory) ||
+                            this.state.showPictureFormatError && formatMessage(messages.imageFormat) ||
+                            this.state.showPictureSizeError && formatMessage(messages.maxSize) ||
+                            this.state.pictureURL === '' && "No image selected" || ''
+                        }</p>
+                        <BrowseButton
+                            icon="file_upload"
+                            label="Upload"
+                            onChange={this.pictureChange}
+                            raised
+                            accent
+                        />
+                    </div>
+                </div>);
             default:
         }
     }
@@ -985,15 +1049,11 @@ const messages = defineMessages({
     }
 
     fillInResponseChange(idx, value) {
-        let newFillInErrors = [];
-        const newFillInResponse = this.state.fillInResponse.map((fillInResponse, sidx) => {
-            if (idx !== sidx) {
-                newFillInErrors.push(this.state.showFillInResponseError[sidx]);
-                return fillInResponse;
-            }
-            newFillInErrors.push({textMandatory: false, numberMandatory: false, numberIncorrect: false});
-            return { ...fillInResponse, text: value };
-        });
+        let newFillInErrors = JSON.parse(JSON.stringify(this.state.showFillInResponseError));
+        let newFillInResponse = JSON.parse(JSON.stringify(this.state.fillInResponse));
+
+        newFillInResponse[idx].text = value;
+        newFillInErrors[idx] = {textMandatory: false, numberMandatory: false, numberIncorrect: false}
 
         this.setState(prevState => ({
             ...prevState,
@@ -1004,15 +1064,11 @@ const messages = defineMessages({
 
     fillInScoreChange(idx, value) {
         if(value === '' || !Number.isNaN(Number.parseInt(value)) && value >= 0) {
-            let newFillInErrors = [];
-            const newFillInResponse = this.state.fillInResponse.map((fillInResponse, sidx) => {
-                if (idx !== sidx) {
-                    newFillInErrors.push(this.state.showFillInResponseError[sidx]);
-                    return fillInResponse;
-                }
-                newFillInErrors.push({textMandatory: false, numberMandatory: false, numberIncorrect: false});
-                return { ...fillInResponse, score: value };
-            });
+            let newFillInErrors = JSON.parse(JSON.stringify(this.state.showFillInResponseError));
+            let newFillInResponse = JSON.parse(JSON.stringify(this.state.fillInResponse));
+
+            newFillInResponse[idx].score = value;
+            newFillInErrors[idx] = {textMandatory: false, numberMandatory: false, numberIncorrect: false}
 
             this.setState(prevState => ({
                 ...prevState,
@@ -1255,59 +1311,35 @@ const messages = defineMessages({
     renderFillInTheBlanksCase(){
         let { intl: {formatMessage} } = this.props;
 
-        switch(this.state.cardinality){
-            case 'simple':
-                return (
-                    <div className={styles['textSolutions']}>
-                        <Input type='text'
-                               label='Fill In The Blanks Response'
-                               styleName = 'text'
-                               value={this.state.fillInResponse[0].text}
-                               error = { this.state.showFillInResponseError[0].textMandatory && formatMessage(messages.mandatory) || ''}
-                               onChange = { (value) => this.fillInResponseChange(0, value) }
-                        />
-                        <Input type='text'
-                               styleName = 'number'
-                               label='Score'
-                               value={this.state.fillInResponse[0].score}
-                               error = {
-                                   this.state.showFillInResponseError[0].numberMandatory && formatMessage(messages.mandatory) ||
-                                   this.state.showFillInResponseError[0].numberIncorrect && formatMessage(messages.incorrect) ||''}
-                               onChange = { (value) => this.fillInScoreChange(0, value) }
-                        />
-                    </div>
-                )
-            case 'multiple':
-                return this.state.fillInResponse.map((fillInResponse, idx) => (
-                    <div styleName="center"
-                         key={`Shareholder #${idx + 1} center`}
-                    >
-                        <div className={styles['textSolutions']}
-                             key={`Shareholder #${idx + 1} textSolution`}
-                        >
-                            <Input type='text'
-                                   label='Fill In The Blanks Response'
-                                   styleName = 'text'
-                                   key={`Shareholder #${idx + 1} name`}
-                                   value={fillInResponse.text}
-                                   error = { this.state.showFillInResponseError[idx].textMandatory && formatMessage(messages.mandatory) || ''}
-                                   onChange = { (value) => this.fillInResponseChange(idx, value) }
-                            />
-                            <Input type='text'
-                                   styleName = 'number'
-                                   label='Score'
-                                   key={`Shareholder #${idx + 1} score`}
-                                   value={fillInResponse.score}
-                                   error = {
-                                       this.state.showFillInResponseError[idx].numberMandatory && formatMessage(messages.mandatory) ||
-                                       this.state.showFillInResponseError[idx].numberIncorrect && formatMessage(messages.incorrect) ||''}
-                                   onChange = { (value) => this.fillInScoreChange(idx, value) }
-                            />
-                        </div>
-                    </div>
-                ))
-            default:
-        }
+        return Object.keys(this.state.fillInResponse).map((blank) => (
+            <div styleName="center"
+                 key={`Shareholder #${blank + 1} center`}
+            >
+                <div className={styles['textSolutions']}
+                     key={`Shareholder #${blank + 1} textSolution`}
+                >
+                    <p styleName="blank">{blank.substring(1, blank.length - 1)}: </p>
+                    <Input type='text'
+                           label='Fill In The Blanks Response'
+                           styleName = 'text'
+                           key={`Shareholder #${blank + 1} name`}
+                           value={this.state.fillInResponse[blank].text}
+                           error = { this.state.showFillInResponseError[blank].textMandatory && formatMessage(messages.mandatory) || ''}
+                           onChange = { (value) => this.fillInResponseChange(blank, value) }
+                    />
+                    <Input type='text'
+                           styleName = 'number'
+                           label='Score'
+                           key={`Shareholder #${blank + 1} score`}
+                           value={this.state.fillInResponse[blank].score}
+                           error = {
+                               this.state.showFillInResponseError[blank].numberMandatory && formatMessage(messages.mandatory) ||
+                               this.state.showFillInResponseError[blank].numberIncorrect && formatMessage(messages.incorrect) ||''}
+                           onChange = { (value) => this.fillInScoreChange(blank, value) }
+                    />
+                </div>
+            </div>
+        ))
     }
 
     renderOptionActions(){
@@ -1420,6 +1452,34 @@ const messages = defineMessages({
         }
     }
 
+    addBlankSpace(){
+        let blanks = (this.state.sentence.match(/\[Blank\d\d\]/g) || []);
+        for(let i = 0; i < 100; i++){
+            let index = '';
+            if (i < 10) index += "0" + i
+            else index += i;
+            if(!blanks.includes("[Blank"+index+"]")){
+                let sentence = this.state.sentence+" [Blank"+index+"]";
+                let preview = sentence.replace(/\[Blank\d\d\]/g, "____");
+
+                this.setState(prevState => ({
+                    ...prevState,
+                    sentence: sentence,
+                    sentencePreview: preview,
+                    fillInResponse: {...prevState.fillInResponse, ["[Blank"+index+"]"]: {
+                            text: '',
+                            score: 0
+                        }},
+                    showFillInResponseError: {...prevState.showFillInResponseError, ["[Blank"+index+"]"]: {
+                            textMandatory: false,
+                            numberMandatory: false,
+                            numberIncorrect: false}}
+                }));
+                break;
+            }
+        }
+    }
+
     renderAnswerType(){
         let { intl: {formatMessage} } = this.props;
 
@@ -1451,17 +1511,29 @@ const messages = defineMessages({
             case 'fillInTheBlanksAnswer':
                 return (
                     <div>
-                        <Dropdown
-                            auto
-                            onChange={this.handleCardinalityChange}
-                            source={cardinality}
-                            value={this.state.cardinality}
-                        />
+                        <div styleName="sentence">
+                            <Input type='text'
+                                   styleName='sentenceInput'
+                                   label='Sentence'
+                                   hint="You need at least one blank space like this: [BlankXX] (with X between 0-9)"
+                                   value={this.state.sentence}
+                                   error = { this.state.showSentenceMandatory && formatMessage(messages.mandatory) || this.state.showSentenceMisformed && formatMessage(messages.misformed) || ''}
+                                   onChange = { this.sentenceChange }
+                                   multiline
+                            />
+                            <TooltipButton
+                                styleName="sentenceButton"
+                                icon='add_circle'
+                                tooltip='Add a new blank space'
+                                onClick={ this.addBlankSpace }
+                                accent
+                            />
+                        </div>
                         <Input type='text'
-                               label='Sentence'
-                               value={this.state.sentence}
-                               error = { this.state.showSentenceMandatory && formatMessage(messages.mandatory) || this.state.showSentenceMisformed && formatMessage(messages.misformed) || ''}
-                               onChange = { this.sentenceChange }
+                               label='Sentence Preview'
+                               value={this.state.sentencePreview}
+                               disabled={true}
+                               styleName="preview"
                                multiline
                         />
                         { this.renderFillInTheBlanksCase() }
@@ -1491,7 +1563,7 @@ const messages = defineMessages({
     handleOverlayClick(){
         let { onCancel} = this.props;
 
-        let r = confirm("You Will Lose All Unsaved Progress. Are You Sure You Want to Quit?");
+        let r = confirm("You will lose all unsaved progress. Are you sure you want to quit?");
         if (r === true) {
             onCancel()
         }
@@ -1506,7 +1578,7 @@ const messages = defineMessages({
             active={active}
             actions={[
                 { label: "Cancel", onClick: onCancel },
-                { label: this.state.isNew? 'Save' : 'Edit' , onClick: this.handleSave }
+                { label: 'Save', onClick: this.handleSave }
             ]}
             onEscKeyDown={onCancel}
             onOverlayClick={this.handleOverlayClick}

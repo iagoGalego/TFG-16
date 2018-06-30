@@ -13,6 +13,10 @@ import Translator from '../../../common/lib/model/translator'
     constructor(props) {
         super(props);
         this.__graph = null
+        this.state = {
+            firstTime: true,
+            fit: true,
+        };
     }
 
     componentDidMount() {
@@ -23,8 +27,6 @@ import Translator from '../../../common/lib/model/translator'
             selectedTask: this.props.selectedTask,
             scale: this.props.scale
         });
-
-        bindGraphEvents(this.__graph, this.__newNodeContainer, this.props.selectedTask, this.props.addTask, this.props.selectTask, this.props.scale, this.props.moveTask)
     }
 
     componentDidUpdate(){
@@ -33,19 +35,31 @@ import Translator from '../../../common/lib/model/translator'
             container: this.__graphContainer,
             graphDefinition: this.props.graph,
             selectedTask: this.props.selectedTask,
-            scale: this.props.scale
+            scale: this.props.scale,
         });
+    }
+
+    componentWillUnmount(){
+        document.dispatchEvent(new CustomEvent('graph:deleteEvents', {}))
+        this.props.setZoom(0.8);
+        this.setState(previousState => ({...previousState, firstTime: true, fit: false}));
     }
 
     componentWillReceiveProps(props){
 
-
         if(props.isLoading){
             ReactDOM.findDOMNode(this.__loaderContainer).style.display = 'block';
-            ReactDOM.findDOMNode(this.__graphContainer).style.display = 'none';
+            ReactDOM.findDOMNode(this.__graphContainer).style.opacity = 0;
         } else{
             ReactDOM.findDOMNode(this.__loaderContainer).style.display = 'none';
-            ReactDOM.findDOMNode(this.__graphContainer).style.display = 'block';
+            ReactDOM.findDOMNode(this.__graphContainer).style.opacity =  1;
+            document.dispatchEvent(new CustomEvent('graph:deleteEvents', {}))
+            bindGraphEvents(this.__graph, this.__newNodeContainer, props.selectedTask, this.props.addTask, this.props.selectTask, props.manageTask, this.props.setManageTask, this.props.setZoom, props.scale, this.state.fit)
+            if(this.state.firstTime){
+                this.setState(previousState => ({...previousState, firstTime: false, fit: true}));
+            } else if(this.state.fit){
+                this.setState(previousState => ({...previousState, firstTime: false, fit: false}));
+            }
         }
     }
 
